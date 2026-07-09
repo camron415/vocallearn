@@ -33,10 +33,19 @@ async function main() {
     throw new Error("Missing Supabase credentials in .env.local");
   }
 
+  const testEmail = readEnvValue(env, "SUPABASE_TEST_EMAIL");
+  const testPassword = readEnvValue(env, "SUPABASE_TEST_PASSWORD");
+
+  if (!testEmail || !testPassword) {
+    throw new Error(
+      "Missing SUPABASE_TEST_EMAIL or SUPABASE_TEST_PASSWORD in .env.local (dev script only)"
+    );
+  }
+
   const supabase = createClient(supabaseUrl, supabaseKey);
   const { error: authError } = await supabase.auth.signInWithPassword({
-    email: "REDACTED_EMAIL",
-    password: "REDACTED_PASSWORD",
+    email: testEmail,
+    password: testPassword,
   });
   if (authError) throw authError;
 
