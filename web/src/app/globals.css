@@ -1,0 +1,2786 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   Halo glass system
+   Registered props so the material can be animated (lensing, fill, light)
+   instead of faded with opacity — opacity on an ancestor kills backdrop-filter.
+   ========================================================================== */
+
+@property --halo-fill {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 1;
+}
+@property --halo-blur {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 24px;
+}
+@property --halo-edge {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 1;
+}
+@property --halo-glow {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+@property --halo-rise {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+@property --halo-lift {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+@property --halo-scale {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 1;
+}
+@property --halo-press {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 1;
+}
+@property --morph-x {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+@property --morph-y {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+/* Water surfaces materialize by modulating their own lensing, so this has to
+   inherit down to the skin and the outline strokes. */
+@property --water-in {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 1;
+}
+/* Attention on a wet surface. Registered so the still fallback can ease it;
+   inherited so the skin and the strokes read the value the engine writes. */
+@property --glow {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+
+:root {
+  color-scheme: light;
+
+  --halo-ink: #14202b;
+  --halo-ink-soft: #35485a;
+  --halo-muted: #5a6e82;
+  --halo-accent: #2b6d8e;
+  --halo-accent-lit: #7fc4e4;
+  --halo-stone: #e8e8ed;
+  --halo-stone-hover: #f4f4f7;
+  --halo-stone-on: #d8d8de;
+  --halo-chat: 52rem;
+
+  /* material */
+  --frost: 1;
+  --glass-blur: 26px;
+  --glass-sat: 108%;
+  --glass-bright: 1.04;
+  --glass-radius: 26px;
+
+  --ease-glass: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-gel: cubic-bezier(0.22, 0.61, 0.36, 1);
+
+  --background: transparent;
+  --foreground: var(--halo-ink);
+  --font-display: var(--font-fraunces);
+  --font-body: var(--font-manrope);
+}
+
+/* Frostier + still when the device or the user asks for calm */
+html[data-halo-motion="soft"],
+html[data-halo-perf="soft"] {
+  --frost: 1.85;
+  --glass-blur: 16px;
+  --glass-sat: 104%;
+}
+
+html[data-halo-bg="sky"] {
+  --glass-sat: 190%;
+  --glass-bright: 1.05;
+}
+
+html[data-halo-bg="sky"][data-halo-motion="soft"],
+html[data-halo-bg="sky"][data-halo-perf="soft"] {
+  --glass-sat: 150%;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-body);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* --------------------------------------------------------------------------
+   Lit environment. Mist is paper: Apple/Google white (#fff / #fafafc),
+   not a cool-gray wash. Blue+yellow pools were reading green on some
+   displays. Sky stays opt-in via the Scene toggle.
+   -------------------------------------------------------------------------- */
+
+html {
+  background:
+    radial-gradient(980px 720px at 12% -10%, #fafafc 0%, rgba(250, 250, 252, 0) 62%),
+    radial-gradient(880px 640px at 94% 108%, #f5f5f7 0%, rgba(245, 245, 247, 0) 58%),
+    #ffffff;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-color: #ffffff;
+}
+
+html[data-halo-bg="sky"] {
+  background:
+    linear-gradient(
+        180deg,
+        rgba(17, 50, 84, 0.26) 0%,
+        rgba(17, 50, 84, 0.13) 38%,
+        rgba(17, 50, 84, 0) 100%
+      )
+      0 0 / 100% 250px no-repeat,
+    radial-gradient(
+      126% 106% at 50% 40%,
+      rgba(18, 44, 70, 0) 38%,
+      rgba(18, 44, 70, 0.12) 74%,
+      rgba(14, 36, 58, 0.28) 100%
+    ),
+    radial-gradient(1100px 740px at 8% -10%, #c5e3f6 0%, rgba(197, 227, 246, 0) 56%),
+    radial-gradient(900px 620px at 99% -8%, #f3e0b8 0%, rgba(243, 224, 184, 0) 46%),
+    radial-gradient(860px 680px at 90% 96%, #5eb5e0 0%, rgba(94, 181, 224, 0) 54%),
+    radial-gradient(840px 700px at 2% 96%, #6aadd8 0%, rgba(106, 173, 216, 0) 52%),
+    linear-gradient(164deg, #cfe6f5 0%, #9ec4de 46%, #7aa8c8 100%);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+body {
+  margin: 0;
+  color: var(--halo-ink);
+  font-family: var(--font-body), system-ui, sans-serif;
+  background: transparent;
+}
+
+/* faint paper grain only — no colored veils */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(42% 34% at 18% 8%, rgba(250, 250, 252, 0.9) 0%, rgba(250, 250, 252, 0) 72%),
+    radial-gradient(36% 30% at 78% 88%, rgba(245, 245, 247, 0.7) 0%, rgba(245, 245, 247, 0) 74%);
+}
+
+html[data-halo-bg="sky"] body::before {
+  inset: -12%;
+  background-size:
+    720px 540px,
+    cover,
+    auto,
+    auto,
+    auto,
+    auto,
+    auto;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='720' height='540'%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.014 0.02' numOctaves='2' seed='3' stitchTiles='stitch' result='n'/%3E%3CfeColorMatrix in='n' type='matrix' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 3.2 0 0 0 -1.55'/%3E%3CfeGaussianBlur stdDeviation='1.4'/%3E%3C/filter%3E%3Crect width='720' height='540' filter='url(%23f)' opacity='0.22'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1400' height='1000'%3E%3Cfilter id='c' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.0045 0.009' numOctaves='2' seed='11' result='n'/%3E%3CfeColorMatrix in='n' type='matrix' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 2.6 0 0 0 -1.15'/%3E%3CfeGaussianBlur stdDeviation='5'/%3E%3C/filter%3E%3Crect width='1400' height='1000' filter='url(%23c)' opacity='0.32'/%3E%3C/svg%3E"),
+    radial-gradient(42% 34% at 14% 10%, rgba(180, 220, 242, 0.7) 0%, rgba(180, 220, 242, 0) 70%),
+    radial-gradient(30% 26% at 78% 16%, rgba(255, 243, 219, 0.42) 0%, rgba(255, 243, 219, 0) 70%),
+    radial-gradient(34% 30% at 64% 78%, rgba(120, 196, 230, 0.48) 0%, rgba(120, 196, 230, 0) 72%),
+    radial-gradient(28% 24% at 8% 78%, rgba(110, 184, 220, 0.4) 0%, rgba(110, 184, 220, 0) 74%),
+    radial-gradient(18% 16% at 44% 46%, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0) 78%);
+  animation: halo-tide 96s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+}
+
+/* grain — gives the lens something to bend, and kills the plastic look */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.028;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 220px 220px;
+}
+
+@keyframes halo-tide {
+  from {
+    transform: translate3d(-1.4%, -1%, 0) scale(1.02);
+  }
+  to {
+    transform: translate3d(1.6%, 1.4%, 0) scale(1.06);
+  }
+}
+
+body > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Compile backdrop-filter offscreen so the first visible frame is already glass. */
+.halo-filter-warmup {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.001;
+  backdrop-filter: blur(24px) saturate(108%);
+  -webkit-backdrop-filter: blur(24px) saturate(108%);
+}
+
+html:not([data-halo-ready]) .capsule,
+html:not([data-halo-ready]) .water--pane {
+  opacity: 0;
+  animation: none;
+}
+
+.halo-defs {
+  position: fixed;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  opacity: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  border: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Type
+   -------------------------------------------------------------------------- */
+
+.brand-mark {
+  margin: 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: clamp(2.3rem, 5vw, 3.4rem);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  line-height: 1;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.brand-mark--sm {
+  font-size: 1.08rem;
+  letter-spacing: -0.02em;
+  opacity: 0.86;
+}
+
+/* --------------------------------------------------------------------------
+   THE MATERIAL
+   One surface used by login card, topbar, buttons, compose, chat dock.
+   Layers: lensed backdrop · low white fill · gradient rim · travelling spec.
+   -------------------------------------------------------------------------- */
+
+.glass {
+  --r: var(--glass-radius);
+  --spec-x: 50%;
+  --spec-y: 0%;
+  --spec-size: 62%;
+  position: relative;
+  border-radius: var(--r);
+  color: var(--halo-ink);
+  background:
+    radial-gradient(
+      132% 148% at 50% -34%,
+      rgba(255, 255, 255, calc(0.3 * var(--halo-fill) * var(--frost))) 0%,
+      rgba(255, 255, 255, 0) 64%
+    ),
+    linear-gradient(
+      168deg,
+      rgba(255, 255, 255, calc(0.82 * var(--halo-fill) * var(--frost))) 0%,
+      rgba(255, 255, 255, calc(0.7 * var(--halo-fill) * var(--frost))) 46%,
+      rgba(255, 255, 255, calc(0.78 * var(--halo-fill) * var(--frost))) 100%
+    );
+  backdrop-filter: blur(var(--halo-blur)) saturate(var(--glass-sat))
+    brightness(var(--glass-bright));
+  -webkit-backdrop-filter: blur(var(--halo-blur)) saturate(var(--glass-sat))
+    brightness(var(--glass-bright));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, calc(0.78 * var(--halo-edge))),
+    inset 0 -1px 0 rgba(255, 255, 255, calc(0.22 * var(--halo-edge))),
+    inset 0 0 26px rgba(255, 255, 255, calc((0.08 + 0.24 * var(--halo-glow)) * var(--halo-edge))),
+    0 0 0 1px rgba(0, 0, 0, calc(0.2 * var(--halo-edge))),
+    0 0.5px 0 rgba(255, 255, 255, calc(0.7 * var(--halo-edge))),
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 8px 22px rgba(0, 0, 0, calc(0.06 + 0.04 * var(--halo-glow))),
+    0 18px 36px -20px rgba(0, 0, 0, 0.1),
+    0 0 32px rgba(127, 196, 228, calc(0.3 * var(--halo-glow)));
+  transform: translate(
+      var(--morph-x),
+      calc(var(--halo-rise) + var(--halo-lift) + var(--morph-y))
+    )
+    scale(calc(var(--halo-scale) * var(--halo-press)));
+  transition:
+    --halo-glow 300ms var(--ease-gel),
+    --halo-lift 420ms var(--ease-glass),
+    --halo-press 200ms var(--ease-glass),
+    box-shadow 320ms var(--ease-gel);
+  animation: halo-materialize 760ms var(--ease-glass) both;
+  animation-delay: var(--enter-delay, 0ms);
+}
+
+/* rim: bright where light enters, near-gone on the shadow side.
+   A gradient hairline, not a fat white border. */
+.glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: rgba(32, 36, 42, calc(0.2 * var(--halo-edge)));
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* specular: fixed sheet reflection + a highlight that travels to the pointer */
+.glass::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(
+      var(--spec-size) 120% at var(--spec-x) var(--spec-y),
+      rgba(255, 255, 255, calc(0.1 + 0.34 * var(--halo-glow))) 0%,
+      rgba(255, 255, 255, 0) 72%
+    ),
+    linear-gradient(
+      177deg,
+      rgba(255, 255, 255, calc(0.34 * var(--halo-edge))) 0%,
+      rgba(255, 255, 255, 0) 38%
+    );
+  mix-blend-mode: plus-lighter;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.glass > * {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes halo-materialize {
+  from {
+    --halo-fill: 0;
+    --halo-blur: 0px;
+    --halo-edge: 0;
+    --halo-rise: 12px;
+    --halo-scale: 0.982;
+  }
+  to {
+    --halo-fill: 1;
+    --halo-blur: var(--glass-blur);
+    --halo-edge: 1;
+    --halo-rise: 0px;
+    --halo-scale: 1;
+  }
+}
+
+/* Chromium: real edge refraction inside the backdrop (SVG displacement). */
+html[data-halo-engine="chromium"] .glass {
+  backdrop-filter: blur(var(--halo-blur)) saturate(var(--glass-sat))
+    brightness(var(--glass-bright)) url(#halo-lens);
+}
+
+html[data-halo-engine="chromium"] .glass--bead {
+  backdrop-filter: blur(var(--halo-blur)) saturate(var(--glass-sat))
+    brightness(var(--glass-bright)) url(#halo-lens-bead);
+}
+
+/* Wide bars and small pills stretch the displacement map into a diagonal
+   slash. Keep the lens for panels; these shapes just want a quiet rim. */
+html[data-halo-engine="chromium"] .glass--bar,
+html[data-halo-engine="chromium"] .glass--pill {
+  backdrop-filter: blur(var(--halo-blur)) saturate(var(--glass-sat))
+    brightness(var(--glass-bright));
+}
+
+/* Safari 26: let the platform draw its own glass under our fill. */
+@supports (-apple-visual-effect: -apple-system-glass-material) {
+  .glass {
+    -apple-visual-effect: -apple-system-glass-material;
+    --frost: 0.6;
+  }
+}
+
+/* variants ---------------------------------------------------------------- */
+
+.glass--bar {
+  --r: 22px;
+  --glass-blur: 22px;
+}
+
+.glass--pill {
+  --r: 999px;
+  --glass-blur: 18px;
+  --spec-y: -20%;
+}
+
+.glass--bar::before,
+.glass--pill::before {
+  background: rgba(32, 36, 42, calc(0.2 * var(--halo-edge)));
+}
+
+.glass--bar::after,
+.glass--pill::after {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, calc(0.2 + 0.12 * var(--halo-glow))) 0%,
+    rgba(255, 255, 255, 0) 48%
+  );
+  mix-blend-mode: normal;
+}
+
+.glass--panel {
+  --r: 28px;
+}
+
+/* interactive glass: gel flex — instant energize, quiet rest */
+.glass--lit {
+  cursor: pointer;
+}
+
+.glass--lit:hover,
+.glass--lit:focus-visible {
+  --halo-glow: 0;
+  --halo-lift: 0px;
+}
+
+.glass--lit:active {
+  --halo-press: 0.984;
+  --halo-glow: 1;
+  transition:
+    --halo-press 90ms linear,
+    --halo-glow 90ms linear;
+}
+
+.glass:focus-visible {
+  outline: 2px solid rgba(43, 109, 142, 0.5);
+  outline-offset: 3px;
+}
+
+/* --------------------------------------------------------------------------
+   THE SAME MATERIAL, WET
+   What the recents do, on the big surfaces: composer/dock and Ask/Send.
+   Centre pinned, silhouette a rounded rectangle, water only in the outline.
+   The shape is redrawn each frame by lib/water-edge — the skin is clipped to
+   it and the strokes ride it — so nothing here may assume a CSS radius.
+   `--water` must match the preset's inset in lib/water-edge.ts.
+   -------------------------------------------------------------------------- */
+
+.water {
+  --water: 12px;
+  --r: 30px;
+  --tap: 0;
+  --spec-x: 50%;
+  --spec-y: 30%;
+  position: relative;
+  color: var(--halo-ink);
+}
+
+.water__ambient,
+.water__shade,
+.water__skin,
+.water__edge {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.water__shade,
+.water__edge {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* far shadow: too soft for the silhouette to matter, so it can stay a box */
+.water__ambient {
+  inset: var(--water);
+  border-radius: var(--r);
+  opacity: var(--water-in);
+}
+
+/* near shadow: a blurred copy of the live outline, so nothing darkens the
+   glass itself — only the few pixels around the rim */
+.water__shade {
+  filter: blur(6px);
+  transform: translateY(2px);
+  opacity: calc((0.42 + 0.18 * var(--glow)) * var(--water-in));
+}
+
+html[data-halo-motion="full"] .water--pane .water__shade {
+  animation: halo-pane-shade 14s ease-in-out infinite;
+}
+
+html[data-halo-motion="full"] .water--pane .water__ambient {
+  animation: halo-pane-ambient 18s ease-in-out infinite;
+}
+
+@keyframes halo-pane-shade {
+  0% {
+    transform: translate(0px, 2px);
+  }
+  33% {
+    transform: translate(1.2px, 1.4px);
+  }
+  66% {
+    transform: translate(-1.1px, 2.4px);
+  }
+  100% {
+    transform: translate(0px, 2px);
+  }
+}
+
+@keyframes halo-pane-ambient {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(1.5px, 1px, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.water__content {
+  position: relative;
+  z-index: 2;
+}
+
+/* pane: the hero composer, which is also the chat dock --------------------- */
+
+.water--pane {
+  animation: water-materialize 760ms var(--ease-glass) both;
+  animation-delay: calc(var(--enter-delay, 0ms) + 280ms);
+}
+
+/* materialize by modulating the lensing, not by fading a rectangle in */
+@keyframes water-materialize {
+  from {
+    --water-in: 0;
+  }
+  to {
+    --water-in: 1;
+  }
+}
+
+.water--pane .water__ambient {
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.12),
+    0 10px 28px -18px rgba(0, 0, 0, 0.12);
+}
+
+.water--pane .water__skin {
+  backdrop-filter: blur(calc(var(--glass-blur) * var(--water-in)))
+    saturate(var(--glass-sat)) brightness(calc(var(--glass-bright) + 0.05 * var(--glow)));
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur) * var(--water-in)))
+    saturate(var(--glass-sat)) brightness(calc(var(--glass-bright) + 0.05 * var(--glow)));
+  background:
+    radial-gradient(
+      132% 148% at 50% -34%,
+      rgba(255, 255, 255, calc(0.3 * var(--frost) * var(--water-in))) 0%,
+      rgba(255, 255, 255, 0) 64%
+    ),
+    radial-gradient(
+      46% 128% at var(--spec-x) var(--spec-y),
+      rgba(255, 255, 255, calc(0.3 * var(--glow) * var(--frost) * var(--water-in))) 0%,
+      rgba(255, 255, 255, 0) 72%
+    ),
+    /* tap: inner illumination spreading out from the contact point */
+      radial-gradient(
+        circle at var(--spec-x) var(--spec-y),
+        rgba(212, 240, 255, calc(0.4 * var(--tap))) 0%,
+        rgba(212, 240, 255, 0) calc(18% + 82% * var(--tap))
+      ),
+    linear-gradient(
+      168deg,
+      rgba(255, 255, 255, calc(0.78 * var(--frost) * var(--water-in))) 0%,
+      rgba(255, 255, 255, calc(0.62 * var(--frost) * var(--water-in))) 46%,
+      rgba(255, 255, 255, calc(0.72 * var(--frost) * var(--water-in))) 100%
+    );
+}
+
+html[data-halo-engine="chromium"] .water--pane .water__skin {
+  backdrop-filter: blur(calc(var(--glass-blur) * var(--water-in)))
+    saturate(var(--glass-sat)) brightness(calc(var(--glass-bright) + 0.05 * var(--glow)))
+    url(#halo-lens);
+}
+
+@supports (-apple-visual-effect: -apple-system-glass-material) {
+  .water--pane .water__skin {
+    -apple-visual-effect: -apple-system-glass-material;
+    --frost: 0.6;
+  }
+}
+
+/* action: Ask / Send. Same water, quieter, over ink instead of glass ------- */
+
+.water--action {
+  --water: 6px;
+  --r: 999px;
+  --spec-y: 28%;
+  display: inline-flex;
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  border-radius: 999px;
+}
+
+.water--action .water__shade,
+.water--action .water__ambient,
+.water--action .water__edge {
+  display: none;
+}
+
+.water--action .water__skin {
+  background: var(--halo-stone);
+  box-shadow: none;
+  transition: background 180ms var(--ease-gel);
+}
+
+.water--action:hover:not(:disabled) .water__skin,
+.water--action:focus-visible .water__skin {
+  background: var(--halo-stone-hover);
+  box-shadow: none;
+}
+
+.water--action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.water--action:focus-visible {
+  outline: none;
+}
+
+/* still: no engine, so the skin is a plain rounded shape again ------------- */
+
+.water--still .water__ambient {
+  display: none;
+}
+
+.water--still .water__skin {
+  inset: var(--water);
+  border-radius: var(--r);
+  transition: box-shadow 240ms var(--ease-gel);
+}
+
+.water--still {
+  --glow: 0;
+  transition: --glow 260ms var(--ease-gel);
+}
+
+.water--still:hover,
+.water--still:focus-within {
+  --glow: 1;
+}
+
+.water--pane.water--still .water__skin {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.22),
+    0 0 0 1px rgba(0, 0, 0, 0.16),
+    0 0.5px 0 rgba(255, 255, 255, 0.7),
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 8px 22px rgba(0, 0, 0, 0.06),
+    0 18px 36px -20px rgba(0, 0, 0, 0.1);
+}
+
+.water--action.water--still .water__skin {
+  box-shadow: none;
+}
+
+/* --------------------------------------------------------------------------
+   Controls
+   -------------------------------------------------------------------------- */
+
+.ghost-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 0;
+  padding: 0.5rem 0.95rem;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--halo-ink);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+  white-space: nowrap;
+}
+
+.ghost-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Actions: same stone as Attach / Dictate / Ask. Hover lightens. No lift. */
+.stone-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.5rem 0.95rem;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--halo-ink);
+  background: var(--halo-stone);
+  box-shadow: none;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 180ms var(--ease-gel);
+}
+
+.stone-btn:hover:not(:disabled),
+.stone-btn:focus-visible {
+  background: var(--halo-stone-hover);
+  outline: none;
+}
+
+.stone-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* inputs are a recess in the sheet, never a second pane of glass */
+.field {
+  width: 100%;
+  border: 0;
+  border-radius: 18px;
+  padding: 0.78rem 0.95rem;
+  font: inherit;
+  color: var(--halo-ink);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.09),
+    rgba(255, 255, 255, 0.26)
+  );
+  box-shadow:
+    inset 0 1px 2px rgba(16, 38, 58, 0.1),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.36),
+    0 1px 0 rgba(255, 255, 255, 0.5);
+  resize: none;
+  transition:
+    box-shadow 240ms var(--ease-gel),
+    background 240ms var(--ease-gel);
+}
+
+.field::placeholder {
+  color: rgba(90, 110, 130, 0.72);
+}
+
+.field:focus {
+  outline: none;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.14),
+    rgba(255, 255, 255, 0.34)
+  );
+  box-shadow:
+    inset 0 1px 2px rgba(16, 38, 58, 0.08),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.55),
+    0 0 0 3px rgba(43, 109, 142, 0.16),
+    0 0 22px rgba(127, 196, 228, 0.28);
+}
+
+/* Settings / welcome: a still white well. Water physics belong on choices,
+   not on a caret. */
+.field--plain {
+  background: #ffffff;
+  border-radius: 999px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 1px rgba(0, 0, 0, 0.1),
+    0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.field--plain:focus {
+  background: #ffffff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 1px rgba(0, 0, 0, 0.16),
+    0 0 0 3px rgba(232, 232, 237, 0.95);
+}
+
+.field-label {
+  display: grid;
+  gap: 0.38rem;
+  margin: 0;
+  font-size: 0.82rem;
+  letter-spacing: 0.01em;
+  color: var(--halo-muted);
+}
+
+/* primary action: ink, lit from above, energizes with light not bounce */
+.primary-btn {
+  --halo-glow: 0;
+  position: relative;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.72rem 1.35rem;
+  font: inherit;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: #f3f8fc;
+  cursor: pointer;
+  background: linear-gradient(178deg, #2b3a48 0%, #16212c 62%, #101a23 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3),
+    0 2px 5px rgba(11, 26, 40, 0.24),
+    0 12px 26px -10px rgba(11, 26, 40, 0.5),
+    0 0 26px rgba(127, 196, 228, calc(0.42 * var(--halo-glow)));
+  transform: scale(var(--halo-press));
+  transition:
+    --halo-glow 260ms var(--ease-gel),
+    --halo-press 200ms var(--ease-glass),
+    box-shadow 260ms var(--ease-gel);
+}
+
+.primary-btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    72% 140% at 50% -32%,
+    rgba(255, 255, 255, calc(0.22 + 0.3 * var(--halo-glow))) 0%,
+    rgba(255, 255, 255, 0) 70%
+  );
+  pointer-events: none;
+}
+
+.primary-btn:hover:not(:disabled),
+.primary-btn:focus-visible {
+  --halo-glow: 1;
+}
+
+.primary-btn:active:not(:disabled) {
+  --halo-press: 0.976;
+  transition: --halo-press 90ms linear;
+}
+
+.primary-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.primary-btn:focus-visible {
+  outline: 2px solid rgba(43, 109, 142, 0.55);
+  outline-offset: 3px;
+}
+
+/* Ask / Send / Dictate: same stone as the header chrome. */
+.action-btn {
+  padding: calc(var(--water) + 0.7rem) calc(var(--water) + 1.32rem);
+  font-weight: 600;
+  font-size: 0.95rem;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  color: var(--halo-ink);
+  white-space: nowrap;
+}
+
+.action-btn .water__content {
+  text-shadow: none;
+}
+
+.form-error {
+  margin: 0.15rem 0 0;
+  color: #8f2f34;
+  font-size: 0.86rem;
+}
+
+/* --------------------------------------------------------------------------
+   Stages
+   -------------------------------------------------------------------------- */
+
+.login-stage {
+  position: relative;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+}
+
+.login-card {
+  --r: 32px;
+  width: min(430px, 100%);
+  padding: 2.1rem 1.9rem 1.75rem;
+}
+
+.login-title {
+  margin: 1rem 0 0.3rem;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 1.7rem;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.login-sub {
+  margin: 0 0 1.5rem;
+  color: var(--halo-muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.login-form {
+  display: grid;
+  gap: 0.95rem;
+}
+
+.login-form .primary-btn {
+  margin-top: 0.3rem;
+}
+
+.ask-stage,
+.chat-stage {
+  position: relative;
+  width: min(1160px, 100%);
+  margin: 0 auto;
+  padding: 0.9rem 1.25rem 1.5rem;
+  min-height: 100dvh;
+}
+
+.chat-stage {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 0.9rem;
+  height: 100dvh;
+  max-height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.topbar {
+  position: sticky;
+  top: 0.9rem;
+  z-index: 30;
+  display: block;
+  width: 100%;
+  --water: 8px;
+  --r: 999px;
+  padding: calc(var(--water) + 0.38rem) calc(var(--water) + 0.5rem)
+    calc(var(--water) + 0.38rem) calc(var(--water) + 0.95rem);
+}
+
+.topbar > .water__content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+.chat-stage .topbar {
+  position: relative;
+  top: auto;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex: 0 0 auto;
+}
+
+.history-wrap {
+  position: relative;
+}
+
+.history-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  justify-items: center;
+  padding: 0;
+  background: rgba(250, 250, 252, 0.82);
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  animation: halo-chat-in 420ms var(--ease-glass) both;
+}
+
+.history-page {
+  width: min(44rem, 100%);
+  height: 100%;
+  overflow: auto;
+  padding: 4.75rem 1.35rem 2.4rem;
+}
+
+.history-page.settings-page {
+  overflow: auto;
+  padding-top: 3.15rem;
+  padding-bottom: 1.6rem;
+}
+
+.settings-page {
+  display: grid;
+  gap: 1.05rem;
+  align-content: start;
+}
+
+.settings-page .history-page-title {
+  font-size: clamp(1.55rem, 3vw, 2.05rem);
+}
+
+.settings-page .login-sub {
+  margin: 0;
+}
+
+.history-page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0 0 1.15rem;
+}
+
+.history-page-title {
+  margin: 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: clamp(2rem, 4vw, 2.7rem);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  color: var(--halo-ink);
+}
+
+.history-sheet {
+  --frost: 1.18;
+  --halo-fill: 1;
+  width: min(38rem, 100%);
+  max-height: min(72vh, 42rem);
+  overflow: auto;
+  padding: 0.85rem 0.75rem 1rem;
+  animation: halo-msg-in 480ms var(--ease-glass) both;
+}
+
+.history-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0 0.2rem 0.55rem;
+}
+
+.history-label {
+  margin: 0.15rem 0.35rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--halo-muted);
+  font-weight: 700;
+}
+
+.history-empty {
+  margin: 0.35rem 0.55rem 0.5rem;
+  color: var(--halo-muted);
+  font-size: 0.98rem;
+  line-height: 1.45;
+}
+
+.history-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin: -0.35rem 0 0.95rem;
+}
+
+.history-pick {
+  flex: 0 0 auto;
+  width: 1.55rem;
+  height: 1.55rem;
+  border: 0;
+  border-radius: 999px;
+  padding: 0;
+  background: var(--halo-stone);
+  box-shadow: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.history-pick.is-on {
+  background: var(--halo-stone-on);
+  box-shadow: 0 0 0 1px rgba(44, 51, 60, 0.16);
+}
+
+.history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.history-row,
+.recipe-card-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.history-row .history-item {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.history-row .stone-btn,
+.recipe-card-head .stone-btn {
+  flex: 0 0 auto;
+  align-self: center;
+}
+
+.recipe-card-head {
+  margin: 0 0 0.7rem;
+}
+
+.recipe-card-head h2 {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.history-item {
+  display: block;
+  width: 100%;
+  border: 0;
+  border-radius: 18px;
+  padding: 0.95rem 1rem;
+  text-align: left;
+  font: inherit;
+  font-size: 1.08rem;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--halo-ink);
+  background: var(--halo-stone);
+  cursor: pointer;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+}
+
+.history-item:hover,
+.history-item:focus-visible {
+  background: var(--halo-stone-hover);
+  outline: none;
+}
+
+.history-item.is-current,
+.history-item.is-picked {
+  background: var(--halo-stone-on);
+  box-shadow: 0 0 0 1px rgba(44, 51, 60, 0.16);
+}
+
+.topbar-title {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  min-width: 0;
+}
+
+.topbar-heading {
+  min-width: 0;
+}
+
+.chat-title {
+  margin: 0.05rem 0 0;
+  font-size: 0.98rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 46ch;
+}
+
+.ask-hero {
+  position: relative;
+  z-index: 2;
+  min-height: calc(100dvh - 8rem);
+  display: grid;
+  /* Definite track: without it the column collapses to the greeting's
+     max-content and the composer never reaches the dock's 832px. */
+  grid-template-columns: min(calc(var(--halo-chat) + 24px), 100%);
+  align-content: center;
+  justify-content: center;
+  justify-items: center;
+  gap: 1.4rem;
+  text-align: center;
+  /* The hero is a full-height sheet; let recents receive clicks through it. */
+  pointer-events: none;
+}
+
+.ask-hero .ask-greeting,
+.ask-hero .compose {
+  pointer-events: auto;
+}
+
+.ask-hero .compose {
+  position: relative;
+  z-index: 6;
+}
+
+.ask-greeting {
+  margin: 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: clamp(1.75rem, 3.6vw, 2.5rem);
+  font-weight: 500;
+  letter-spacing: -0.028em;
+  color: var(--halo-ink);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.ask-kicker {
+  margin: -0.85rem 0 0;
+  font-size: 0.9rem;
+  color: var(--halo-muted);
+}
+
+/* the hero water object → becomes the chat dock */
+/* One width for both states, so compose → dock is pure travel with no
+   stretching of the pane or its text. Extra --water on each side is the
+   headroom the edge needs to move in. */
+.compose {
+  width: min(calc(var(--halo-chat) + 2 * var(--water)), 100%);
+  padding: calc(var(--water) + 0.85rem) calc(var(--water) + 0.85rem)
+    calc(var(--water) + 0.7rem);
+  text-align: left;
+}
+
+.compose-dock {
+  position: sticky;
+  bottom: calc(0.95rem - var(--water));
+  z-index: 20;
+  margin: calc(0.6rem - var(--water)) auto 0;
+}
+
+/* same object, arriving from where it was standing on the other screen */
+.compose[data-morph] {
+  --water-in: 1;
+  transform: translate(var(--morph-x), var(--morph-y));
+  animation: none;
+}
+
+.compose[data-morph="moving"] {
+  transition:
+    --morph-x 820ms cubic-bezier(0.18, 1.06, 0.28, 1),
+    --morph-y 820ms cubic-bezier(0.18, 1.06, 0.28, 1);
+}
+
+.compose-form {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.compose-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.compose-form .field {
+  flex: 1;
+  min-width: 0;
+  align-self: center;
+  background: transparent;
+  box-shadow: none;
+  padding: 0.55rem 0.55rem;
+  font-size: 1.02rem;
+  line-height: 1.35;
+  overflow: hidden;
+  min-height: 2.45rem;
+  max-height: 17.5rem;
+}
+
+.compose-form .field:focus {
+  background: transparent;
+  box-shadow: none;
+}
+
+.compose-footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0 0.15rem 0 0.6rem;
+  flex-wrap: nowrap;
+}
+
+.compose-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex: 0 0 auto;
+}
+
+.action-btn--icon {
+  padding-left: calc(var(--water) + 0.82rem);
+  padding-right: calc(var(--water) + 0.82rem);
+  min-width: 3.05rem;
+}
+
+.action-btn--icon.is-listening {
+  color: #7fc4e4;
+}
+
+.dictate-btn {
+  flex: 0 0 auto;
+}
+
+.compose-hint {
+  color: var(--halo-muted);
+  font-size: 0.86rem;
+}
+
+/* --------------------------------------------------------------------------
+   Recents — capsules. Anchored. Water lives in the outline.
+   -------------------------------------------------------------------------- */
+
+.recents {
+  display: none;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: min(1680px, calc(100vw - 1.5rem));
+  transform: translateX(-50%);
+  z-index: 3;
+  pointer-events: none;
+}
+
+.recent-slot {
+  position: absolute;
+  pointer-events: auto;
+}
+
+.capsule {
+  --water: 9px;
+  --spec-x: 50%;
+  --spec-y: 30%;
+  --tap: 0;
+  position: relative;
+  display: block;
+  max-width: min(20rem, calc((100vw - var(--halo-chat) - 6rem) / 2));
+  padding: calc(var(--water) + 0.94rem) calc(var(--water) + 1.52rem);
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: clamp(1.02rem, 0.38vw + 0.86rem, 1.12rem);
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: -0.005em;
+  color: var(--halo-ink);
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  animation: halo-drop-in 720ms var(--ease-glass) both;
+  animation-delay: calc(var(--enter-delay, 0ms) + 280ms);
+}
+
+@keyframes halo-drop-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.capsule__shade,
+.capsule__glass {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.capsule__shade {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: blur(4px);
+  transform: translateY(2px);
+  opacity: calc(0.45 + 0.15 * var(--glow));
+}
+
+html[data-halo-motion="full"] .capsule__shade {
+  animation: halo-shade-drift 11s ease-in-out infinite;
+}
+
+.recent-slot:nth-child(2) .capsule__shade {
+  animation-duration: 12.6s;
+  animation-delay: -3.2s;
+}
+.recent-slot:nth-child(3) .capsule__shade {
+  animation-duration: 10.4s;
+  animation-delay: -6.1s;
+}
+.recent-slot:nth-child(4) .capsule__shade {
+  animation-duration: 13.1s;
+  animation-delay: -1.4s;
+}
+.recent-slot:nth-child(5) .capsule__shade {
+  animation-duration: 11.8s;
+  animation-delay: -8s;
+}
+.recent-slot:nth-child(6) .capsule__shade {
+  animation-duration: 12.2s;
+  animation-delay: -4.7s;
+}
+
+@keyframes halo-shade-drift {
+  0% {
+    transform: translate(0px, 2px);
+  }
+  25% {
+    transform: translate(1px, 1.4px);
+  }
+  50% {
+    transform: translate(0.2px, 1.2px);
+  }
+  75% {
+    transform: translate(-1px, 1.6px);
+  }
+  100% {
+    transform: translate(0px, 2px);
+  }
+}
+
+.capsule__glass {
+  backdrop-filter: blur(var(--capsule-blur, 14px)) saturate(var(--glass-sat))
+    brightness(calc(1.08 + 0.06 * var(--glow)));
+  -webkit-backdrop-filter: blur(var(--capsule-blur, 14px)) saturate(var(--glass-sat))
+    brightness(calc(1.08 + 0.06 * var(--glow)));
+  background:
+    radial-gradient(
+      46% 130% at var(--spec-x) var(--spec-y),
+      rgba(255, 255, 255, calc((0.42 + 0.4 * var(--glow)) * var(--frost))) 0%,
+      rgba(255, 255, 255, 0) 70%
+    ),
+    radial-gradient(
+      circle at var(--spec-x) var(--spec-y),
+      rgba(212, 240, 255, calc(0.5 * var(--tap))) 0%,
+      rgba(212, 240, 255, 0) calc(24% + 76% * var(--tap))
+    ),
+    linear-gradient(
+      170deg,
+      rgba(255, 255, 255, calc(0.82 * var(--frost))) 0%,
+      rgba(255, 255, 255, calc(0.68 * var(--frost))) 48%,
+      rgba(255, 255, 255, calc(0.76 * var(--frost))) 100%
+    );
+}
+
+html[data-halo-engine="chromium"] .capsule__glass {
+  backdrop-filter: blur(var(--capsule-blur, 16px)) saturate(var(--glass-sat))
+    brightness(calc(1.04 + 0.05 * var(--glow))) url(#halo-lens-bead);
+}
+
+/* outline strokes: wet rim toward the pointer, meniscus dip underneath */
+.capsule__edge {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.capsule__label {
+  position: relative;
+  z-index: 2;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-height: 1.28;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.42);
+}
+
+/* still fallback: a plain, pretty capsule */
+.capsule--still {
+  --glow: 0;
+}
+
+.capsule--still:hover,
+.capsule--still:focus-visible {
+  --glow: 0.55;
+}
+
+.capsule--still .capsule__glass {
+  inset: var(--water);
+  border-radius: 999px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    0 0 0 1px rgba(0, 0, 0, 0.16),
+    0 0.5px 0 rgba(255, 255, 255, 0.5),
+    0 4px 14px -8px rgba(0, 0, 0, 0.12);
+}
+
+.length-picks,
+.choice-picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem;
+  align-items: center;
+  margin: 0 -0.35rem;
+}
+
+.capsule--choice {
+  --water: 8px;
+  max-width: none;
+  min-width: 6.4rem;
+  padding: calc(var(--water) + 0.55rem) calc(var(--water) + 1.2rem);
+  font-size: 0.95rem;
+  text-align: center;
+  animation: none;
+  border-radius: 999px;
+  appearance: none;
+  outline: none;
+}
+
+.capsule--choice:focus,
+.capsule--choice:focus-visible,
+.capsule--choice:active {
+  outline: none;
+  background: none;
+  box-shadow: none;
+}
+
+.capsule__fill {
+  fill: transparent;
+  pointer-events: none;
+}
+
+.capsule--picked .capsule__fill {
+  fill: var(--halo-stone);
+}
+
+.capsule--choice .capsule__label {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  -webkit-line-clamp: unset;
+}
+
+.capsule--still.capsule--picked .capsule__glass {
+  background: var(--halo-stone);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 0 0 1px rgba(44, 51, 60, 0.18);
+}
+
+.ask-stage.is-leaving .recent-slot {
+  animation: halo-recents-out 340ms var(--ease-glass) both;
+  pointer-events: none;
+}
+
+.ask-stage.is-leaving .recent-slot:nth-child(2) {
+  animation-delay: 30ms;
+}
+.ask-stage.is-leaving .recent-slot:nth-child(3) {
+  animation-delay: 50ms;
+}
+.ask-stage.is-leaving .recent-slot:nth-child(4) {
+  animation-delay: 70ms;
+}
+.ask-stage.is-leaving .recent-slot:nth-child(5) {
+  animation-delay: 90ms;
+}
+.ask-stage.is-leaving .recent-slot:nth-child(6) {
+  animation-delay: 110ms;
+}
+
+.ask-stage.is-leaving .ask-greeting {
+  animation: halo-greeting-out 280ms var(--ease-glass) both;
+}
+
+@keyframes halo-recents-out {
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+@keyframes halo-greeting-out {
+  to {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Chat
+   -------------------------------------------------------------------------- */
+
+.chat-stage > .stage--page {
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-scroll {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  align-content: start;
+  gap: 1.05rem;
+  width: 100%;
+  max-width: var(--halo-chat);
+  margin: 0 auto;
+  padding: 0.35rem 0.85rem 0.65rem;
+  scrollbar-gutter: stable;
+  animation: halo-chat-in 640ms var(--ease-glass) both;
+}
+
+@keyframes halo-chat-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.chat-empty {
+  margin: 2.5rem 0 0;
+  text-align: center;
+  color: var(--halo-muted);
+  font-size: 0.95rem;
+}
+
+.msg {
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.95rem 1.2rem;
+  border-radius: 22px;
+  font-size: 1.22rem;
+  line-height: 1.55;
+  letter-spacing: -0.012em;
+  overflow-wrap: anywhere;
+}
+
+.msg--user {
+  white-space: pre-wrap;
+  scroll-margin-top: 5.6rem;
+}
+
+.msg p {
+  margin: 0;
+}
+
+.msg--live {
+  min-width: min(100%, 280px);
+  max-width: 100%;
+}
+
+.answer {
+  color: var(--halo-ink);
+}
+
+.answer > *:first-child {
+  margin-top: 0;
+}
+
+.answer > *:last-child {
+  margin-bottom: 0;
+}
+
+.answer h1,
+.answer h2,
+.answer h3 {
+  font-family: var(--font-display);
+  font-weight: 560;
+  letter-spacing: -0.03em;
+  line-height: 1.25;
+  color: var(--halo-ink);
+}
+
+.answer h1 {
+  font-size: 1.42rem;
+  margin: 0 0 0.55rem;
+}
+
+.answer h2 {
+  font-size: 1.18rem;
+  margin: 1.05rem 0 0.4rem;
+}
+
+.answer h3 {
+  font-size: 1.04rem;
+  margin: 0.9rem 0 0.32rem;
+}
+
+.answer p {
+  margin: 0 0 0.72rem;
+}
+
+.answer p:last-child {
+  margin-bottom: 0;
+}
+
+.answer ul,
+.answer ol {
+  margin: 0.15rem 0 0.8rem;
+  padding-left: 1.35rem;
+}
+
+.answer ul {
+  list-style: disc;
+}
+
+.answer ol {
+  list-style: decimal;
+}
+
+.answer ul ul {
+  list-style: circle;
+}
+
+.answer li::marker {
+  color: var(--halo-accent);
+}
+
+.answer li {
+  margin: 0.22rem 0;
+  padding-left: 0.15rem;
+}
+
+.answer li > ul,
+.answer li > ol {
+  margin: 0.2rem 0 0.35rem;
+}
+
+.answer strong {
+  font-weight: 720;
+  letter-spacing: -0.018em;
+}
+
+.answer em {
+  font-style: italic;
+}
+
+.answer code {
+  font-size: 0.86em;
+  padding: 0.08em 0.32em;
+  border-radius: 6px;
+  background: rgba(20, 32, 43, 0.06);
+}
+
+.answer pre {
+  margin: 0.4rem 0 0.85rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 14px;
+  overflow: auto;
+  background: rgba(20, 32, 43, 0.04);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.answer pre code {
+  padding: 0;
+  background: none;
+}
+
+.answer blockquote {
+  margin: 0.4rem 0 0.85rem;
+  padding: 0.1rem 0 0.1rem 0.85rem;
+  border-left: 2px solid rgba(43, 109, 142, 0.35);
+  color: var(--halo-ink-soft);
+}
+
+.answer-link {
+  color: var(--halo-accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.answer-link:hover,
+.answer-link:focus-visible {
+  text-decoration: underline;
+}
+
+.cite-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.15em;
+  height: 1.15em;
+  margin: 0 0.08em 0 0.14em;
+  padding: 0 0.28em;
+  border-radius: 999px;
+  background: rgba(43, 109, 142, 0.12);
+  color: var(--halo-accent);
+  font-size: 0.68em;
+  font-weight: 750;
+  line-height: 1;
+  text-decoration: none;
+  vertical-align: super;
+  position: relative;
+  top: -0.12em;
+}
+
+.cite-mark:hover,
+.cite-mark:focus-visible {
+  background: rgba(43, 109, 142, 0.2);
+}
+
+.answer--streaming .message-sources {
+  display: none;
+}
+
+.stream-caret {
+  display: inline-block;
+  width: 0.42rem;
+  height: 1.05em;
+  margin-left: 0.12rem;
+  border-radius: 1px;
+  background: var(--halo-accent);
+  vertical-align: text-bottom;
+  animation: halo-caret 1s steps(1) infinite;
+}
+
+@keyframes halo-caret {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+html[data-halo-motion="soft"] .stream-caret,
+html[data-halo-perf="soft"] .stream-caret {
+  animation: none;
+  opacity: 0.55;
+}
+
+.work-trace {
+  display: grid;
+  gap: 0.45rem;
+  margin-bottom: 0.7rem;
+}
+
+.work-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.18rem;
+  color: var(--halo-muted);
+  font-size: 0.92rem;
+}
+
+.work-waiting,
+.work-summary {
+  margin: 0 0 0.55rem;
+  color: var(--halo-muted);
+  font-size: 0.9rem;
+}
+
+.work-thinking {
+  position: relative;
+  max-height: 7.2rem;
+  overflow: hidden;
+  padding: 0.15rem 0 0.2rem;
+}
+
+.work-thinking::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1.6rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0), #ffffff);
+  pointer-events: none;
+}
+
+.work-thinking-label {
+  margin: 0 0 0.2rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--halo-accent);
+  font-weight: 700;
+}
+
+.work-thinking-text {
+  margin: 0;
+  color: var(--halo-muted);
+  font-size: 0.92rem;
+  line-height: 1.45;
+  font-style: italic;
+  white-space: pre-wrap;
+}
+
+.source-index {
+  font-weight: 700;
+  color: var(--halo-accent);
+}
+
+/* You: Apple stone gray, clearly not the white Ask card. */
+.chat-scroll .msg.msg--user {
+  margin-left: auto;
+  border-bottom-right-radius: 9px;
+  color: var(--halo-ink);
+  background: var(--halo-stone);
+  background-color: var(--halo-stone);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 0 0 1px rgba(44, 51, 60, 0.18),
+    0 4px 12px -8px rgba(0, 0, 0, 0.08);
+}
+
+/* Ask: white card with a hairline you can actually see on mist */
+.msg--assistant {
+  border-bottom-left-radius: 9px;
+  background: #ffffff;
+  color: var(--halo-ink);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 1px rgba(0, 0, 0, 0.14),
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 8px 18px -12px rgba(0, 0, 0, 0.1);
+}
+
+.msg--pending {
+  padding: 0.7rem 1.05rem;
+}
+
+.msg--fresh {
+  animation: halo-msg-in 520ms var(--ease-glass) both;
+}
+
+@keyframes halo-msg-in {
+  from {
+    opacity: 0;
+    transform: translateY(9px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.thinking-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 1.2rem;
+}
+
+.thinking-dots {
+  display: inline-flex;
+  gap: 0.32rem;
+  align-items: center;
+}
+
+.thinking-dots span {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: var(--halo-accent);
+  display: inline-block;
+  animation: halo-dot 1s ease-in-out infinite;
+}
+
+.thinking-dots span:nth-child(2) {
+  animation-delay: 0.16s;
+}
+
+.thinking-dots span:nth-child(3) {
+  animation-delay: 0.32s;
+}
+
+@keyframes halo-dot {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: none;
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+.thinking-label {
+  color: var(--halo-muted);
+  font-size: 0.86rem;
+}
+
+.message-sources {
+  margin-top: 0.9rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(43, 109, 142, 0.16);
+}
+
+.message-sources-label {
+  margin: 0 0 0.28rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--halo-accent);
+  font-weight: 700;
+}
+
+.message-sources-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.28rem;
+}
+
+.message-sources-list a {
+  color: var(--halo-accent);
+  font-size: 1.02rem;
+  line-height: 1.45;
+  text-decoration: none;
+}
+
+.message-sources-list a:hover,
+.message-sources-list a:focus-visible {
+  text-decoration: underline;
+}
+
+.message-sources-body {
+  margin: 0;
+  color: var(--halo-muted);
+  font-size: 1.02rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+/* --------------------------------------------------------------------------
+   Stage entrance — surfaces materialize, text rises. No ancestor opacity.
+   -------------------------------------------------------------------------- */
+
+.stage {
+  width: 100%;
+}
+
+.stage--hero {
+  display: grid;
+  justify-items: center;
+  gap: 1.15rem;
+  width: 100%;
+}
+
+.stage--hero > :not(.glass) {
+  animation: halo-text-rise 700ms var(--ease-glass) both;
+  animation-delay: var(--enter-delay, 0ms);
+}
+
+@keyframes halo-text-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Calm modes
+   -------------------------------------------------------------------------- */
+
+html[data-halo-motion="soft"] .glass,
+html[data-halo-perf="soft"] .glass {
+  --halo-fill: 1;
+  --halo-edge: 1;
+  --halo-rise: 0px;
+  --halo-scale: 1;
+  --halo-blur: var(--glass-blur);
+  animation: none;
+  transition: box-shadow 200ms linear;
+}
+
+html[data-halo-motion="soft"] .glass--lit:hover,
+html[data-halo-perf="soft"] .glass--lit:hover {
+  --halo-lift: 0px;
+  --halo-glow: 0;
+}
+
+html[data-halo-motion="soft"] .capsule,
+html[data-halo-perf="soft"] .capsule,
+html[data-halo-motion="soft"] .water--pane,
+html[data-halo-perf="soft"] .water--pane,
+html[data-halo-motion="soft"] .msg--fresh,
+html[data-halo-perf="soft"] .msg--fresh,
+html[data-halo-motion="soft"] .thinking-dots span,
+html[data-halo-perf="soft"] .thinking-dots span,
+html[data-halo-motion="soft"] .stage--hero > :not(.glass),
+html[data-halo-perf="soft"] .stage--hero > :not(.glass),
+html[data-halo-motion="soft"] .chat-scroll,
+html[data-halo-perf="soft"] .chat-scroll,
+html[data-halo-motion="soft"] .history-overlay,
+html[data-halo-perf="soft"] .history-overlay,
+html[data-halo-motion="soft"] .history-page,
+html[data-halo-perf="soft"] .history-page {
+  animation: none;
+}
+
+html[data-halo-motion="soft"] .thinking-dots span,
+html[data-halo-perf="soft"] .thinking-dots span {
+  opacity: 0.55;
+}
+
+/* No backdrop-filter at all: keep it a legible frosted sheet. */
+html[data-halo-glass="off"] {
+  --frost: 2.8;
+}
+
+html[data-halo-glass="off"] .msg--assistant {
+  background: #ffffff;
+}
+
+html[data-halo-glass="off"] .chat-scroll .msg.msg--user {
+  background: var(--halo-stone);
+}
+
+html[data-halo-motion="soft"] body::before,
+html[data-halo-perf="soft"] body::before {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  .glass {
+    --halo-fill: 1;
+    --halo-edge: 1;
+    --halo-blur: var(--glass-blur);
+    --halo-rise: 0px;
+    --halo-scale: 1;
+  }
+
+  .water--pane {
+    --water-in: 1;
+    animation: none;
+  }
+}
+
+/* Recents: hide, don't squeeze. Full view keeps all six. A bit smaller
+   keeps the four corners and drops the side chips. Then they all go. */
+@media (min-width: 1240px) and (min-height: 740px) and (min-aspect-ratio: 12/9) {
+  .recents {
+    display: block;
+  }
+
+  .recent-slot[data-slot="side"] {
+    display: none;
+  }
+}
+
+@media (min-width: 1400px) and (min-height: 820px) and (min-aspect-ratio: 13/9) {
+  .recent-slot[data-slot="side"] {
+    display: block;
+  }
+}
+
+@media (max-width: 1279px), (max-height: 740px) {
+  .ask-hero {
+    min-height: calc(100dvh - 9rem);
+  }
+}
+
+@media (max-height: 700px) {
+  .ask-greeting {
+    font-size: clamp(1.35rem, 3vw, 1.85rem);
+  }
+
+  .ask-hero {
+    min-height: calc(100dvh - 6.5rem);
+    gap: 0.85rem;
+  }
+
+  .compose-hint {
+    display: none;
+  }
+
+  .history-page.settings-page {
+    overflow: auto;
+  }
+}
+
+@media (max-height: 560px) {
+  .ask-greeting {
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: 720px) {
+  .ask-greeting {
+    font-size: 1.45rem;
+    max-width: 18ch;
+  }
+
+  .topbar > .water__content {
+    justify-content: flex-end;
+    gap: 0.4rem;
+  }
+
+  .topbar-title {
+    margin-right: auto;
+    gap: 0.45rem;
+  }
+
+  .topbar-home-label {
+    display: none;
+  }
+
+  .topbar-actions {
+    gap: 0.22rem;
+  }
+
+  .stone-btn {
+    padding: 0.42rem 0.62rem;
+    font-size: 0.78rem;
+  }
+
+  .topbar > .water__content > .brand-mark,
+  .topbar-heading .brand-mark {
+    display: none;
+  }
+
+  /* Phone composer: field on its own row so Ask/Send isn’t crushed. */
+  .compose-row {
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 0.35rem;
+  }
+
+  .compose-form .field {
+    flex: 1 1 100%;
+    font-size: 16px;
+    min-height: 2.7rem;
+    max-height: 8rem;
+    overflow-y: auto;
+    padding: 0.4rem 0.2rem 0.15rem;
+  }
+
+  .compose-actions {
+    flex: 1 1 100%;
+    justify-content: flex-end;
+    gap: 0.28rem;
+  }
+
+  .compose {
+    width: 100%;
+    max-width: 100%;
+    padding: calc(var(--water) + 0.5rem) calc(var(--water) + 0.55rem)
+      calc(var(--water) + 0.42rem);
+  }
+
+  .compose-dock {
+    bottom: 0;
+    margin: 0;
+    min-height: 4.25rem;
+  }
+
+  .action-btn--icon {
+    min-width: 2.7rem;
+    padding-left: calc(var(--water) + 0.62rem);
+    padding-right: calc(var(--water) + 0.62rem);
+  }
+
+  .msg {
+    width: 100%;
+    max-width: 100%;
+    font-size: 1.02rem;
+    line-height: 1.48;
+    padding: 0.72rem 0.9rem;
+    border-radius: 18px;
+  }
+
+  .answer h1 {
+    font-size: 1.18rem;
+  }
+
+  .answer h2 {
+    font-size: 1.05rem;
+  }
+
+  .answer h3 {
+    font-size: 0.98rem;
+  }
+
+  .chat-stage {
+    position: fixed;
+    top: var(--app-top, 0px);
+    left: 0;
+    right: 0;
+    width: auto;
+    height: var(--app-height, 100dvh);
+    max-height: var(--app-height, 100dvh);
+    margin: 0;
+    overflow: hidden;
+  }
+
+  .ask-stage {
+    min-height: var(--app-height, 100dvh);
+  }
+
+  .ask-hero {
+    min-height: calc(var(--app-height, 100dvh) - 6.5rem);
+    gap: 0.9rem;
+    align-content: end;
+    padding-bottom: 0.35rem;
+  }
+
+  .ask-hero:has(.compose:focus-within) .ask-greeting {
+    display: none;
+  }
+
+  .chat-scroll {
+    padding: 0.15rem 0 0.35rem;
+    gap: 0.75rem;
+    max-width: 100%;
+    scrollbar-gutter: auto;
+  }
+
+  .history-row,
+  .recipe-card-head {
+    gap: 0.32rem;
+  }
+
+  .history-row .history-item {
+    padding: 0.78rem 0.85rem;
+    font-size: 1rem;
+  }
+
+  .history-pick {
+    width: 1.4rem;
+    height: 1.4rem;
+  }
+
+  .history-row .stone-btn,
+  .recipe-card-head .stone-btn {
+    padding: 0.42rem 0.7rem;
+    font-size: 0.78rem;
+  }
+
+  .recipe-card-head h2 {
+    font-size: 1.22rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .chat-title {
+    display: none;
+  }
+}
+
+.preview-switcher {
+  position: fixed;
+  left: 0.7rem;
+  top: 50%;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  transform: translateY(-50%);
+  padding: 0.35rem;
+  border-radius: 22px;
+  background: #1d1d1f;
+  color: #f5f5f7;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.25),
+    0 8px 20px rgba(0, 0, 0, 0.18);
+}
+
+.preview-switcher__group {
+  display: flex;
+  gap: 0.15rem;
+}
+
+.preview-switcher button {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.4rem 0.7rem;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.preview-switcher button.is-on {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+@media (max-width: 640px) {
+  .ask-stage,
+  .chat-stage {
+    padding: 0.5rem max(0.7rem, env(safe-area-inset-right))
+      max(0.35rem, env(safe-area-inset-bottom))
+      max(0.7rem, env(safe-area-inset-left));
+  }
+
+  .topbar {
+    padding: calc(var(--water) + 0.28rem) calc(var(--water) + 0.32rem)
+      calc(var(--water) + 0.28rem) calc(var(--water) + 0.55rem);
+  }
+
+  .chat-title {
+    max-width: 12ch;
+  }
+
+  .recents {
+    max-width: 100%;
+  }
+
+  .history-page {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+
+  .recipes-main {
+    margin-top: 1rem;
+    padding: 0 0.1rem 1.5rem;
+  }
+}
+
+.mode-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 85;
+}
+
+.mode-sheet {
+  position: absolute;
+  top: 4.6rem;
+  right: max(1rem, calc(50vw - 36rem));
+  width: min(16rem, calc(100vw - 2rem));
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.55rem;
+  border-radius: 22px;
+  background: #ffffff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 1px rgba(0, 0, 0, 0.14),
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 8px 18px -12px rgba(0, 0, 0, 0.1);
+}
+
+.mode-soon {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.78rem;
+  color: var(--halo-muted);
+  font-weight: 500;
+}
+
+.settings-page .history-page-head {
+  margin-bottom: 0.35rem;
+}
+
+.settings-block {
+  display: grid;
+  gap: 0.38rem;
+  justify-items: start;
+}
+
+.settings-block .field--plain,
+.settings-name-pane {
+  width: 100%;
+  max-width: 22rem;
+}
+
+.settings-name {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+  max-width: 28rem;
+}
+
+.settings-name .settings-name-pane {
+  flex: 1;
+  min-width: 0;
+  max-width: none;
+}
+
+.settings-name-pane {
+  --water: 8px;
+  --r: 999px;
+  padding: calc(var(--water) + 0.08rem) calc(var(--water) + 0.2rem);
+}
+
+.settings-name-pane .water__ambient {
+  box-shadow: none;
+}
+
+.settings-name-pane .field,
+.settings-name-pane .field:focus {
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+  border-radius: 999px;
+  padding: 0.52rem 0.75rem;
+}
+
+.settings-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.invite-copy {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.invite-copy code {
+  display: block;
+  padding: 0.7rem 0.85rem;
+  border-radius: 14px;
+  background: #ffffff;
+  color: var(--halo-ink);
+  word-break: break-all;
+  font-size: 0.88rem;
+}
+
+.attach-list {
+  list-style: none;
+  margin: 0 0 0.2rem;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.attach-list li {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  background: var(--halo-stone);
+  font-size: 0.82rem;
+}
+
+.attach-list button {
+  border: 0;
+  background: none;
+  color: var(--halo-muted);
+  cursor: pointer;
+  font: inherit;
+}
+
+.recipes-main {
+  width: min(var(--halo-chat), 100%);
+  margin: 1.5rem auto 2rem;
+}
+
+.recipe-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1rem;
+}
+
+.recipe-card {
+  padding: 1.15rem 1.25rem;
+  border-radius: 22px;
+  background: #ffffff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
+.recipe-card h2 {
+  margin: 0 0 0.7rem;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 1.45rem;
+  font-weight: 500;
+}
+
+.recipe-card-head h2 {
+  margin: 0;
+}
+
+.recipe-card h3 {
+  margin: 0.85rem 0 0.3rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--halo-muted);
+}
+
+.recipe-card pre {
+  margin: 0;
+  font: inherit;
+  white-space: pre-wrap;
+}
+
+.recipe-photo {
+  display: block;
+  width: 100%;
+  height: 12rem;
+  object-fit: cover;
+  border-radius: 16px;
+  margin: 0 0 0.85rem;
+  background: var(--halo-stone);
+}
+
+.recipe-photo--empty {
+  position: relative;
+  display: grid;
+  place-items: center;
+  color: var(--halo-muted);
+  font-size: 0.92rem;
+  cursor: pointer;
+}
+
+.recipe-photo--empty.is-busy {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.recipe-photo-swap {
+  position: relative;
+  margin: 0 0 0.7rem;
+  width: fit-content;
+  cursor: pointer;
+}
+
+.tour-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: rgba(250, 250, 252, 0.55);
+}
+
+.tour-spot {
+  position: fixed;
+  border-radius: 22px;
+  box-shadow: 0 0 0 2px rgba(43, 109, 142, 0.45);
+  pointer-events: none;
+}
+
+.tour-card {
+  position: fixed;
+  left: 50%;
+  bottom: 1.5rem;
+  transform: translateX(-50%);
+  width: min(28rem, calc(100vw - 2rem));
+  padding: 1.15rem 1.2rem;
+  border-radius: 22px;
+  background: #ffffff;
+  color: var(--halo-ink);
+}
+
+.tour-card h2 {
+  margin: 0.15rem 0 0.4rem;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 1.4rem;
+  font-weight: 500;
+}
+
+.tour-card p {
+  margin: 0 0 0.9rem;
+}
+
+.tour-kicker {
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--halo-muted);
+  font-weight: 700;
+}
