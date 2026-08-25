@@ -1,0 +1,1892 @@
+/* Ownership: Cove Lab Home — greeting, chips, composer hero, morph travel.
+   Edit: .ask-hero, .ask-greeting, Keep beads, harvest chip colors, .compose
+   morph (1080ms). Move rules; do not retune --travel, harvest physics, or Look.
+   Do not: overlay menus, Paper skin, water-edge.ts, chat bubbles.
+   Login/topbar/form chrome currently lives here because it sat on the shared
+   stage — do not restyle Login as Home mixer. History/Learn/Mode CSS is in
+   overlays.css. */
+
+/* --------------------------------------------------------------------------
+   Controls
+   -------------------------------------------------------------------------- */
+
+.ghost-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 0;
+  padding: 0.5rem 0.95rem;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--halo-ink);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+  white-space: nowrap;
+}
+
+.ghost-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Actions: same stone as Attach / Dictate / Ask. Hover lightens. No lift. */
+.stone-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.5rem 0.95rem;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--halo-ink);
+  background: var(--halo-stone);
+  box-shadow: none;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 180ms var(--ease-gel);
+}
+
+.stone-btn:hover:not(:disabled),
+.stone-btn:focus-visible {
+  background: var(--halo-stone-hover);
+  outline: none;
+}
+
+.stone-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* inputs are a recess in the sheet, never a second pane of glass */
+.field {
+  width: 100%;
+  border: 0;
+  border-radius: 18px;
+  padding: 0.78rem 0.95rem;
+  font: inherit;
+  color: var(--halo-ink);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.09),
+    rgba(255, 255, 255, 0.26)
+  );
+  box-shadow:
+    inset 0 1px 2px rgba(16, 38, 58, 0.1),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.36),
+    0 1px 0 rgba(255, 255, 255, 0.5);
+  resize: none;
+  transition:
+    box-shadow 240ms var(--ease-gel),
+    background 240ms var(--ease-gel);
+}
+
+.field::placeholder {
+  color: rgba(90, 110, 130, 0.72);
+}
+
+.field:focus {
+  outline: none;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.14),
+    rgba(255, 255, 255, 0.34)
+  );
+  box-shadow:
+    inset 0 1px 2px rgba(16, 38, 58, 0.08),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.55),
+    0 0 0 3px rgba(43, 109, 142, 0.16),
+    0 0 22px rgba(127, 196, 228, 0.28);
+}
+
+/* Settings / welcome: a still white well. Water physics belong on choices,
+   not on a caret. */
+.field--plain {
+  background: #ffffff;
+  border-radius: 999px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 1px rgba(0, 0, 0, 0.1),
+    0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.field--plain:focus {
+  background: #ffffff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 1px rgba(0, 0, 0, 0.16),
+    0 0 0 3px rgba(232, 232, 237, 0.95);
+}
+
+.field-label {
+  display: grid;
+  gap: 0.38rem;
+  margin: 0;
+  font-size: 0.82rem;
+  letter-spacing: 0.01em;
+  color: var(--halo-muted);
+}
+
+/* primary action: ink, lit from above, energizes with light not bounce */
+.primary-btn {
+  --halo-glow: 0;
+  position: relative;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.72rem 1.35rem;
+  font: inherit;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: #f3f8fc;
+  cursor: pointer;
+  background: linear-gradient(178deg, #2b3a48 0%, #16212c 62%, #101a23 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3),
+    0 2px 5px rgba(11, 26, 40, 0.24),
+    0 12px 26px -10px rgba(11, 26, 40, 0.5),
+    0 0 26px rgba(127, 196, 228, calc(0.42 * var(--halo-glow)));
+  transform: scale(var(--halo-press));
+  transition:
+    --halo-glow 260ms var(--ease-gel),
+    --halo-press 200ms var(--ease-glass),
+    box-shadow 260ms var(--ease-gel);
+}
+
+.primary-btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    72% 140% at 50% -32%,
+    rgba(255, 255, 255, calc(0.22 + 0.3 * var(--halo-glow))) 0%,
+    rgba(255, 255, 255, 0) 70%
+  );
+  pointer-events: none;
+}
+
+.primary-btn:hover:not(:disabled),
+.primary-btn:focus-visible {
+  --halo-glow: 1;
+}
+
+.primary-btn:active:not(:disabled) {
+  --halo-press: 0.976;
+  transition: --halo-press 90ms linear;
+}
+
+.primary-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.primary-btn:focus-visible {
+  outline: 2px solid rgba(43, 109, 142, 0.55);
+  outline-offset: 3px;
+}
+
+/* Ask / Send / Dictate: same stone as the header chrome. */
+.action-btn {
+  padding: calc(var(--water) + 0.7rem) calc(var(--water) + 1.32rem);
+  font-weight: 600;
+  font-size: 0.95rem;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  color: var(--halo-ink);
+  white-space: nowrap;
+}
+
+.action-btn .water__content {
+  text-shadow: none;
+}
+
+.form-error {
+  margin: 0.15rem 0 0;
+  color: #8f2f34;
+  font-size: 0.86rem;
+}
+
+/* --------------------------------------------------------------------------
+   Stages
+   -------------------------------------------------------------------------- */
+
+.login-stage {
+  position: relative;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: max(1.5rem, env(safe-area-inset-top))
+    max(1.5rem, env(safe-area-inset-right))
+    max(1.5rem, env(safe-area-inset-bottom))
+    max(1.5rem, env(safe-area-inset-left));
+}
+
+.login-card {
+  --r: 32px;
+  --water: 12px;
+  width: min(430px, 100%);
+  padding: 2.1rem 1.9rem 1.75rem;
+}
+
+.login-card .water__ambient {
+  box-shadow:
+    0 0 0 1.5px rgba(44, 51, 60, 0.2),
+    0 10px 28px -18px rgba(0, 0, 0, 0.12);
+}
+
+.login-title {
+  margin: 1rem 0 0.3rem;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 1.7rem;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.login-sub {
+  margin: 0 0 1.5rem;
+  color: var(--halo-muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.login-form {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.login-form .settings-name-pane {
+  width: 100%;
+  max-width: none;
+  margin-bottom: 0.5rem;
+}
+
+.login-hint {
+  margin: -0.15rem 0 0.15rem;
+  color: var(--halo-muted);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.login-submit {
+  width: 100%;
+  margin-top: 0.45rem;
+  padding: 0.72rem 1.2rem;
+}
+
+.ask-stage,
+.chat-stage {
+  position: relative;
+  width: min(1160px, 100%);
+  margin: 0 auto;
+  padding: 0.9rem 1.25rem 1.5rem;
+  min-height: 100dvh;
+}
+
+.chat-stage {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 0.9rem;
+  height: 100dvh;
+  max-height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.chat-stage.is-entering {
+  animation: none;
+}
+
+.chat-stage.is-entering .topbar,
+.chat-stage.is-entering .chat-scroll {
+  animation: halo-travel-in var(--travel) var(--ease-travel) both;
+}
+
+.chat-stage.is-entering .compose-dock,
+.chat-stage.is-entering .compose[data-morph] {
+  animation: none;
+}
+
+.topbar {
+  position: sticky;
+  top: 0.9rem;
+  z-index: 30;
+  display: block;
+  width: 100%;
+  --water: 8px;
+  --r: 999px;
+  padding: calc(var(--water) + 0.38rem) calc(var(--water) + 0.5rem)
+    calc(var(--water) + 0.38rem) calc(var(--water) + 0.95rem);
+}
+
+.topbar > .water__content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+.chat-stage .topbar {
+  position: relative;
+  top: auto;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex: 0 0 auto;
+}
+
+.topbar-title {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  min-width: 0;
+}
+
+.topbar-heading {
+  min-width: 0;
+}
+
+.chat-title {
+  margin: 0.05rem 0 0;
+  font-size: 0.98rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 46ch;
+}
+
+.ask-hero {
+  position: relative;
+  z-index: 2;
+  min-height: calc(100dvh - 8rem);
+  display: grid;
+  /* Definite track: without it the column collapses to the greeting's
+     max-content and the composer never reaches the dock's 832px. */
+  grid-template-columns: min(calc(var(--halo-chat) + 24px), 100%);
+  align-content: center;
+  justify-content: center;
+  justify-items: center;
+  gap: 1.4rem;
+  text-align: center;
+  /* The hero is a full-height sheet; let recents receive clicks through it. */
+  pointer-events: none;
+}
+
+.ask-hero .ask-greeting,
+.ask-hero .compose,
+.ask-hero .compose-stack,
+.ask-hero .compose-suggest,
+.ask-hero .learn-nudge {
+  pointer-events: auto;
+}
+
+.ask-hero .compose {
+  position: relative;
+  z-index: 6;
+  width: 100%;
+}
+
+/* Keep the composer in the hero's center. Suggestions overlay below so
+   inserting the list cannot jump the field 20–30px in one layout frame.
+   Slide the stack with margin, not transform — fill-mode on the pane
+   would pin transform: none and make the lift look instant. */
+.compose-stack {
+  position: relative;
+  z-index: 6;
+  width: 100%;
+  min-width: 0;
+  justify-self: stretch;
+  transition: margin-top 1080ms cubic-bezier(0.33, 0.04, 0.2, 1);
+}
+
+.compose-stack.is-open {
+  margin-top: -1.1rem;
+}
+
+.compose-suggest {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 0.28rem);
+  display: grid;
+  gap: 0.38rem;
+  text-align: left;
+  z-index: 6;
+  animation: compose-suggest-rise 1080ms cubic-bezier(0.33, 0.04, 0.2, 1) both;
+}
+
+@keyframes compose-suggest-rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.7rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+html[data-halo-motion="soft"] .compose-stack,
+html[data-halo-motion="soft"] .compose-stack.is-open {
+  transition: none;
+  margin-top: 0;
+}
+
+html[data-halo-motion="soft"] .compose-suggest {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .compose-stack,
+  .compose-stack.is-open {
+    transition: none;
+    margin-top: 0;
+  }
+
+  .compose-suggest {
+    animation: none;
+  }
+}
+
+.compose-suggest-item {
+  display: block;
+  width: 100%;
+  border: 0;
+  border-radius: 18px;
+  padding: 0.82rem 1rem;
+  text-align: left;
+  font: inherit;
+  font-size: 1.02rem;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--halo-ink);
+  background: var(--halo-stone);
+  cursor: pointer;
+}
+
+.compose-suggest-item:hover,
+.compose-suggest-item:focus-visible,
+.compose-suggest-item.is-active {
+  background: var(--halo-stone-hover);
+  outline: none;
+}
+
+html[data-halo-theme="dark"] .compose-suggest-item {
+  background: var(--halo-stone);
+}
+
+html[data-halo-theme="dark"] .compose-suggest-item:hover,
+html[data-halo-theme="dark"] .compose-suggest-item:focus-visible,
+html[data-halo-theme="dark"] .compose-suggest-item.is-active {
+  background: var(--halo-stone-hover);
+}
+
+.ask-greeting {
+  margin: 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: clamp(1.75rem, 3.6vw, 2.5rem);
+  font-weight: 600;
+  font-variation-settings: "WONK" 0, "SOFT" 40, "opsz" 144;
+  letter-spacing: -0.012em;
+  color: var(--home-type);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+
+html[data-halo-theme="dark"] .ask-greeting,
+html[data-halo-theme="dark"] .capsule__label {
+  text-shadow: none;
+}
+
+.learn-nudge {
+  justify-self: center;
+  margin: 0.15rem 0 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.92rem;
+  color: var(--halo-muted);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.learn-nudge.is-done {
+  text-decoration: none;
+  cursor: default;
+}
+
+.keep-pocket {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  height: 2.2rem;
+  min-width: 0.7rem;
+  max-width: 7.4rem;
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
+.keep-pocket.is-empty {
+  width: 0.55rem;
+  min-width: 0.55rem;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.keep-dock {
+  display: flex;
+  align-items: center;
+  gap: 0.22rem;
+  border: 0;
+  background: none;
+  padding: 0.15rem 0.1rem;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.keep-dock--count {
+  min-width: 1.7rem;
+  height: 1.7rem;
+  justify-content: center;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--halo-ink);
+  background: rgba(255, 255, 255, 0.38);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.keep-bead {
+  width: 0.62rem;
+  height: 0.62rem;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45);
+}
+
+.keep-bead-stack {
+  position: relative;
+  display: block;
+  width: 0.62rem;
+  height: 0.62rem;
+  flex: 0 0 auto;
+}
+
+.keep-bead-stack[data-n="2"] {
+  width: 0.86rem;
+}
+
+.keep-bead-stack[data-n="3"] {
+  width: 1.08rem;
+}
+
+.keep-bead-stack .keep-bead {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.keep-bead-stack .keep-bead:nth-child(2) {
+  left: 0.22rem;
+}
+
+.keep-bead-stack .keep-bead:nth-child(3) {
+  left: 0.44rem;
+}
+
+.keep-dock--beads {
+  gap: 0.42rem;
+}
+
+/* Literal hex, same KEEP_HEX as chips. rgb(var(--bead-*)) can miss citrus. */
+.keep-bead--when { background: #ffa818; }
+.keep-bead--where { background: #00bac6; }
+.keep-bead--who { background: #ec4e8c; }
+.keep-bead--meaning { background: #2ec456; }
+
+html[data-home-ink="halo"] .keep-bead--when { background: #f5c844; }
+html[data-home-ink="halo"] .keep-bead--where { background: #3cd0d8; }
+html[data-home-ink="halo"] .keep-bead--who { background: #f8789c; }
+html[data-home-ink="halo"] .keep-bead--meaning { background: #78dc88; }
+
+html[data-halo-theme="dark"][data-home-ink="halo"] {
+  --bead-when: 168 136 64;
+  --bead-when-hi: 196 162 90;
+  --bead-where: 78 126 136;
+  --bead-where-hi: 106 158 168;
+  --bead-who: 166 120 136;
+  --bead-who-hi: 196 150 164;
+  --bead-meaning: 94 138 104;
+  --bead-meaning-hi: 122 168 132;
+  --keep-when-hi: #c4a25a;
+  --keep-when-lo: #a88840;
+  --keep-where-hi: #6a9ea8;
+  --keep-where-lo: #4e7e88;
+  --keep-who-hi: #c496a4;
+  --keep-who-lo: #a67888;
+  --keep-meaning-hi: #7aa884;
+  --keep-meaning-lo: #5e8a68;
+}
+
+html[data-halo-theme="dark"][data-home-ink="halo"] .keep-bead--when { background: #a88840; }
+html[data-halo-theme="dark"][data-home-ink="halo"] .keep-bead--where { background: #4e7e88; }
+html[data-halo-theme="dark"][data-home-ink="halo"] .keep-bead--who { background: #a67888; }
+html[data-halo-theme="dark"][data-home-ink="halo"] .keep-bead--meaning { background: #5e8a68; }
+
+html[data-home-ink="gummy"] .keep-bead--when { background: #ffba28; }
+html[data-home-ink="gummy"] .keep-bead--where { background: #00d0e4; }
+html[data-home-ink="gummy"] .keep-bead--who { background: #d260ff; }
+html[data-home-ink="gummy"] .keep-bead--meaning { background: #24d676; }
+
+html[data-home-ink="dusk"] .keep-bead--when { background: #ff9838; }
+html[data-home-ink="dusk"] .keep-bead--where { background: #38a4e6; }
+html[data-home-ink="dusk"] .keep-bead--who { background: #a85cff; }
+html[data-home-ink="dusk"] .keep-bead--meaning { background: #1cba96; }
+
+.keep-word {
+  max-width: 4.4rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.72rem;
+  font-weight: 650;
+  padding: 0.18rem 0.45rem;
+  border-radius: 999px;
+}
+
+.keep-word--when {
+  background: rgb(var(--bead-when) / 0.38);
+}
+.keep-word--where {
+  background: rgb(var(--bead-where) / 0.34);
+}
+.keep-word--who {
+  background: rgb(var(--bead-who) / 0.34);
+}
+.keep-word--meaning {
+  background: rgb(var(--bead-meaning) / 0.34);
+}
+
+.capsule--harvest {
+  --water: 10px;
+  max-width: none;
+  animation: none;
+  filter: none;
+  box-shadow: none;
+}
+
+.capsule--harvest .capsule__shade,
+.capsule--harvest .capsule__stroke-dip {
+  display: none;
+}
+
+.capsule--harvest-orb {
+  width: 3.05rem;
+  height: 3.05rem;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 650;
+  text-align: center;
+}
+
+.capsule--harvest-orb .capsule__label {
+  max-width: 2.55rem;
+  -webkit-line-clamp: 2;
+  line-height: 1.1;
+}
+
+.capsule--harvest-drop {
+  width: 2.85rem;
+  height: 2.85rem;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  font-size: 0.6rem;
+  font-weight: 650;
+  text-align: center;
+}
+
+.capsule--harvest-drop .capsule__label {
+  max-width: 2.35rem;
+  -webkit-line-clamp: 2;
+  line-height: 1.1;
+}
+
+.capsule--harvest-pill {
+  --water: 8px;
+  padding: calc(var(--water) + 0.42rem) calc(var(--water) + 1rem);
+  font-size: 0.95rem;
+  font-weight: 650;
+}
+
+.capsule--kind-when .capsule__fill {
+  fill: rgb(var(--bead-when) / 0.22);
+}
+.capsule--kind-where .capsule__fill {
+  fill: rgb(var(--bead-where) / 0.2);
+}
+.capsule--kind-who .capsule__fill {
+  fill: rgb(var(--bead-who) / 0.2);
+}
+.capsule--kind-meaning .capsule__fill {
+  fill: rgb(var(--bead-meaning) / 0.2);
+}
+
+.capsule--harvest.capsule--kind-when .capsule__fill,
+.capsule--keep-album.capsule--kind-when .capsule__fill,
+.capsule.is-kept.capsule--kind-when .capsule__fill,
+.capsule.is-ask-keep.capsule--kind-when .capsule__fill,
+.keep-pocket--glow .capsule--kind-when .capsule__fill,
+.keep-pocket--match .capsule--kind-when .capsule__fill {
+  fill: rgb(var(--bead-when) / 0.55);
+}
+.capsule--harvest.capsule--kind-where .capsule__fill,
+.capsule--keep-album.capsule--kind-where .capsule__fill,
+.capsule.is-kept.capsule--kind-where .capsule__fill,
+.capsule.is-ask-keep.capsule--kind-where .capsule__fill,
+.keep-pocket--glow .capsule--kind-where .capsule__fill,
+.keep-pocket--match .capsule--kind-where .capsule__fill {
+  fill: rgb(var(--bead-where) / 0.52);
+}
+.capsule--harvest.capsule--kind-who .capsule__fill,
+.capsule--keep-album.capsule--kind-who .capsule__fill,
+.capsule.is-kept.capsule--kind-who .capsule__fill,
+.capsule.is-ask-keep.capsule--kind-who .capsule__fill,
+.keep-pocket--glow .capsule--kind-who .capsule__fill,
+.keep-pocket--match .capsule--kind-who .capsule__fill {
+  fill: rgb(var(--bead-who) / 0.52);
+}
+.capsule--harvest.capsule--kind-meaning .capsule__fill,
+.capsule--keep-album.capsule--kind-meaning .capsule__fill,
+.capsule.is-kept.capsule--kind-meaning .capsule__fill,
+.capsule.is-ask-keep.capsule--kind-meaning .capsule__fill,
+.keep-pocket--glow .capsule--kind-meaning .capsule__fill,
+.keep-pocket--match .capsule--kind-meaning .capsule__fill {
+  fill: rgb(var(--bead-meaning) / 0.52);
+}
+
+.capsule--harvest.capsule--kind-when .capsule__glass,
+.keep-pocket--glow .capsule--kind-when .capsule__glass {
+  background:
+    radial-gradient(
+      46% 130% at var(--spec-x, 50%) var(--spec-y, 30%),
+      rgba(255, 248, 230, 0.72) 0%,
+      rgba(255, 248, 230, 0) 70%
+    ),
+    linear-gradient(170deg, var(--keep-when-hi), var(--keep-when-lo));
+}
+.capsule--harvest.capsule--kind-where .capsule__glass,
+.keep-pocket--glow .capsule--kind-where .capsule__glass {
+  background:
+    radial-gradient(
+      46% 130% at var(--spec-x, 50%) var(--spec-y, 30%),
+      rgba(230, 252, 255, 0.72) 0%,
+      rgba(230, 252, 255, 0) 70%
+    ),
+    linear-gradient(170deg, var(--keep-where-hi), var(--keep-where-lo));
+}
+.capsule--harvest.capsule--kind-who .capsule__glass,
+.keep-pocket--glow .capsule--kind-who .capsule__glass {
+  background:
+    radial-gradient(
+      46% 130% at var(--spec-x, 50%) var(--spec-y, 30%),
+      rgba(248, 236, 255, 0.72) 0%,
+      rgba(248, 236, 255, 0) 70%
+    ),
+    linear-gradient(170deg, var(--keep-who-hi), var(--keep-who-lo));
+}
+.capsule--harvest.capsule--kind-meaning .capsule__glass,
+.keep-pocket--glow .capsule--kind-meaning .capsule__glass {
+  background:
+    radial-gradient(
+      46% 130% at var(--spec-x, 50%) var(--spec-y, 30%),
+      rgba(232, 255, 242, 0.72) 0%,
+      rgba(232, 255, 242, 0) 70%
+    ),
+    linear-gradient(170deg, var(--keep-meaning-hi), var(--keep-meaning-lo));
+}
+
+.keep-pocket--quiet .capsule--kind-when .capsule__glass,
+.keep-pocket--match .capsule--kind-when .capsule__glass {
+  background: linear-gradient(
+    170deg,
+    rgba(255, 232, 186, 0.62),
+    rgba(255, 214, 150, 0.5)
+  );
+}
+.keep-pocket--quiet .capsule--kind-where .capsule__glass,
+.keep-pocket--match .capsule--kind-where .capsule__glass {
+  background: linear-gradient(
+    170deg,
+    rgba(186, 236, 244, 0.62),
+    rgba(150, 220, 232, 0.5)
+  );
+}
+.keep-pocket--quiet .capsule--kind-who .capsule__glass,
+.keep-pocket--match .capsule--kind-who .capsule__glass {
+  background: linear-gradient(
+    170deg,
+    rgba(236, 214, 248, 0.62),
+    rgba(220, 186, 240, 0.5)
+  );
+}
+.keep-pocket--quiet .capsule--kind-meaning .capsule__glass,
+.keep-pocket--match .capsule--kind-meaning .capsule__glass {
+  background: linear-gradient(
+    170deg,
+    rgba(196, 236, 214, 0.62),
+    rgba(168, 224, 196, 0.5)
+  );
+}
+
+html[data-halo-theme="dark"] .capsule--harvest.capsule--kind-when .capsule__glass,
+html[data-halo-theme="dark"] .keep-pocket--glow .capsule--kind-when .capsule__glass {
+  background: linear-gradient(170deg, var(--keep-when-hi), var(--keep-when-lo));
+}
+html[data-halo-theme="dark"] .capsule--harvest.capsule--kind-where .capsule__glass,
+html[data-halo-theme="dark"] .keep-pocket--glow .capsule--kind-where .capsule__glass {
+  background: linear-gradient(170deg, var(--keep-where-hi), var(--keep-where-lo));
+}
+html[data-halo-theme="dark"] .capsule--harvest.capsule--kind-who .capsule__glass,
+html[data-halo-theme="dark"] .keep-pocket--glow .capsule--kind-who .capsule__glass {
+  background: linear-gradient(170deg, var(--keep-who-hi), var(--keep-who-lo));
+}
+html[data-halo-theme="dark"] .capsule--harvest.capsule--kind-meaning .capsule__glass,
+html[data-halo-theme="dark"] .keep-pocket--glow .capsule--kind-meaning .capsule__glass {
+  background: linear-gradient(170deg, var(--keep-meaning-hi), var(--keep-meaning-lo));
+}
+
+.harvest-span {
+  background: none;
+  color: inherit;
+  font: inherit;
+  padding: 0.05em 0.2em;
+  border-radius: 0.42em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.harvest-span--when {
+  background: rgb(var(--bead-when) / 0.58);
+}
+.harvest-span--where {
+  background: rgb(var(--bead-where) / 0.5);
+}
+.harvest-span--who {
+  background: rgb(var(--bead-who) / 0.5);
+}
+.harvest-span--meaning {
+  background: rgb(var(--bead-meaning) / 0.52);
+}
+
+html[data-halo-theme="dark"] .harvest-span--when {
+  background: rgb(var(--bead-when) / 0.5);
+}
+html[data-halo-theme="dark"] .harvest-span--where {
+  background: rgb(var(--bead-where) / 0.46);
+}
+html[data-halo-theme="dark"] .harvest-span--who {
+  background: rgb(var(--bead-who) / 0.46);
+}
+html[data-halo-theme="dark"] .harvest-span--meaning {
+  background: rgb(var(--bead-meaning) / 0.46);
+}
+
+.harvest-fly {
+  position: fixed;
+  z-index: 120;
+  pointer-events: none;
+  overflow: visible;
+  will-change: left, top, transform, opacity;
+}
+
+.harvest-fly--drop,
+.harvest-fly--orb {
+  width: 2.85rem;
+  height: 2.85rem;
+}
+
+.harvest-fly--orb {
+  width: 3.05rem;
+  height: 3.05rem;
+}
+
+.capsule--keep-album {
+  --water: 10px;
+  max-width: none;
+  min-width: 4.6rem;
+  padding: calc(var(--water) + 0.55rem) calc(var(--water) + 0.9rem);
+  font-size: 0.92rem;
+  font-weight: 650;
+  text-align: center;
+}
+
+.home-bubbles .capsule.is-ask-keep {
+  min-width: 0;
+  padding: calc(var(--water) + 0.88rem) calc(var(--water) + 1.7rem);
+  font-size: clamp(1.02rem, 0.38vw + 0.86rem, 1.12rem);
+  font-weight: 800;
+  text-align: left;
+}
+
+.home-bubbles .recent-slot {
+  transform: translateX(-50%);
+  max-width: none;
+  width: max-content;
+}
+
+.home-bubbles .recent-slot.is-packed {
+  transform: none;
+}
+
+.home-bubbles .capsule {
+  max-width: none;
+  width: max-content;
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+  font-family: var(--font-chip), var(--font-body), sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: var(--home-type);
+}
+
+.home-bubbles .capsule__label {
+  display: block;
+  overflow: visible;
+  -webkit-line-clamp: unset;
+  text-overflow: unset;
+  white-space: nowrap;
+  text-shadow: none;
+}
+
+/* Keep candy must stay a stadium even if the water clip-path
+   lags or a long path string is dropped. Does not freeze water. */
+.home-bubbles .capsule.is-ask-keep,
+.home-bubbles .capsule--keep-album,
+.home-bubbles .capsule.is-kept {
+  overflow: hidden;
+  border-radius: 999px;
+}
+
+/* Paint lives in the rest water inset. Hold-swell used to fill the
+   padding box and stay there as a larger outline after the pill settled.
+   Do not !important-clip the rim — that froze the liquid edge. */
+.home-bubbles .capsule.is-ask-keep .capsule__glass,
+.home-bubbles .capsule--keep-album .capsule__glass,
+.home-bubbles .capsule.is-kept .capsule__glass {
+  clip-path: inset(var(--water) round 999px);
+  -webkit-clip-path: inset(var(--water) round 999px);
+}
+
+/* Keep candy uses literal hex custom props (--keep-when-hi). Do not
+   put rgb(var(--bead) / a) here — Safari drops the whole paint on refresh. */
+:root,
+html[data-home-tone="match"] {
+  --keep-frost: 0.22;
+  --keep-when: linear-gradient(170deg, var(--keep-when-hi), var(--keep-when-lo));
+  --keep-where: linear-gradient(170deg, var(--keep-where-hi), var(--keep-where-lo));
+  --keep-who: linear-gradient(170deg, var(--keep-who-hi), var(--keep-who-lo));
+  --keep-meaning: linear-gradient(170deg, var(--keep-meaning-hi), var(--keep-meaning-lo));
+}
+
+html[data-home-tone="glass"] {
+  --keep-when: linear-gradient(170deg, var(--keep-when-hi), var(--keep-when-lo));
+  --keep-where: linear-gradient(170deg, var(--keep-where-hi), var(--keep-where-lo));
+  --keep-who: linear-gradient(170deg, var(--keep-who-hi), var(--keep-who-lo));
+  --keep-meaning: linear-gradient(170deg, var(--keep-meaning-hi), var(--keep-meaning-lo));
+}
+
+html[data-home-tone="wash"] {
+  --keep-when: linear-gradient(170deg, var(--keep-when-hi), var(--keep-when-lo));
+  --keep-where: linear-gradient(170deg, var(--keep-where-hi), var(--keep-where-lo));
+  --keep-who: linear-gradient(170deg, var(--keep-who-hi), var(--keep-who-lo));
+  --keep-meaning: linear-gradient(170deg, var(--keep-meaning-hi), var(--keep-meaning-lo));
+}
+
+html[data-halo-theme="dark"][data-home-tone="match"],
+html[data-halo-theme="dark"]:not([data-home-tone]) {
+  --keep-when: linear-gradient(170deg, var(--keep-when-hi), var(--keep-when-lo));
+  --keep-where: linear-gradient(170deg, var(--keep-where-hi), var(--keep-where-lo));
+  --keep-who: linear-gradient(170deg, var(--keep-who-hi), var(--keep-who-lo));
+  --keep-meaning: linear-gradient(170deg, var(--keep-meaning-hi), var(--keep-meaning-lo));
+}
+
+html[data-halo-theme="dark"][data-home-tone="glass"] {
+  --keep-when: linear-gradient(170deg, var(--keep-when-hi), var(--keep-when-lo));
+  --keep-where: linear-gradient(170deg, var(--keep-where-hi), var(--keep-where-lo));
+  --keep-who: linear-gradient(170deg, var(--keep-who-hi), var(--keep-who-lo));
+  --keep-meaning: linear-gradient(170deg, var(--keep-meaning-hi), var(--keep-meaning-lo));
+}
+
+html[data-halo-theme="dark"][data-home-tone="wash"] {
+  --keep-when: linear-gradient(170deg, var(--keep-when-hi), var(--keep-when-lo));
+  --keep-where: linear-gradient(170deg, var(--keep-where-hi), var(--keep-where-lo));
+  --keep-who: linear-gradient(170deg, var(--keep-who-hi), var(--keep-who-lo));
+  --keep-meaning: linear-gradient(170deg, var(--keep-meaning-hi), var(--keep-meaning-lo));
+}
+
+.capsule--keep-album.capsule--kind-when .capsule__glass,
+.capsule.is-kept.capsule--kind-when .capsule__glass,
+.capsule.is-ask-keep.capsule--kind-when .capsule__glass {
+  background:
+    linear-gradient(165deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.08)),
+    var(--keep-when);
+  box-shadow: 0 10px 22px -8px rgb(var(--bead-when) / 0.28);
+}
+.capsule--keep-album.capsule--kind-where .capsule__glass,
+.capsule.is-kept.capsule--kind-where .capsule__glass,
+.capsule.is-ask-keep.capsule--kind-where .capsule__glass {
+  background:
+    linear-gradient(165deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.08)),
+    var(--keep-where);
+  box-shadow: 0 10px 22px -8px rgb(var(--bead-where) / 0.28);
+}
+.capsule--keep-album.capsule--kind-who .capsule__glass,
+.capsule.is-kept.capsule--kind-who .capsule__glass,
+.capsule.is-ask-keep.capsule--kind-who .capsule__glass {
+  background:
+    linear-gradient(165deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.08)),
+    var(--keep-who);
+  box-shadow: 0 10px 22px -8px rgb(var(--bead-who) / 0.28);
+}
+.capsule--keep-album.capsule--kind-meaning .capsule__glass,
+.capsule.is-kept.capsule--kind-meaning .capsule__glass,
+.capsule.is-ask-keep.capsule--kind-meaning .capsule__glass {
+  background:
+    linear-gradient(165deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.08)),
+    var(--keep-meaning);
+  box-shadow: 0 10px 22px -8px rgb(var(--bead-meaning) / 0.28);
+}
+
+html[data-halo-theme="dark"] .capsule--keep-album.capsule--kind-when .capsule__glass,
+html[data-halo-theme="dark"] .capsule.is-kept.capsule--kind-when .capsule__glass,
+html[data-halo-theme="dark"] .capsule.is-ask-keep.capsule--kind-when .capsule__glass {
+  box-shadow: 0 10px 22px -8px rgb(var(--bead-when) / 0.42);
+}
+html[data-halo-theme="dark"] .capsule--keep-album.capsule--kind-where .capsule__glass,
+html[data-halo-theme="dark"] .capsule.is-kept.capsule--kind-where .capsule__glass,
+html[data-halo-theme="dark"] .capsule.is-ask-keep.capsule--kind-where .capsule__glass {
+  box-shadow: 0 10px 22px -8px rgb(var(--bead-where) / 0.4);
+}
+html[data-halo-theme="dark"] .capsule--keep-album.capsule--kind-who .capsule__glass,
+html[data-halo-theme="dark"] .capsule.is-kept.capsule--kind-who .capsule__glass,
+html[data-halo-theme="dark"] .capsule.is-ask-keep.capsule--kind-who .capsule__glass {
+  box-shadow: 0 10px 22px -8px rgb(var(--bead-who) / 0.4);
+}
+html[data-halo-theme="dark"] .capsule--keep-album.capsule--kind-meaning .capsule__glass,
+html[data-halo-theme="dark"] .capsule.is-kept.capsule--kind-meaning .capsule__glass,
+html[data-halo-theme="dark"] .capsule.is-ask-keep.capsule--kind-meaning .capsule__glass {
+  box-shadow: 0 10px 22px -8px rgb(var(--bead-meaning) / 0.4);
+}
+
+html:not([data-halo-theme="dark"])[data-home-ink="halo"] .capsule--keep-album.capsule--kind-when .capsule__fill,
+html:not([data-halo-theme="dark"])[data-home-ink="halo"] .capsule.is-kept.capsule--kind-when .capsule__fill,
+html:not([data-halo-theme="dark"])[data-home-ink="halo"] .capsule.is-ask-keep.capsule--kind-when .capsule__fill {
+  fill: var(--keep-when-hi) !important;
+}
+html:not([data-halo-theme="dark"])[data-home-ink="halo"] .capsule--keep-album.capsule--kind-where .capsule__fill,
+html:not([data-halo-theme="dark"])[data-home-ink="halo"] .capsule.is-kept.capsule--kind-where .capsule__fill,
+html:not([data-halo-theme="dark"])[data-home-ink="halo"] .capsule.is-ask-keep.capsule--kind-where .capsule__fill {
+  fill: var(--keep-where-hi) !important;
+}
+html:not([data-halo-theme="dark"])[data-home-ink="halo"] .capsule--keep-album.capsule--kind-who .capsule__fill,
+html:not([data-halo-theme="dark"])[data-home-ink="halo"] .capsule.is-kept.capsule--kind-who .capsule__fill,
+html:not([data-halo-theme="dark"])[data-home-ink="halo"] .capsule.is-ask-keep.capsule--kind-who .capsule__fill {
+  fill: var(--keep-who-hi) !important;
+}
+html:not([data-halo-theme="dark"])[data-home-ink="halo"] .capsule--keep-album.capsule--kind-meaning .capsule__fill,
+html:not([data-halo-theme="dark"])[data-home-ink="halo"] .capsule.is-kept.capsule--kind-meaning .capsule__fill,
+html:not([data-halo-theme="dark"])[data-home-ink="halo"] .capsule.is-ask-keep.capsule--kind-meaning .capsule__fill {
+  fill: var(--keep-meaning-hi) !important;
+}
+html:not([data-halo-theme="dark"]) .capsule--keep-album.capsule--kind-when .capsule__fill,
+html:not([data-halo-theme="dark"]) .capsule.is-kept.capsule--kind-when .capsule__fill,
+html:not([data-halo-theme="dark"]) .capsule.is-ask-keep.capsule--kind-when .capsule__fill {
+  fill: rgb(var(--bead-when) / 0.42);
+}
+html:not([data-halo-theme="dark"]) .capsule--keep-album.capsule--kind-where .capsule__fill,
+html:not([data-halo-theme="dark"]) .capsule.is-kept.capsule--kind-where .capsule__fill,
+html:not([data-halo-theme="dark"]) .capsule.is-ask-keep.capsule--kind-where .capsule__fill {
+  fill: rgb(var(--bead-where) / 0.4);
+}
+html:not([data-halo-theme="dark"]) .capsule--keep-album.capsule--kind-who .capsule__fill,
+html:not([data-halo-theme="dark"]) .capsule.is-kept.capsule--kind-who .capsule__fill,
+html:not([data-halo-theme="dark"]) .capsule.is-ask-keep.capsule--kind-who .capsule__fill {
+  fill: rgb(var(--bead-who) / 0.4);
+}
+html:not([data-halo-theme="dark"]) .capsule--keep-album.capsule--kind-meaning .capsule__fill,
+html:not([data-halo-theme="dark"]) .capsule.is-kept.capsule--kind-meaning .capsule__fill,
+html:not([data-halo-theme="dark"]) .capsule.is-ask-keep.capsule--kind-meaning .capsule__fill {
+  fill: rgb(var(--bead-meaning) / 0.4);
+}
+
+html[data-home-lamp="on"] .capsule--keep-album.capsule--kind-when .capsule__glass,
+html[data-home-lamp="on"] .capsule.is-kept.capsule--kind-when .capsule__glass,
+html[data-home-lamp="on"] .capsule.is-ask-keep.capsule--kind-when .capsule__glass {
+  background:
+    radial-gradient(46% 130% at var(--spec-x, 50%) var(--spec-y, 30%), var(--keep-when-hi) 0%, transparent 70%),
+    var(--keep-when);
+}
+html[data-home-lamp="on"] .capsule--keep-album.capsule--kind-where .capsule__glass,
+html[data-home-lamp="on"] .capsule.is-kept.capsule--kind-where .capsule__glass,
+html[data-home-lamp="on"] .capsule.is-ask-keep.capsule--kind-where .capsule__glass {
+  background:
+    radial-gradient(46% 130% at var(--spec-x, 50%) var(--spec-y, 30%), var(--keep-where-hi) 0%, transparent 70%),
+    var(--keep-where);
+}
+html[data-home-lamp="on"] .capsule--keep-album.capsule--kind-who .capsule__glass,
+html[data-home-lamp="on"] .capsule.is-kept.capsule--kind-who .capsule__glass,
+html[data-home-lamp="on"] .capsule.is-ask-keep.capsule--kind-who .capsule__glass {
+  background:
+    radial-gradient(46% 130% at var(--spec-x, 50%) var(--spec-y, 30%), var(--keep-who-hi) 0%, transparent 70%),
+    var(--keep-who);
+}
+html[data-home-lamp="on"] .capsule--keep-album.capsule--kind-meaning .capsule__glass,
+html[data-home-lamp="on"] .capsule.is-kept.capsule--kind-meaning .capsule__glass,
+html[data-home-lamp="on"] .capsule.is-ask-keep.capsule--kind-meaning .capsule__glass {
+  background:
+    radial-gradient(46% 130% at var(--spec-x, 50%) var(--spec-y, 30%), var(--keep-meaning-hi) 0%, transparent 70%),
+    var(--keep-meaning);
+}
+
+.water--bar.is-keep-hit::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    220px 64px at var(--keep-hit-x, 58%) 50%,
+    var(--keep-hit, rgba(196, 112, 232, 0.5)),
+    transparent 74%
+  );
+  animation: keep-wash 820ms ease-out both;
+}
+
+.water--bar.is-keep-glow::after {
+  background: radial-gradient(
+    280px 78px at var(--keep-hit-x, 58%) 50%,
+    var(--keep-hit, rgba(196, 112, 232, 0.7)),
+    transparent 72%
+  );
+}
+
+@keyframes keep-wash {
+  from {
+    opacity: 0.95;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.harvest-more {
+  display: block;
+  margin: 0.35rem auto 0.8rem;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.92rem;
+  color: var(--halo-muted);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+.ask-kicker {
+  margin: -0.85rem 0 0;
+  font-size: 0.9rem;
+  color: var(--halo-muted);
+}
+
+/* the hero water object → becomes the chat dock */
+/* One width for both states, so compose → dock is pure travel with no
+   stretching of the pane or its text. Extra --water on each side is the
+   headroom the edge needs to move in. */
+.compose {
+  width: min(calc(var(--halo-chat) + 2 * var(--water)), 100%);
+  padding: calc(var(--water) + 0.85rem) calc(var(--water) + 0.85rem)
+    calc(var(--water) + 0.7rem);
+  text-align: left;
+}
+
+.compose-dock {
+  position: sticky;
+  bottom: calc(0.95rem - var(--water));
+  z-index: 20;
+  margin: calc(0.6rem - var(--water)) auto 0;
+}
+
+/* same object, arriving from where it was standing on the other screen */
+.compose[data-morph] {
+  --water-in: 1;
+  transform: translate(var(--morph-x), var(--morph-y));
+  animation: none;
+}
+
+.compose[data-morph="moving"] {
+  transition:
+    --morph-x var(--travel) var(--ease-travel),
+    --morph-y var(--travel) var(--ease-travel);
+}
+
+.compose-form {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.compose-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.compose-form .field {
+  flex: 1;
+  min-width: 0;
+  align-self: center;
+  background: transparent;
+  box-shadow: none;
+  padding: 0.55rem 0.55rem;
+  font-size: 1.02rem;
+  line-height: 1.35;
+  overflow: hidden;
+  min-height: 2.45rem;
+  max-height: 17.5rem;
+}
+
+.compose-form .field:focus {
+  background: transparent;
+  box-shadow: none;
+}
+
+.compose-footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0 0.15rem 0 0.6rem;
+  flex-wrap: nowrap;
+}
+
+.compose-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex: 0 0 auto;
+}
+
+.action-btn--icon {
+  padding-left: calc(var(--water) + 0.82rem);
+  padding-right: calc(var(--water) + 0.82rem);
+  min-width: 3.05rem;
+}
+
+.action-btn--icon.is-listening {
+  color: #7fc4e4;
+}
+
+.dictate-btn {
+  flex: 0 0 auto;
+}
+
+.compose-hint {
+  color: var(--halo-muted);
+  font-size: 0.86rem;
+}
+
+/* --------------------------------------------------------------------------
+   Recents — capsules. Anchored. Water lives in the outline.
+   -------------------------------------------------------------------------- */
+
+.recents {
+  display: none;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: min(1680px, calc(100vw - 1.5rem));
+  transform: translateX(-50%);
+  z-index: 3;
+  pointer-events: none;
+}
+
+.keep-album.recents,
+.home-bubbles.recents {
+  display: block;
+}
+
+.recent-slot.is-converting {
+  animation: none;
+}
+
+.home-bubbles .recent-slot.is-converting,
+.home-bubbles .recent-slot.is-keeping .capsule {
+  animation: none !important;
+  filter: none;
+  transform: none;
+}
+
+.recent-slot.is-converting .capsule {
+  animation: none !important;
+  opacity: 1;
+  transform: none;
+}
+
+@keyframes halo-convert {
+  0% {
+    transform: scale(1);
+  }
+  38% {
+    transform: scale(1.07);
+    filter: brightness(1.08);
+  }
+  100% {
+    transform: scale(1);
+    filter: none;
+  }
+}
+
+.recent-slot {
+  position: absolute;
+  pointer-events: auto;
+  max-width: min(24.5rem, 46vw);
+}
+
+.capsule {
+  --water: 9px;
+  --spec-x: 50%;
+  --spec-y: 30%;
+  --tap: 0;
+  position: relative;
+  display: block;
+  border-radius: 999px;
+  max-width: min(24.5rem, calc((100vw - var(--halo-chat) - 3.5rem) / 2));
+  padding: calc(var(--water) + 0.88rem) calc(var(--water) + 1.7rem);
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: clamp(1.02rem, 0.38vw + 0.86rem, 1.12rem);
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: -0.005em;
+  color: var(--halo-ink);
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  animation: halo-drop-in 720ms var(--ease-glass) both;
+  animation-delay: calc(var(--enter-delay, 0ms) + 280ms);
+}
+
+.capsule.is-settled {
+  animation: none !important;
+  opacity: 1;
+  transform: none;
+}
+
+.home-bubbles .recent-slot[data-kind="keep"]:not(.keep-album__slot) .capsule {
+  animation: none !important;
+  opacity: 1;
+  transform: none;
+}
+
+@keyframes halo-drop-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.capsule__shade,
+.capsule__glass {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.capsule__glass {
+  clip-path: inset(0 round 999px);
+  -webkit-clip-path: inset(0 round 999px);
+}
+
+.capsule.is-ask-keep .capsule__shade,
+.capsule--keep-album .capsule__shade,
+.capsule.is-kept .capsule__shade {
+  visibility: hidden;
+}
+
+.capsule.is-ask-keep .capsule__glass,
+.capsule--keep-album .capsule__glass,
+.capsule.is-kept .capsule__glass {
+  overflow: hidden;
+  border-radius: 999px;
+}
+
+.home-bubbles .capsule.is-ask-keep .capsule__edge,
+.home-bubbles .capsule--keep-album .capsule__edge,
+.home-bubbles .capsule.is-kept .capsule__edge {
+  overflow: hidden;
+  border-radius: 999px;
+}
+
+
+.capsule__shade {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: blur(4px);
+  transform: translateY(2px);
+  opacity: calc(0.45 + 0.15 * var(--glow));
+}
+
+html[data-halo-motion="full"] .capsule__shade {
+  animation: halo-shade-drift 11s ease-in-out infinite;
+}
+
+.recent-slot:nth-child(2) .capsule__shade {
+  animation-duration: 12.6s;
+  animation-delay: -3.2s;
+}
+.recent-slot:nth-child(3) .capsule__shade {
+  animation-duration: 10.4s;
+  animation-delay: -6.1s;
+}
+.recent-slot:nth-child(4) .capsule__shade {
+  animation-duration: 13.1s;
+  animation-delay: -1.4s;
+}
+.recent-slot:nth-child(5) .capsule__shade {
+  animation-duration: 11.8s;
+  animation-delay: -8s;
+}
+.recent-slot:nth-child(6) .capsule__shade {
+  animation-duration: 12.2s;
+  animation-delay: -4.7s;
+}
+
+@keyframes halo-shade-drift {
+  0% {
+    transform: translate(0px, 2px);
+  }
+  25% {
+    transform: translate(1px, 1.4px);
+  }
+  50% {
+    transform: translate(0.2px, 1.2px);
+  }
+  75% {
+    transform: translate(-1px, 1.6px);
+  }
+  100% {
+    transform: translate(0px, 2px);
+  }
+}
+
+.capsule__glass {
+  backdrop-filter: blur(var(--capsule-blur, 14px)) saturate(var(--glass-sat))
+    brightness(calc(1.08 + 0.06 * var(--glow)));
+  -webkit-backdrop-filter: blur(var(--capsule-blur, 14px)) saturate(var(--glass-sat))
+    brightness(calc(1.08 + 0.06 * var(--glow)));
+  background:
+    radial-gradient(
+      46% 130% at var(--spec-x) var(--spec-y),
+      rgba(255, 255, 255, calc((0.42 + 0.4 * var(--glow)) * var(--frost))) 0%,
+      rgba(255, 255, 255, 0) 70%
+    ),
+    radial-gradient(
+      circle at var(--spec-x) var(--spec-y),
+      rgba(212, 240, 255, calc(0.5 * var(--tap))) 0%,
+      rgba(212, 240, 255, 0) calc(24% + 76% * var(--tap))
+    ),
+    linear-gradient(
+      170deg,
+      rgba(255, 255, 255, calc(0.82 * var(--frost))) 0%,
+      rgba(255, 255, 255, calc(0.68 * var(--frost))) 48%,
+      rgba(255, 255, 255, calc(0.76 * var(--frost))) 100%
+    );
+}
+
+html[data-halo-engine="chromium"] .capsule__glass {
+  backdrop-filter: blur(var(--capsule-blur, 16px)) saturate(var(--glass-sat))
+    brightness(calc(1.04 + 0.05 * var(--glow))) url(#halo-lens-bead);
+}
+
+html[data-halo-theme="dark"] .capsule__glass {
+  background:
+    linear-gradient(
+      170deg,
+      rgba(28, 36, 46, 0.92) 0%,
+      rgba(22, 28, 36, 0.9) 48%,
+      rgba(26, 34, 44, 0.94) 100%
+    );
+}
+
+html[data-halo-theme="dark"] .capsule--keep-album .capsule__glass,
+html[data-halo-theme="dark"] .capsule.is-kept .capsule__glass,
+html[data-halo-theme="dark"] .capsule.is-ask-keep .capsule__glass,
+html[data-halo-theme="dark"] .home-bubbles .recent-slot[data-kind="keep"] .capsule__glass {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+html[data-halo-theme="dark"] .capsule--keep-album.capsule--kind-when .capsule__glass,
+html[data-halo-theme="dark"] .capsule.is-kept.capsule--kind-when .capsule__glass,
+html[data-halo-theme="dark"] .capsule.is-ask-keep.capsule--kind-when .capsule__glass,
+html[data-halo-theme="dark"] .home-bubbles .recent-slot[data-hue="when"] .capsule__glass {
+  background: var(--keep-when) !important;
+}
+html[data-halo-theme="dark"] .capsule--keep-album.capsule--kind-where .capsule__glass,
+html[data-halo-theme="dark"] .capsule.is-kept.capsule--kind-where .capsule__glass,
+html[data-halo-theme="dark"] .capsule.is-ask-keep.capsule--kind-where .capsule__glass,
+html[data-halo-theme="dark"] .home-bubbles .recent-slot[data-hue="where"] .capsule__glass {
+  background: var(--keep-where) !important;
+}
+html[data-halo-theme="dark"] .capsule--keep-album.capsule--kind-who .capsule__glass,
+html[data-halo-theme="dark"] .capsule.is-kept.capsule--kind-who .capsule__glass,
+html[data-halo-theme="dark"] .capsule.is-ask-keep.capsule--kind-who .capsule__glass,
+html[data-halo-theme="dark"] .home-bubbles .recent-slot[data-hue="who"] .capsule__glass {
+  background: var(--keep-who) !important;
+}
+html[data-halo-theme="dark"] .capsule--keep-album.capsule--kind-meaning .capsule__glass,
+html[data-halo-theme="dark"] .capsule.is-kept.capsule--kind-meaning .capsule__glass,
+html[data-halo-theme="dark"] .capsule.is-ask-keep.capsule--kind-meaning .capsule__glass,
+html[data-halo-theme="dark"] .home-bubbles .recent-slot[data-hue="meaning"] .capsule__glass {
+  background: var(--keep-meaning) !important;
+}
+
+html:not([data-halo-theme="dark"]) .capsule--keep-album.capsule--kind-when .capsule__glass,
+html:not([data-halo-theme="dark"]) .capsule.is-kept.capsule--kind-when .capsule__glass,
+html:not([data-halo-theme="dark"]) .capsule.is-ask-keep.capsule--kind-when .capsule__glass {
+  background:
+    linear-gradient(165deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.08)),
+    var(--keep-when) !important;
+}
+html:not([data-halo-theme="dark"]) .capsule--keep-album.capsule--kind-where .capsule__glass,
+html:not([data-halo-theme="dark"]) .capsule.is-kept.capsule--kind-where .capsule__glass,
+html:not([data-halo-theme="dark"]) .capsule.is-ask-keep.capsule--kind-where .capsule__glass {
+  background:
+    linear-gradient(165deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.08)),
+    var(--keep-where) !important;
+}
+html:not([data-halo-theme="dark"]) .capsule--keep-album.capsule--kind-who .capsule__glass,
+html:not([data-halo-theme="dark"]) .capsule.is-kept.capsule--kind-who .capsule__glass,
+html:not([data-halo-theme="dark"]) .capsule.is-ask-keep.capsule--kind-who .capsule__glass {
+  background:
+    linear-gradient(165deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.08)),
+    var(--keep-who) !important;
+}
+html:not([data-halo-theme="dark"]) .capsule--keep-album.capsule--kind-meaning .capsule__glass,
+html:not([data-halo-theme="dark"]) .capsule.is-kept.capsule--kind-meaning .capsule__glass,
+html:not([data-halo-theme="dark"]) .capsule.is-ask-keep.capsule--kind-meaning .capsule__glass {
+  background:
+    linear-gradient(165deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.08)),
+    var(--keep-meaning) !important;
+}
+
+html:not([data-halo-theme="dark"])[data-home-ink="halo"] .capsule--keep-album.capsule--kind-when .capsule__glass,
+html:not([data-halo-theme="dark"])[data-home-ink="halo"] .capsule.is-kept.capsule--kind-when .capsule__glass,
+html:not([data-halo-theme="dark"])[data-home-ink="halo"] .capsule.is-ask-keep.capsule--kind-when .capsule__glass {
+  background: linear-gradient(170deg, var(--keep-when-hi), var(--keep-when-lo)) !important;
+}
+html:not([data-halo-theme="dark"])[data-home-ink="halo"] .capsule--keep-album.capsule--kind-where .capsule__glass,
+html:not([data-halo-theme="dark"])[data-home-ink="halo"] .capsule.is-kept.capsule--kind-where .capsule__glass,
+html:not([data-halo-theme="dark"])[data-home-ink="halo"] .capsule.is-ask-keep.capsule--kind-where .capsule__glass {
+  background: linear-gradient(170deg, var(--keep-where-hi), var(--keep-where-lo)) !important;
+}
+html:not([data-halo-theme="dark"])[data-home-ink="halo"] .capsule--keep-album.capsule--kind-who .capsule__glass,
+html:not([data-halo-theme="dark"])[data-home-ink="halo"] .capsule.is-kept.capsule--kind-who .capsule__glass,
+html:not([data-halo-theme="dark"])[data-home-ink="halo"] .capsule.is-ask-keep.capsule--kind-who .capsule__glass {
+  background: linear-gradient(170deg, var(--keep-who-hi), var(--keep-who-lo)) !important;
+}
+html:not([data-halo-theme="dark"])[data-home-ink="halo"] .capsule--keep-album.capsule--kind-meaning .capsule__glass,
+html:not([data-halo-theme="dark"])[data-home-ink="halo"] .capsule.is-kept.capsule--kind-meaning .capsule__glass,
+html:not([data-halo-theme="dark"])[data-home-ink="halo"] .capsule.is-ask-keep.capsule--kind-meaning .capsule__glass {
+  background: linear-gradient(170deg, var(--keep-meaning-hi), var(--keep-meaning-lo)) !important;
+}
+
+/* outline strokes: wet rim toward the pointer, meniscus dip underneath */
+.capsule__edge {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.capsule__label {
+  position: relative;
+  z-index: 2;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-height: 1.28;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.42);
+  pointer-events: none;
+}
+
+/* still fallback: a plain, pretty capsule */
+.capsule--still {
+  --glow: 0;
+}
+
+.capsule--still .capsule__shade {
+  animation: none;
+  opacity: 0.22;
+}
+
+.capsule--still:hover,
+.capsule--still:focus-visible {
+  --glow: 0.55;
+}
+
+.capsule--still .capsule__glass {
+  inset: var(--water);
+  border-radius: 999px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    0 0 0 1px rgba(0, 0, 0, 0.16),
+    0 0.5px 0 rgba(255, 255, 255, 0.5),
+    0 4px 14px -8px rgba(0, 0, 0, 0.12);
+}
+
+.length-picks,
+.choice-picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem;
+  align-items: center;
+  margin: 0 -0.35rem;
+}
+
+.capsule--choice {
+  --water: 8px;
+  max-width: none;
+  min-width: 6.4rem;
+  padding: calc(var(--water) + 0.55rem) calc(var(--water) + 1.2rem);
+  font-size: 0.95rem;
+  text-align: center;
+  animation: none;
+  border-radius: 999px;
+  appearance: none;
+  outline: none;
+}
+
+.capsule--choice:focus,
+.capsule--choice:focus-visible,
+.capsule--choice:active {
+  outline: none;
+  background: none;
+  box-shadow: none;
+}
+
+.capsule__fill {
+  fill: transparent;
+  pointer-events: none;
+}
+
+.capsule--keep-album.capsule--kind-when .capsule__fill,
+.capsule.is-kept.capsule--kind-when .capsule__fill,
+.capsule.is-ask-keep.capsule--kind-when .capsule__fill,
+.home-bubbles .recent-slot[data-hue="when"] .capsule__fill {
+  fill: var(--keep-when-lo, #fdcf00);
+}
+.capsule--keep-album.capsule--kind-where .capsule__fill,
+.capsule.is-kept.capsule--kind-where .capsule__fill,
+.capsule.is-ask-keep.capsule--kind-where .capsule__fill,
+.home-bubbles .recent-slot[data-hue="where"] .capsule__fill {
+  fill: var(--keep-where-lo, #a3d9ff);
+}
+.capsule--keep-album.capsule--kind-who .capsule__fill,
+.capsule.is-kept.capsule--kind-who .capsule__fill,
+.capsule.is-ask-keep.capsule--kind-who .capsule__fill,
+.home-bubbles .recent-slot[data-hue="who"] .capsule__fill {
+  fill: var(--keep-who-lo, #fbcfe8);
+}
+.capsule--keep-album.capsule--kind-meaning .capsule__fill,
+.capsule.is-kept.capsule--kind-meaning .capsule__fill,
+.capsule.is-ask-keep.capsule--kind-meaning .capsule__fill,
+.home-bubbles .recent-slot[data-hue="meaning"] .capsule__fill {
+  fill: var(--keep-meaning-lo, #5adba5);
+}
+
+.capsule--picked .capsule__fill {
+  fill: var(--halo-stone);
+}
+
+.capsule--choice .capsule__label {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  -webkit-line-clamp: unset;
+}
+
+.capsule--still.capsule--picked .capsule__glass {
+  background: var(--halo-stone);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 0 0 1px rgba(44, 51, 60, 0.18);
+}
+
+.ask-stage.is-leaving .recent-slot {
+  animation: halo-recents-out var(--travel) var(--ease-travel) both !important;
+  pointer-events: none;
+}
+
+.ask-stage.is-leaving .recent-slot:nth-child(2) {
+  animation-delay: 40ms !important;
+}
+.ask-stage.is-leaving .recent-slot:nth-child(3) {
+  animation-delay: 70ms !important;
+}
+.ask-stage.is-leaving .recent-slot:nth-child(4) {
+  animation-delay: 100ms !important;
+}
+.ask-stage.is-leaving .recent-slot:nth-child(5) {
+  animation-delay: 130ms !important;
+}
+.ask-stage.is-leaving .recent-slot:nth-child(6) {
+  animation-delay: 160ms !important;
+}
+.ask-stage.is-leaving .recent-slot:nth-child(7) {
+  animation-delay: 190ms !important;
+}
+.ask-stage.is-leaving .recent-slot:nth-child(8) {
+  animation-delay: 220ms !important;
+}
+
+.ask-stage.is-leaving .recent-slot.is-packed {
+  animation: halo-recents-out-packed var(--travel) var(--ease-travel) both !important;
+}
+
+.ask-stage.is-leaving .recent-slot.is-diving {
+  z-index: 16;
+  animation: none !important;
+  opacity: 1;
+  pointer-events: none;
+}
+
+.ask-stage.is-leaving .recent-slot.is-diving .capsule {
+  overflow: visible;
+}
+
+.ask-stage.is-leaving .recent-slot.is-diving[data-hue="when"] .capsule {
+  box-shadow: 0 10px 28px -6px rgb(var(--bead-when) / 0.55);
+}
+.ask-stage.is-leaving .recent-slot.is-diving[data-hue="where"] .capsule {
+  box-shadow: 0 10px 28px -6px rgb(var(--bead-where) / 0.55);
+}
+.ask-stage.is-leaving .recent-slot.is-diving[data-hue="who"] .capsule {
+  box-shadow: 0 10px 28px -6px rgb(var(--bead-who) / 0.55);
+}
+.ask-stage.is-leaving .recent-slot.is-diving[data-hue="meaning"] .capsule {
+  box-shadow: 0 10px 28px -6px rgb(var(--bead-meaning) / 0.55);
+}
+
+.ask-stage.is-leaving .ask-greeting,
+.ask-stage.is-leaving .learn-nudge,
+.ask-stage.is-leaving .compose-suggest {
+  animation: halo-greeting-out var(--travel) var(--ease-travel) both !important;
+}
+
+/* Composer stays. It is the same object as the chat dock. */
+.ask-stage.is-leaving .compose-stack,
+.ask-stage.is-leaving .compose {
+  animation: none;
+  z-index: 24;
+}
+
+.chat-stage.is-leaving .topbar,
+.chat-stage.is-leaving .chat-scroll {
+  animation: halo-greeting-out var(--travel) var(--ease-travel) both !important;
+  pointer-events: none;
+}
+
+.chat-stage.is-leaving .compose-dock {
+  animation: none;
+  z-index: 24;
+}
+
+.recent-slot.is-keeping .capsule {
+  animation: none;
+}
+
+.home-bubbles .recent-slot.is-keeping .capsule {
+  animation: none !important;
+}
+
+@keyframes halo-recents-out {
+  to {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+}
+
+@keyframes halo-recents-out-packed {
+  to {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@keyframes halo-greeting-out {
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes halo-travel-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+html[data-halo-morph] .home-bubbles .recent-slot {
+  animation: halo-travel-fade var(--travel) var(--ease-travel) both;
+}
+
+@keyframes halo-travel-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

@@ -1,0 +1,260 @@
+/* Ownership: Cove Lab Paper Look (html[data-home-skin="paper"]).
+   Edit: Paper skin only. Ours stays wet candy. Do not still water; hide
+   rim/skin layers instead.
+   Do not: change data-home-skin attribute names, harvest flight, or make
+   Paper the default for family /ask. */
+
+/* --------------------------------------------------------------------------
+   Paper look — Xhulia chrome on Halo Home only. Ours stays wet candy.
+   Do not still water; hide rim/skin layers instead.
+   -------------------------------------------------------------------------- */
+
+html[data-home-skin="paper"] {
+  --keep-when-hi: #ffd978;
+  --keep-when-lo: #ffd978;
+  --keep-where-hi: #a3d9ff;
+  --keep-where-lo: #a3d9ff;
+  --keep-who-hi: #fbcfe8;
+  --keep-who-lo: #fbcfe8;
+  --keep-meaning-hi: #c5f3d4;
+  --keep-meaning-lo: #c5f3d4;
+  --keep-when: #ffd978;
+  --keep-where: #a3d9ff;
+  --keep-who: #fbcfe8;
+  --keep-meaning: #c5f3d4;
+  --home-chip-ink: #111111;
+}
+
+html[data-home-skin="paper"] .ask-stage .keep-bead {
+  box-shadow: none;
+}
+html[data-home-skin="paper"] .ask-stage .keep-bead--when { background: #ffd978; }
+html[data-home-skin="paper"] .ask-stage .keep-bead--where { background: #a3d9ff; }
+html[data-home-skin="paper"] .ask-stage .keep-bead--who { background: #fbcfe8; }
+html[data-home-skin="paper"] .ask-stage .keep-bead--meaning { background: #c5f3d4; }
+
+html[data-home-skin="paper"] .ask-stage .topbar {
+  background: none;
+  box-shadow: none;
+}
+html[data-home-skin="paper"] .ask-stage .topbar .water__skin,
+html[data-home-skin="paper"] .ask-stage .topbar .water__edge,
+html[data-home-skin="paper"] .ask-stage .topbar .water__ambient,
+html[data-home-skin="paper"] .ask-stage .topbar .water__shade {
+  display: none !important;
+}
+html[data-home-skin="paper"] .ask-stage .topbar .brand-mark {
+  font-family: var(--font-body), sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: #111111;
+  text-shadow: none;
+  opacity: 1;
+}
+html[data-home-skin="paper"] .ask-stage .topbar .stone-btn {
+  background: transparent;
+  box-shadow: none;
+  color: #111111;
+  font-weight: 600;
+}
+html[data-home-skin="paper"] .ask-stage .topbar .stone-btn:hover:not(:disabled),
+html[data-home-skin="paper"] .ask-stage .topbar .stone-btn:focus-visible {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+html[data-home-skin="paper"] .ask-greeting {
+  font-family: var(--font-body), sans-serif;
+  font-weight: 700;
+  font-variation-settings: normal;
+  color: #111111;
+  text-shadow: none;
+}
+
+html[data-home-skin="paper"] .home-bubbles .capsule {
+  font-family: var(--font-body), sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: #111111;
+}
+html[data-home-skin="paper"] .home-bubbles .capsule__label {
+  text-shadow: none;
+}
+html[data-home-skin="paper"] .ask-stage .capsule.is-ask-keep .capsule__edge,
+html[data-home-skin="paper"] .ask-stage .capsule--keep-album .capsule__edge,
+html[data-home-skin="paper"] .ask-stage .capsule.is-kept .capsule__edge,
+html[data-home-skin="paper"] .ask-stage .capsule.is-ask-keep .capsule__shade,
+html[data-home-skin="paper"] .ask-stage .capsule--keep-album .capsule__shade,
+html[data-home-skin="paper"] .ask-stage .capsule.is-kept .capsule__shade,
+html[data-home-skin="paper"] .home-bubbles .capsule .capsule__edge,
+html[data-home-skin="paper"] .home-bubbles .capsule .capsule__shade {
+  display: none !important;
+}
+
+html[data-home-skin="paper"] .home-bubbles .capsule:not(.is-ask-keep):not(.capsule--keep-album):not(.is-kept) .capsule__glass {
+  background: #ffffff !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+
+html[data-home-skin="paper"] .home-bubbles .capsule .capsule__glass,
+html[data-home-skin="paper"] .ask-stage .capsule.is-ask-keep .capsule__glass,
+html[data-home-skin="paper"] .ask-stage .capsule--keep-album .capsule__glass,
+html[data-home-skin="paper"] .ask-stage .capsule.is-kept .capsule__glass {
+  clip-path: none !important;
+  -webkit-clip-path: none !important;
+}
+
+html[data-home-skin="paper"] .ask-stage .capsule--keep-album .capsule__glass,
+html[data-home-skin="paper"] .ask-stage .capsule.is-kept .capsule__glass,
+html[data-home-skin="paper"] .ask-stage .capsule.is-ask-keep .capsule__glass {
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+html[data-home-skin="paper"] .ask-stage .capsule--keep-album.capsule--kind-when .capsule__glass,
+html[data-home-skin="paper"] .ask-stage .capsule.is-kept.capsule--kind-when .capsule__glass,
+html[data-home-skin="paper"] .ask-stage .capsule.is-ask-keep.capsule--kind-when .capsule__glass {
+  background: #ffd978 !important;
+}
+html[data-home-skin="paper"] .ask-stage .capsule--keep-album.capsule--kind-where .capsule__glass,
+html[data-home-skin="paper"] .ask-stage .capsule.is-kept.capsule--kind-where .capsule__glass,
+html[data-home-skin="paper"] .ask-stage .capsule.is-ask-keep.capsule--kind-where .capsule__glass {
+  background: #a3d9ff !important;
+}
+html[data-home-skin="paper"] .ask-stage .capsule--keep-album.capsule--kind-who .capsule__glass,
+html[data-home-skin="paper"] .ask-stage .capsule.is-kept.capsule--kind-who .capsule__glass,
+html[data-home-skin="paper"] .ask-stage .capsule.is-ask-keep.capsule--kind-who .capsule__glass {
+  background: #fbcfe8 !important;
+}
+html[data-home-skin="paper"] .ask-stage .capsule--keep-album.capsule--kind-meaning .capsule__glass,
+html[data-home-skin="paper"] .ask-stage .capsule.is-kept.capsule--kind-meaning .capsule__glass,
+html[data-home-skin="paper"] .ask-stage .capsule.is-ask-keep.capsule--kind-meaning .capsule__glass {
+  background: #c5f3d4 !important;
+}
+
+html[data-home-skin="paper"][data-home-lamp="on"] .ask-stage .capsule--keep-album .capsule__glass,
+html[data-home-skin="paper"][data-home-lamp="on"] .ask-stage .capsule.is-kept .capsule__glass,
+html[data-home-skin="paper"][data-home-lamp="on"] .ask-stage .capsule.is-ask-keep .capsule__glass {
+  background: inherit;
+}
+html[data-home-skin="paper"][data-home-lamp="on"] .ask-stage .capsule--keep-album.capsule--kind-when .capsule__glass,
+html[data-home-skin="paper"][data-home-lamp="on"] .ask-stage .capsule.is-kept.capsule--kind-when .capsule__glass,
+html[data-home-skin="paper"][data-home-lamp="on"] .ask-stage .capsule.is-ask-keep.capsule--kind-when .capsule__glass {
+  background: #ffd978 !important;
+}
+html[data-home-skin="paper"][data-home-lamp="on"] .ask-stage .capsule--keep-album.capsule--kind-where .capsule__glass,
+html[data-home-skin="paper"][data-home-lamp="on"] .ask-stage .capsule.is-kept.capsule--kind-where .capsule__glass,
+html[data-home-skin="paper"][data-home-lamp="on"] .ask-stage .capsule.is-ask-keep.capsule--kind-where .capsule__glass {
+  background: #a3d9ff !important;
+}
+html[data-home-skin="paper"][data-home-lamp="on"] .ask-stage .capsule--keep-album.capsule--kind-who .capsule__glass,
+html[data-home-skin="paper"][data-home-lamp="on"] .ask-stage .capsule.is-kept.capsule--kind-who .capsule__glass,
+html[data-home-skin="paper"][data-home-lamp="on"] .ask-stage .capsule.is-ask-keep.capsule--kind-who .capsule__glass {
+  background: #fbcfe8 !important;
+}
+html[data-home-skin="paper"][data-home-lamp="on"] .ask-stage .capsule--keep-album.capsule--kind-meaning .capsule__glass,
+html[data-home-skin="paper"][data-home-lamp="on"] .ask-stage .capsule.is-kept.capsule--kind-meaning .capsule__glass,
+html[data-home-skin="paper"][data-home-lamp="on"] .ask-stage .capsule.is-ask-keep.capsule--kind-meaning .capsule__glass {
+  background: #c5f3d4 !important;
+}
+
+html[data-home-skin="paper"] .ask-hero .compose .water__edge,
+html[data-home-skin="paper"] .ask-hero .compose .water__ambient,
+html[data-home-skin="paper"] .ask-hero .compose .water__shade {
+  display: none !important;
+}
+html[data-home-skin="paper"] .ask-hero .compose {
+  border-radius: 28px;
+}
+html[data-home-skin="paper"] .ask-hero .compose .water__skin {
+  clip-path: none !important;
+  -webkit-clip-path: none !important;
+  inset: 0;
+  border-radius: inherit;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: #ffffff !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+html[data-home-skin="paper"] .ask-hero .compose .action-btn:not(.action-btn--icon) {
+  color: #ffffff;
+}
+html[data-home-skin="paper"] .ask-hero .compose .action-btn:not(.action-btn--icon) .water__skin {
+  background: #111111 !important;
+  box-shadow: none !important;
+}
+html[data-home-skin="paper"] .ask-hero .compose .action-btn:not(.action-btn--icon):hover:not(:disabled) .water__skin,
+html[data-home-skin="paper"] .ask-hero .compose .action-btn:not(.action-btn--icon):focus-visible .water__skin {
+  background: #2a2a2a !important;
+}
+html[data-home-skin="paper"] .ask-hero .compose .action-btn--icon {
+  color: #111111;
+}
+html[data-home-skin="paper"] .ask-hero .compose .action-btn--icon .water__skin {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+html[data-home-skin="paper"] .ask-hero .compose-suggest-item {
+  background: #ffffff;
+  box-shadow: none;
+  color: #111111;
+}
+
+html[data-home-skin="paper"][data-halo-theme="dark"] .ask-stage .topbar .brand-mark,
+html[data-home-skin="paper"][data-halo-theme="dark"] .ask-stage .topbar .stone-btn,
+html[data-home-skin="paper"][data-halo-theme="dark"] .ask-greeting {
+  color: #f5f5f7;
+}
+html[data-home-skin="paper"][data-halo-theme="dark"] .ask-stage .topbar .stone-btn:hover:not(:disabled),
+html[data-home-skin="paper"][data-halo-theme="dark"] .ask-stage .topbar .stone-btn:focus-visible {
+  background: rgba(255, 255, 255, 0.08);
+}
+html[data-home-skin="paper"][data-halo-theme="dark"] .home-bubbles .capsule:not(.is-ask-keep):not(.capsule--keep-album):not(.is-kept) {
+  color: #f5f5f7;
+}
+html[data-home-skin="paper"][data-halo-theme="dark"] .home-bubbles .capsule:not(.is-ask-keep):not(.capsule--keep-album):not(.is-kept) .capsule__glass {
+  background: #2c2c2e !important;
+}
+html[data-home-skin="paper"][data-halo-theme="dark"] .ask-hero .compose .water__skin {
+  background: #2c2c2e !important;
+}
+html[data-home-skin="paper"][data-halo-theme="dark"] .ask-hero .compose .action-btn:not(.action-btn--icon) {
+  color: #111111;
+}
+html[data-home-skin="paper"][data-halo-theme="dark"] .ask-hero .compose .action-btn:not(.action-btn--icon) .water__skin {
+  background: #f5f5f7 !important;
+}
+html[data-home-skin="paper"][data-halo-theme="dark"] .ask-hero .compose .action-btn--icon {
+  color: #f5f5f7;
+}
+html[data-home-skin="paper"][data-halo-theme="dark"] .ask-hero .compose-suggest-item {
+  background: #2c2c2e;
+  color: #f5f5f7;
+}
+html[data-home-skin="paper"][data-halo-theme="dark"] .home-bubbles .capsule.is-ask-keep,
+html[data-home-skin="paper"][data-halo-theme="dark"] .home-bubbles .capsule--keep-album,
+html[data-home-skin="paper"][data-halo-theme="dark"] .home-bubbles .capsule.is-kept {
+  color: #111111;
+}
+html[data-home-skin="paper"][data-halo-theme="dark"] .ask-stage .capsule--keep-album.capsule--kind-when .capsule__glass,
+html[data-home-skin="paper"][data-halo-theme="dark"] .ask-stage .capsule.is-kept.capsule--kind-when .capsule__glass,
+html[data-home-skin="paper"][data-halo-theme="dark"] .ask-stage .capsule.is-ask-keep.capsule--kind-when .capsule__glass {
+  background: #ffd978 !important;
+}
+html[data-home-skin="paper"][data-halo-theme="dark"] .ask-stage .capsule--keep-album.capsule--kind-where .capsule__glass,
+html[data-home-skin="paper"][data-halo-theme="dark"] .ask-stage .capsule.is-kept.capsule--kind-where .capsule__glass,
+html[data-home-skin="paper"][data-halo-theme="dark"] .ask-stage .capsule.is-ask-keep.capsule--kind-where .capsule__glass {
+  background: #a3d9ff !important;
+}
+html[data-home-skin="paper"][data-halo-theme="dark"] .ask-stage .capsule--keep-album.capsule--kind-who .capsule__glass,
+html[data-home-skin="paper"][data-halo-theme="dark"] .ask-stage .capsule.is-kept.capsule--kind-who .capsule__glass,
+html[data-home-skin="paper"][data-halo-theme="dark"] .ask-stage .capsule.is-ask-keep.capsule--kind-who .capsule__glass {
+  background: #fbcfe8 !important;
+}
+html[data-home-skin="paper"][data-halo-theme="dark"] .ask-stage .capsule--keep-album.capsule--kind-meaning .capsule__glass,
+html[data-home-skin="paper"][data-halo-theme="dark"] .ask-stage .capsule.is-kept.capsule--kind-meaning .capsule__glass,
+html[data-home-skin="paper"][data-halo-theme="dark"] .ask-stage .capsule.is-ask-keep.capsule--kind-meaning .capsule__glass {
+  background: #c5f3d4 !important;
+}
+

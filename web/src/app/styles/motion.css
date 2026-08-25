@@ -1,0 +1,355 @@
+/* Ownership: Cove Lab motion fallbacks + shared breakpoints.
+   Edit: soft/perf/reduced-motion overrides and responsive recents/composer
+   rules that must come AFTER Home/Chat/water surfaces.
+   Do not: move this earlier than .recents { display: none } (chips vanish).
+   Do not: retune morph --travel or harvest. Token-level --frost for soft
+   motion lives in tokens.css. */
+
+/* --------------------------------------------------------------------------
+   Calm modes
+   -------------------------------------------------------------------------- */
+
+html[data-halo-motion="soft"] .glass,
+html[data-halo-perf="soft"] .glass {
+  --halo-fill: 1;
+  --halo-edge: 1;
+  --halo-rise: 0px;
+  --halo-scale: 1;
+  --halo-blur: var(--glass-blur);
+  animation: none;
+  transition: box-shadow 200ms linear;
+}
+
+html[data-halo-motion="soft"] .glass--lit:hover,
+html[data-halo-perf="soft"] .glass--lit:hover {
+  --halo-lift: 0px;
+  --halo-glow: 0;
+}
+
+html[data-halo-motion="soft"] .capsule,
+html[data-halo-perf="soft"] .capsule,
+html[data-halo-motion="soft"] .water--pane,
+html[data-halo-perf="soft"] .water--pane,
+html[data-halo-motion="soft"] .stage--hero .compose-stack .compose,
+html[data-halo-perf="soft"] .stage--hero .compose-stack .compose,
+html[data-halo-motion="soft"] .msg-wrap--fresh,
+html[data-halo-perf="soft"] .msg-wrap--fresh,
+html[data-halo-motion="soft"] .thinking-dots span,
+html[data-halo-perf="soft"] .thinking-dots span,
+html[data-halo-motion="soft"] .stage--hero > :not(.glass),
+html[data-halo-perf="soft"] .stage--hero > :not(.glass),
+html[data-halo-motion="soft"] .chat-scroll,
+html[data-halo-perf="soft"] .chat-scroll,
+html[data-halo-motion="soft"] .history-overlay,
+html[data-halo-perf="soft"] .history-overlay,
+html[data-halo-motion="soft"] .history-page,
+html[data-halo-perf="soft"] .history-page {
+  animation: none;
+}
+
+html[data-halo-motion="soft"] .thinking-dots span,
+html[data-halo-perf="soft"] .thinking-dots span {
+  opacity: 0.55;
+}
+
+/* No backdrop-filter at all: keep it a legible frosted sheet. */
+html[data-halo-glass="off"] {
+  --frost: 2.8;
+}
+
+html[data-halo-glass="off"] .msg--assistant {
+  background: #ffffff;
+}
+
+html[data-halo-theme="dark"][data-halo-glass="off"] .msg--assistant {
+  background: #1c242e;
+}
+
+html[data-halo-glass="off"] .chat-scroll .msg.msg--user {
+  background: var(--halo-stone);
+}
+
+html[data-halo-motion="soft"] body::before,
+html[data-halo-perf="soft"] body::before {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  .glass {
+    --halo-fill: 1;
+    --halo-edge: 1;
+    --halo-blur: var(--glass-blur);
+    --halo-rise: 0px;
+    --halo-scale: 1;
+  }
+
+  .water--pane {
+    --water-in: 1;
+    animation: none;
+  }
+}
+
+/* Recents: hide, don't squeeze. Full view keeps all six. A bit smaller
+   keeps the four corners and drops the side chips. Then they all go. */
+@media (max-width: 1239px) {
+  .keep-album.recents,
+  .home-bubbles.recents {
+    position: relative;
+    top: auto;
+    bottom: auto;
+    left: auto;
+    width: min(26rem, calc(100% - 1.5rem));
+    height: auto;
+    min-height: 5.2rem;
+    transform: none;
+    margin: 0.15rem auto 0.35rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.45rem;
+  }
+
+  .keep-album .recent-slot,
+  .home-bubbles .recent-slot {
+    position: relative;
+    top: auto;
+    left: auto;
+    right: auto;
+    max-width: none;
+    transform: none;
+  }
+
+  .home-bubbles [data-kind="keep"] ~ [data-kind="keep"] ~ [data-kind="keep"] {
+    display: none;
+  }
+
+  .home-bubbles [data-kind="ask"] ~ [data-kind="ask"] {
+    display: none;
+  }
+
+  .keep-album .recent-slot:nth-child(n + 4) {
+    display: none;
+  }
+}
+
+@media (min-width: 1240px) and (min-height: 740px) and (min-aspect-ratio: 12/9) {
+  .recents {
+    display: block;
+  }
+
+  html[data-preview]:not([data-preview-mixer="min"]) .home-bubbles.recents {
+    width: min(1480px, calc(100vw - 11.5rem));
+    left: calc(50% + 3.4rem);
+  }
+
+  .recent-slot[data-slot="side"] {
+    display: none;
+  }
+}
+
+@media (min-width: 1400px) and (min-height: 820px) and (min-aspect-ratio: 13/9) {
+  .recent-slot[data-slot="side"] {
+    display: block;
+  }
+}
+
+@media (max-width: 1279px), (max-height: 740px) {
+  .ask-hero {
+    min-height: calc(100dvh - 9rem);
+  }
+}
+
+@media (max-height: 700px) {
+  .ask-greeting {
+    font-size: clamp(1.35rem, 3vw, 1.85rem);
+  }
+
+  .ask-hero {
+    min-height: calc(100dvh - 6.5rem);
+    gap: 0.85rem;
+  }
+
+  .compose-hint {
+    display: none;
+  }
+
+  .history-page.settings-page {
+    overflow: auto;
+  }
+}
+
+@media (max-height: 560px) {
+  .ask-greeting {
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: 720px) {
+  .ask-greeting {
+    font-size: 1.45rem;
+    max-width: 18ch;
+  }
+
+  .topbar > .water__content {
+    justify-content: flex-end;
+    gap: 0.4rem;
+  }
+
+  .topbar-title {
+    margin-right: auto;
+    gap: 0.45rem;
+  }
+
+  .topbar-home-label {
+    display: none;
+  }
+
+  .topbar-actions {
+    gap: 0.22rem;
+  }
+
+  .stone-btn {
+    padding: 0.42rem 0.62rem;
+    font-size: 0.78rem;
+  }
+
+  .topbar > .water__content > .brand-mark,
+  .topbar-heading .brand-mark {
+    display: none;
+  }
+
+  /* Phone composer: field on its own row so Ask/Send isn’t crushed. */
+  .compose-row {
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 0.35rem;
+  }
+
+  .compose-form .field {
+    flex: 1 1 100%;
+    font-size: 16px;
+    min-height: 2.7rem;
+    max-height: 8rem;
+    overflow-y: auto;
+    padding: 0.4rem 0.2rem 0.15rem;
+  }
+
+  .compose-actions {
+    flex: 1 1 100%;
+    justify-content: flex-end;
+    gap: 0.28rem;
+  }
+
+  .compose {
+    width: 100%;
+    max-width: 100%;
+    padding: calc(var(--water) + 0.5rem) calc(var(--water) + 0.55rem)
+      calc(var(--water) + 0.42rem);
+  }
+
+  .compose-dock {
+    bottom: 0;
+    margin: 0;
+    min-height: 4.25rem;
+  }
+
+  .action-btn--icon {
+    min-width: 2.7rem;
+    padding-left: calc(var(--water) + 0.62rem);
+    padding-right: calc(var(--water) + 0.62rem);
+  }
+
+  .msg {
+    width: 100%;
+    max-width: 100%;
+    font-size: 1.02rem;
+    line-height: 1.48;
+    padding: 0.72rem 0.9rem;
+    border-radius: 18px;
+  }
+
+  .answer h1 {
+    font-size: 1.18rem;
+  }
+
+  .answer h2 {
+    font-size: 1.05rem;
+  }
+
+  .answer h3 {
+    font-size: 0.98rem;
+  }
+
+  .chat-stage {
+    position: fixed;
+    top: var(--app-top, 0px);
+    left: 0;
+    right: 0;
+    width: auto;
+    height: var(--app-height, 100dvh);
+    max-height: var(--app-height, 100dvh);
+    margin: 0;
+    overflow: hidden;
+  }
+
+  .ask-stage {
+    min-height: var(--app-height, 100dvh);
+  }
+
+  .ask-hero {
+    min-height: calc(var(--app-height, 100dvh) - 6.5rem);
+    gap: 0.9rem;
+    align-content: end;
+    padding-bottom: 0.35rem;
+  }
+
+  .ask-hero:has(.compose:focus-within) .ask-greeting {
+    display: none;
+  }
+
+  .chat-scroll {
+    padding: 0.15rem 0 0.35rem;
+    gap: 0.75rem;
+    max-width: 100%;
+    scrollbar-gutter: auto;
+  }
+
+  .history-row,
+  .recipe-card-head {
+    gap: 0.32rem;
+  }
+
+  .history-row .history-item {
+    padding: 0.78rem 0.85rem;
+    font-size: 1rem;
+  }
+
+  .history-pick {
+    width: 1.4rem;
+    height: 1.4rem;
+  }
+
+  .history-row .stone-btn,
+  .recipe-card-head .stone-btn {
+    padding: 0.42rem 0.7rem;
+    font-size: 0.78rem;
+  }
+
+  .recipe-card-head h2 {
+    font-size: 1.22rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .chat-title {
+    display: none;
+  }
+}
