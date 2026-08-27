@@ -1,8 +1,12 @@
-# VocalLearn — Project Instructions
+# Halo + VocalLearn — Project Instructions
 
 ## Project Overview
 
-VocalLearn is a voice-powered spaced repetition AI learning app built with React Native / Expo. Users learn any subject by speaking facts out loud (production effect) with AI-tutored evaluation and SM-2 spaced repetition scheduling.
+This repo contains two related products. **Start with [`README.md`](../README.md)** for the current picture.
+
+**Halo (web, `web/`)** — Live invite-only AI Ask chat on Next.js. V1 is in production for early-access users. V2 adds a Cove / Keep learning loop (harvest facts from answers, review on Home, mastery beads) — walkable at `/preview` in Lab.
+
+**VocalLearn (native, `app/` + `src/`)** — Voice-powered spaced repetition on React Native / Expo. Users learn by speaking facts aloud with AI-tutored evaluation and SM-2 scheduling. Research lab; Halo web is the active shipping surface.
 
 ## Tech Stack
 
@@ -38,8 +42,10 @@ VocalLearn is a voice-powered spaced repetition AI learning app built with React
 
 ## Development Status
 
-See `ROADMAP.md` for the full 6-phase plan. Check completed items there for current progress.
-
+- **Halo V1 (Ask):** Live at https://halo-gules-three.vercel.app
+- **Halo V2 (Cove loop):** Lab preview at `/preview` — see `web/HALO-LOOP.md`
+- **VocalLearn native:** See `HANDOFF.md` for current engineering state
+- `ROADMAP.md` below is mostly historical VocalLearn planning
 ## Conventions
 
 - Path alias: `@/` maps to `src/`
