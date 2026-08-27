@@ -1,19 +1,23 @@
 {
-  "name": "web",
+  "name": "halo-web",
+  "description": "Halo — invite-only family Ask chat with Cove/Keep learning loop (Next.js, TypeScript, Supabase, Grok).",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "preview": "node scripts/preview-up.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "deploy:lab": "vercel deploy",
-    "deploy:family": "vercel deploy --prod"
+    "deploy:lab": "vercel deploy --yes",
+    "deploy:early": "vercel deploy --prod --yes",
+    "capture:sink": "node scripts/harvest-sink.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.112.2",
     "framer-motion": "^13.1.0",
+    "html-to-image": "^1.11.13",
     "next": "16.3.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",

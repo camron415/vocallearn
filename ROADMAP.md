@@ -2,11 +2,9 @@
 
 ## Current Doc Status
 
-This roadmap is mostly historical product planning now.
+**Start here instead:** [`README.md`](./README.md) — live V1, Lab V2 preview, roadmap, and recruiter summary.
 
-- For the current project overview and workflows, read `README.md`.
-- For the latest engineering state and recent conversation summary, read `HANDOFF.md`.
-- Some stack, architecture, and setup details below are outdated relative to the current repo state.
+This roadmap is mostly historical VocalLearn product planning.
 
 ## Project Vision
 

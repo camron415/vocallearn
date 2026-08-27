@@ -1,8 +1,11 @@
 {
   "name": "vocallearn",
+  "description": "Halo — invite-only AI Ask + Cove learning loop (Next.js). VocalLearn — voice-first spaced repetition (React Native).",
   "version": "1.0.0",
   "main": "expo-router/entry",
   "scripts": {
+    "dev": "npm run dev --prefix web",
+    "preview": "npm run preview --prefix web",
     "start": "expo start",
     "typecheck": "tsc --noEmit",
     "android": "expo run:android",
