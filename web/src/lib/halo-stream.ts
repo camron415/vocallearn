@@ -1,12 +1,14 @@
 import type { AskMessage } from "@/lib/types";
+import type { HarvestChip } from "@/lib/harvest";
 
-export type HaloWorkStatus = "searching" | "reading";
+export type HaloWorkStatus = "searching" | "reading" | "checking";
 
 export type HaloStreamEvent =
   | { type: "status"; status: HaloWorkStatus; detail?: string }
   | { type: "thinking"; text: string }
   | { type: "delta"; text: string }
   | { type: "done"; conversationId: string; reply: AskMessage }
+  | { type: "harvest"; chips: HarvestChip[] }
   | { type: "error"; error: string };
 
 export function encodeHaloEvent(event: HaloStreamEvent): string {

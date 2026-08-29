@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Manrope } from "next/font/google";
+import { headers } from "next/headers";
+import { Fraunces, Manrope, Nunito } from "next/font/google";
 import { MotionProvider } from "@/components/MotionProvider";
+import { LoopSkin } from "@/components/LoopSkin";
+import { HALO_BOOT_INLINE } from "@/lib/halo-boot";
 import "./globals.css";
 
 export const viewport: Viewport = {
@@ -12,11 +15,18 @@ export const viewport: Viewport = {
 const display = Fraunces({
   variable: "--font-fraunces",
   subsets: ["latin"],
+  axes: ["SOFT", "WONK", "opsz"],
 });
 
 const body = Manrope({
   variable: "--font-manrope",
   subsets: ["latin"],
+});
+
+const chip = Nunito({
+  variable: "--font-nunito",
+  subsets: ["latin"],
+  weight: ["600", "700", "800"],
 });
 
 export const metadata: Metadata = {
@@ -156,22 +166,35 @@ function HaloFilters() {
   );
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const hdrs = await headers();
+  const previewSkin = hdrs.get("x-halo-home-skin");
+  const homeSkin = previewSkin === "paper" ? "paper" : "ours";
+  const homeTheme = hdrs.get("x-halo-theme") === "dark" ? "dark" : "light";
   return (
     <html
       lang="en"
       data-halo-motion="full"
       data-halo-bg="mist"
-      className={`${display.variable} ${body.variable} h-full`}
+      data-halo-theme={homeTheme}
+      data-home-skin={homeSkin}
+      data-halo-loop="17"
+      data-halo-ready="1"
+      suppressHydrationWarning
+      className={`${display.variable} ${body.variable} ${chip.variable} h-full`}
     >
       <body className="min-h-full antialiased">
+        <script dangerouslySetInnerHTML={{ __html: HALO_BOOT_INLINE }} />
         <div className="halo-filter-warmup" aria-hidden />
         <HaloFilters />
+        <LoopSkin />
         <MotionProvider>{children}</MotionProvider>
+        {/* Future overlay portal. No UI. Do not bolt menus onto HaloHeader. */}
+        <div id="cove-overlay" />
       </body>
     </html>
   );

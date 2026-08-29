@@ -1,0 +1,25 @@
+---
+description: Cursor Visual QA Contract — film first, iterate until verified. Use for Halo UI, CSS, color, animation, Replay, or any visual change.
+alwaysApply: true
+---
+
+# Cursor Visual QA Contract
+
+Persistent design oracle for Halo frontend. On any visual, color, animation, or UI change, follow steps 1–7. Start the work by stating: "Following Cursor Visual QA Contract steps 1-7."
+
+Do not hand work back with unfixed glitches. Do not stop after one attempt. Judge from film and frames, not from CSS you just wrote.
+
+## Every visual iteration
+
+1. **Load latest visuals first.** Newest Replay folder (`web/captures/home/latest/` or `web/captures/harvest/latest/`), screen recording, or keyframes Camron sent. Read `meta.json`, then frames in order, before generating code.
+2. **Analyze.** Color (palette, contrast, harmony — what actually reads on screen, not hex names); motion (timing, smoothness, water physics, unified language across animations); layout; type; regressions.
+3. **Propose** the smallest targeted fix.
+4. **Apply** it.
+5. **Re-check immediately.** New Replay or equivalent. Confirm the fix and hunt new glitches.
+6. **Iterate** steps 2–5 until it looks correct. Catch your own mistakes.
+7. **Only then summarize.**
+
+If the visual outcome is still uncertain: "Syncing with Atlas for visual QA confirmation before finalizing."
+
+Home film: `/preview` Home tab, Mix Start then Stop (not a timed take), `npm run capture:sink`, then `web/captures/home/latest/`. Harvest film: `/preview?view=chat`, `web/captures/harvest/latest/`. Do not freeze Home water with `still`. Harvest Shape/Flight/Wake/Dock stay locked unless Camron asks.
+---

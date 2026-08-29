@@ -130,6 +130,8 @@ function pickSpecificTag(tags: string[] | null | undefined): string | null {
     const formatted = formatTag(rawTag);
     const lower = formatted.toLowerCase();
     if (SKIP_TAGS.has(lower) || GENERIC_TAGS.has(lower) || /^\d{4}$/.test(lower)) continue;
+    // Single broad category tags make terrible quiz prompts ("What about geography?")
+    if (!formatted.includes(" ") && formatted.length <= 12) continue;
     if (formatted.length >= 3) return formatted;
   }
   return null;
@@ -306,6 +308,29 @@ function buildPromptSpec(fact: Fact): { quiz: string; prediction: string; produc
       prediction: `Before I explain it, why do you think ${subject} can be risky?`,
       production: `Explain why ${subject} is risky.`,
     };
+  }
+
+  const capitalMatch = content.match(/^(.+?) is the capital of (.+?)\.?$/i);
+  if (capitalMatch) {
+    const place = toSentenceAnchor(cleanAnchor(capitalMatch[2]));
+    return {
+      quiz: `What is the capital of ${place}?`,
+      prediction: `Before I explain it, what do you think is the capital of ${place}?`,
+      production: `Tell me the capital of ${place}.`,
+    };
+  }
+
+  const definitionOfMatch = content.match(/^(.+?) is (?:a |an |the )?(.+?)\.?$/i);
+  // Only use for short, definition-like sentences (avoid eating long paragraphs)
+  if (definitionOfMatch && content.length < 140 && !content.includes(",")) {
+    const subject = toSentenceAnchor(cleanAnchor(definitionOfMatch[1]));
+    if (subject && !isLowSignalAnchor(subject) && subject.split(" ").length <= 6) {
+      return {
+        quiz: `What is ${subject}?`,
+        prediction: `Before I explain it, what do you think ${subject} is?`,
+        production: `Explain what ${subject} is in your own words.`,
+      };
+    }
   }
 
   // Pattern: "Subject—enumeration—descriptor" (em-dash parenthetical list)

@@ -64,6 +64,10 @@
   gap: 0.15rem;
 }
 
+.preview-switcher__group--wrap {
+  flex-wrap: wrap;
+}
+
 .preview-switcher button {
   border: 0;
   border-radius: 999px;

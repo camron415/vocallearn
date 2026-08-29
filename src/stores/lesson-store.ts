@@ -34,12 +34,15 @@ interface LessonState {
 }
 
 const AI_SUBJECT_ID = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
+import { FROM_ASK_SUBJECT_ID } from "@/types/ask";
+
 const JUNIOR_INTERVIEW_SUBJECT_ID = "7b0c1d2e-3f40-4567-89ab-cdef01234567";
 const CAREER_PREP_SUBJECT_ID = "a9b8c7d6-e5f4-4321-abcd-ef9876543210";
 
 const UNLOCK_ALL_LESSONS_SUBJECT_IDS = new Set([
   JUNIOR_INTERVIEW_SUBJECT_ID,
   CAREER_PREP_SUBJECT_ID,
+  FROM_ASK_SUBJECT_ID,
 ]);
 const REMOVED_AI_LESSON_IDS = new Set([
   "d4e5f6a7-b8c9-0123-def0-123456789903",

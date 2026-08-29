@@ -7,7 +7,7 @@ import { ChoicePicks } from "@/components/ChoicePicks";
 import { GlassButton } from "@/components/Glass";
 import { LengthPicks } from "@/components/LengthPicks";
 import { useMotionSettings } from "@/components/MotionProvider";
-import { WaterPane } from "@/components/WaterSurface";
+import { useOursWet, WaterPane } from "@/components/WaterSurface";
 import { APP_NAME } from "@/lib/constants";
 import { formatUsd, isHaloLane, laneLabel, type HaloLane } from "@/lib/limits";
 import { createClient } from "@/lib/supabase/client";
@@ -39,8 +39,9 @@ export function SettingsMenu({
   demo?: boolean;
 }) {
   const router = useRouter();
-  const { intensity, setIntensity, wallpaper, setWallpaper, autoSoft } =
+  const { intensity, setIntensity, theme, setTheme, autoSoft } =
     useMotionSettings();
+  const wet = useOursWet();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [name, setName] = useState(profile?.displayName ?? "");
@@ -172,24 +173,45 @@ export function SettingsMenu({
             What should {APP_NAME} call you?
           </label>
           <div className="settings-name">
-            <WaterPane variant="field" className="settings-name-pane">
-              <input
-                id="halo-name"
-                className="field"
-                value={name}
-                onChange={(e) => {
-                  setName(e.target.value);
-                  setNameState("idle");
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    void saveName();
-                  }
-                }}
-                maxLength={40}
-              />
-            </WaterPane>
+            {!wet ? (
+              <div className="settings-name-pane">
+                <input
+                  id="halo-name"
+                  className="field"
+                  value={name}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    setNameState("idle");
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      void saveName();
+                    }
+                  }}
+                  maxLength={40}
+                />
+              </div>
+            ) : (
+              <WaterPane variant="field" className="settings-name-pane" still>
+                <input
+                  id="halo-name"
+                  className="field"
+                  value={name}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    setNameState("idle");
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      void saveName();
+                    }
+                  }}
+                  maxLength={40}
+                />
+              </WaterPane>
+            )}
             {demo ? null : (
               <GlassButton onClick={() => void saveName()}>
                 {nameState === "saving"
@@ -220,15 +242,15 @@ export function SettingsMenu({
               ] as const
             }
           />
-          <p className="field-label">Scene</p>
+          <p className="field-label">Appearance</p>
           <ChoicePicks
-            label="Scene"
-            value={wallpaper}
-            onChange={setWallpaper}
+            label="Appearance"
+            value={theme}
+            onChange={setTheme}
             options={
               [
-                ["mist", "Mist"],
-                ["sky", "Sky"],
+                ["light", "Light"],
+                ["dark", "Dark"],
               ] as const
             }
           />
@@ -305,7 +327,7 @@ export function SettingsMenu({
   ) : null;
 
   return (
-    <div className="history-wrap" data-tour="settings">
+    <div className="history-wrap">
       <GlassButton title="Open settings" onClick={() => setOpen((v) => !v)}>
         Settings
       </GlassButton>

@@ -1,46 +1,41 @@
 "use client";
 
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnswerBody } from "@/components/AnswerBody";
 import { AttachButton } from "@/components/AttachButton";
 import { ComposeField } from "@/components/ComposeField";
 import { DictateButton } from "@/components/DictateButton";
 import { HaloHeader } from "@/components/HaloHeader";
+import { HarvestFlights } from "@/components/HarvestFlights";
 import { type HistoryItem } from "@/components/HistoryMenu";
+import { MessageCopy } from "@/components/MessageCopy";
 import { WorkTrace, type WorkStep } from "@/components/WorkTrace";
 import { useEffectiveMotion } from "@/components/MotionProvider";
-import { SpringStage, captureComposeMorph, useComposeMorph } from "@/components/SpringStage";
-import { WaterAction, WaterPane } from "@/components/WaterSurface";
+import {
+  SpringStage,
+  COMPOSE_TRAVEL_MS,
+  captureComposeMorph,
+  clearComposeHandoff,
+  pinComposeGhost,
+  travelComposeTowardHero,
+  useComposeMorph,
+} from "@/components/SpringStage";
+import { ComposeStadium, WaterAction } from "@/components/WaterSurface";
+import {
+  PREVIEW_HARVEST_CHIPS,
+  PREVIEW_HARVEST_REPLY,
+  PREVIEW_MORE_CHIP,
+  type HarvestChip,
+} from "@/lib/harvest";
 import { readHaloStream, type HaloStreamEvent } from "@/lib/halo-stream";
+import { isLabPreviewPath, labPreviewChatHref, labPreviewHomeHref } from "@/lib/lab-preview";
 import { stripMarkdownForDisplay } from "@/lib/markdown-plain";
 import { readAttachments } from "@/lib/read-files";
 import type { AskMessage, HaloProfile } from "@/lib/types";
 
 const RESUME_MS = 3 * 60 * 1000;
 const generating = new Set<string>();
-
-const DEMO_REPLY = `## Weekly feed
-
-Keep the starter **in the fridge** and feed it once a week.[[1]](https://www.kingarthurbaking.com/blog/2018/01/05/feeding-sourdough-starter)
-
-The night before you bake:
-
-- Take it out and let it warm up
-- Discard most of it
-- Feed **equal weights** of flour and water
-
-It should *double in 4–8 hours* at room temperature. If it smells like acetone, it is hungry, not dead.
-
-### If you skip a week
-
-Feed it once, wait until it is lively, then feed again before you mix dough.[[2]](https://www.kingarthurbaking.com)
-
-## Sources
-
-1. [King Arthur Baking](https://www.kingarthurbaking.com/blog/2018/01/05/feeding-sourdough-starter)
-2. [King Arthur Baking](https://www.kingarthurbaking.com)
-`;
 
 function shouldResume(messages: AskMessage[]) {
   const last = messages[messages.length - 1];
@@ -81,15 +76,65 @@ export function ChatThread({
   const [thinking, setThinking] = useState("");
   const [showWork, setShowWork] = useState(false);
   const [chats, setChats] = useState(conversations);
+  const [harvest, setHarvest] = useState<HarvestChip[]>([]);
+  const [flying, setFlying] = useState<HarvestChip[]>([]);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [moreTaken, setMoreTaken] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const turnStartRef = useRef<HTMLDivElement | null>(null);
   const dockRef = useRef<HTMLDivElement | null>(null);
+  const leaving = useRef(false);
+  const [exit, setExit] = useState(false);
   const resumeLock = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
   const bufferRef = useRef("");
   const flushTimer = useRef<number | null>(null);
+  const demoHarvested = useRef(false);
+
+  const landChip = useCallback((chip: HarvestChip) => {
+    window.dispatchEvent(new CustomEvent("halo-keep-add", { detail: chip }));
+  }, []);
+
+  function beginHarvest(chips: HarvestChip[]) {
+    if (!chips.length) return;
+    window.dispatchEvent(
+      new CustomEvent("halo-harvest-begin", {
+        detail: { count: chips.length },
+      })
+    );
+    setHarvest((prev) => {
+      const seen = new Set(prev.map((item) => item.id));
+      return [...prev, ...chips.filter((chip) => !seen.has(chip.id))];
+    });
+    window.setTimeout(() => {
+      setFlying((prev) => {
+        const known = new Set(prev.map((item) => item.id));
+        return [...prev, ...chips.filter((chip) => !known.has(chip.id))];
+      });
+    }, 360);
+    setMoreOpen(true);
+  }
 
   useComposeMorph(dockRef, !soft);
+
+  function goHome() {
+    if (leaving.current) return;
+    const dest = demo || isLabPreviewPath() ? labPreviewHomeHref() : homeHref;
+    if (soft) {
+      pinComposeGhost(dockRef.current);
+      captureComposeMorph(dockRef.current);
+      router.replace(dest);
+      return;
+    }
+    leaving.current = true;
+    travelComposeTowardHero(dockRef.current);
+    setExit(true);
+    window.setTimeout(() => {
+      pinComposeGhost(dockRef.current);
+      captureComposeMorph(dockRef.current);
+      router.replace(dest);
+    }, COMPOSE_TRAVEL_MS);
+  }
 
   useEffect(() => {
     setMessages(initialMessages);
@@ -98,6 +143,37 @@ export function ChatThread({
   useEffect(() => {
     setChats(conversations);
   }, [conversations]);
+
+  function replayHarvest() {
+    setHarvest([]);
+    setFlying([]);
+    setMoreOpen(false);
+    window.dispatchEvent(new Event("halo-keep-reset"));
+    window.setTimeout(() => beginHarvest(PREVIEW_HARVEST_CHIPS), 80);
+  }
+
+  useEffect(() => {
+    if (!demo) return;
+    const ready = messages.some(
+      (row) => row.role === "assistant" && row.content.includes("Nile")
+    );
+    if (!ready) return;
+    const t = window.setTimeout(() => {
+      if (demoHarvested.current) return;
+      demoHarvested.current = true;
+      beginHarvest(PREVIEW_HARVEST_CHIPS);
+    }, 640);
+    return () => window.clearTimeout(t);
+  }, [demo, messages]);
+
+  useEffect(() => {
+    if (!demo) return;
+    function onReplay() {
+      replayHarvest();
+    }
+    window.addEventListener("halo-harvest-replay", onReplay);
+    return () => window.removeEventListener("halo-harvest-replay", onReplay);
+  }, [demo]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: "end", behavior: "auto" });
@@ -178,6 +254,9 @@ export function ChatThread({
     if (event.type === "delta") {
       queueDelta(event.text);
     }
+    if (event.type === "harvest") {
+      beginHarvest(event.chips);
+    }
   }
 
   async function playDemo() {
@@ -186,9 +265,9 @@ export function ChatThread({
     await new Promise((r) => window.setTimeout(r, 520));
     setWorkSteps((prev) => [
       ...prev,
-      { id: "read", kind: "reading", detail: "kingarthurbaking.com" },
+      { id: "read", kind: "reading", detail: "britannica.com" },
     ]);
-    const chunks = DEMO_REPLY.match(/\s+|\S+/g) ?? [DEMO_REPLY];
+    const chunks = PREVIEW_HARVEST_REPLY.match(/\s+|\S+/g) ?? [PREVIEW_HARVEST_REPLY];
     for (const chunk of chunks) {
       queueDelta(chunk);
       await new Promise((r) => window.setTimeout(r, 18));
@@ -203,10 +282,11 @@ export function ChatThread({
         id: replyId,
         conversation_id: conversationId,
         role: "assistant",
-        content: DEMO_REPLY,
+        content: PREVIEW_HARVEST_REPLY,
         created_at: new Date().toISOString(),
       },
     ]);
+    beginHarvest(PREVIEW_HARVEST_CHIPS);
   }
 
   async function runTurn(opts: {
@@ -299,6 +379,10 @@ export function ChatThread({
             result = "ok";
             return;
           }
+          if (event.type === "harvest") {
+            beginHarvest(event.chips);
+            return;
+          }
           handleLive(event);
         },
         abort.signal
@@ -355,7 +439,7 @@ export function ChatThread({
   const lastUserId = [...messages].reverse().find((row) => row.role === "user")?.id;
 
   return (
-    <div className="chat-stage">
+    <div className={`chat-stage is-entering${exit ? " is-leaving" : ""}`} data-harvest-capture="true">
       <HaloHeader
         conversations={chats}
         currentId={conversationId}
@@ -364,22 +448,22 @@ export function ChatThread({
         showHome
         demo={demo}
         profile={profile}
+        onGoHome={goHome}
         onOpenChat={(id) => {
           if (id === conversationId) return;
-          captureComposeMorph(dockRef.current);
-          if (demo) {
-            const next = new URLSearchParams(window.location.search);
-            next.set("view", "chat");
-            router.replace(`/preview?${next.toString()}`);
+          if (demo || isLabPreviewPath()) {
+            clearComposeHandoff();
+            router.replace(labPreviewChatHref(id));
             return;
           }
+          captureComposeMorph(dockRef.current);
           router.push(`/ask/${id}`);
         }}
         onDeleted={(id) => {
           setChats((prev) => prev.filter((chat) => chat.id !== id));
           if (id !== conversationId) return;
           captureComposeMorph(null);
-          router.replace(homeHref);
+          router.replace(demo || isLabPreviewPath() ? labPreviewHomeHref() : homeHref);
         }}
       />
 
@@ -395,45 +479,67 @@ export function ChatThread({
               <div
                 key={m.id}
                 ref={lastUser ? turnStartRef : undefined}
-                className={`msg msg--${m.role}${
-                  freshIds.has(m.id) ? " msg--fresh" : ""
+                className={`msg-wrap msg-wrap--${m.role}${
+                  freshIds.has(m.id) ? " msg-wrap--fresh" : ""
                 }`}
               >
-                {m.role === "assistant" ? (
-                  <AnswerBody content={m.content} />
-                ) : (
-                  <p>{stripMarkdownForDisplay(m.content)}</p>
-                )}
+                <div
+                  className={`msg msg--${m.role}${
+                    freshIds.has(m.id) ? " msg--fresh" : ""
+                  }`}
+                >
+                  {m.role === "assistant" ? (
+                    <AnswerBody content={m.content} harvest={harvest} />
+                  ) : (
+                    <p>{stripMarkdownForDisplay(m.content)}</p>
+                  )}
+                  <MessageCopy content={m.content} />
+                </div>
               </div>
             );
           })}
+          {demo && moreOpen && !moreTaken && !sending ? (
+            <button
+              type="button"
+              className="harvest-more"
+              onClick={() => {
+                setMoreTaken(true);
+                beginHarvest([PREVIEW_MORE_CHIP]);
+              }}
+            >
+              Want a little more on this?
+            </button>
+          ) : null}
           {sending ? (
-            <div className="msg msg--assistant msg--live msg--fresh">
-              {showWork || workSteps.length > 0 || thinking ? (
-                <WorkTrace
-                  steps={workSteps}
-                  thinking={thinking}
-                  collapsed={streamText.length > 40}
-                  waiting={!streamText && workSteps.length === 0 && !thinking}
-                />
-              ) : (
-                <WorkTrace
-                  steps={[]}
-                  thinking=""
-                  collapsed={false}
-                  waiting
-                />
-              )}
-              {streamText ? (
-                <AnswerBody content={streamText} streaming />
-              ) : null}
+            <div className="msg-wrap msg-wrap--assistant">
+              <div className="msg msg--assistant msg--live">
+                {showWork || workSteps.length > 0 || thinking ? (
+                  <WorkTrace
+                    steps={workSteps}
+                    thinking={thinking}
+                    collapsed={streamText.length > 40}
+                    waiting={!streamText && workSteps.length === 0 && !thinking}
+                  />
+                ) : (
+                  <WorkTrace
+                    steps={[]}
+                    thinking=""
+                    collapsed={false}
+                    waiting
+                  />
+                )}
+                {streamText ? (
+                  <AnswerBody content={streamText} streaming />
+                ) : null}
+                {streamText ? <MessageCopy content={streamText} /> : null}
+              </div>
             </div>
           ) : null}
           <div ref={bottomRef} />
         </div>
       </SpringStage>
 
-      <WaterPane className="compose compose-dock" elementRef={dockRef} listening={listening}>
+      <ComposeStadium className="compose compose-dock" elementRef={dockRef} listening={listening}>
         <form onSubmit={onSubmit} className="compose-form">
           {error ? <p className="form-error">{error}</p> : null}
           {files.length ? (
@@ -486,7 +592,8 @@ export function ChatThread({
             </div>
           </div>
         </form>
-      </WaterPane>
+      </ComposeStadium>
+      <HarvestFlights chips={flying} reduced={demo ? false : soft} onLanded={landChip} />
     </div>
   );
 }

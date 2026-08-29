@@ -6,13 +6,17 @@ import {
   useLayoutEffect,
   useId,
   useRef,
+  useState,
   type CSSProperties,
   type ReactNode,
   type RefObject,
 } from "react";
 import { useLiquidEnabled } from "@/components/MotionProvider";
+import { kindGlow, harvestStyleFromDom } from "@/lib/harvest-style";
+import { applyHaloBoot } from "@/lib/halo-boot";
 import {
   createWaterSurface,
+  dropPebble,
   registerWater,
   splashWater,
   WATER_ACTION,
@@ -97,6 +101,32 @@ const FIELD: Tone = { ...PANE, preset: WATER_FIELD };
 
 const TONES = { pane: PANE, action: ACTION, bar: BAR, field: FIELD };
 
+/** Ours water mounts only after we read the live skin. Paper never gets a
+ *  water pane — Safari 26 glass on .water--pane .water__skin samples the page
+ *  and CSS cannot paint over it. Default false so SSR/hydrate is a plain div.
+ *  Trust URL/cookie/mixer before the SSR `ours` attribute, or a refresh
+ *  remounts glass and Safari cannot paint over it. */
+
+export function useOursWet() {
+  const [wet, setWet] = useState(false);
+  useLayoutEffect(() => {
+    applyHaloBoot();
+    function read() {
+      const next =
+        document.documentElement.getAttribute("data-home-skin") !== "paper";
+      setWet((prev) => (prev === next ? prev : next));
+    }
+    read();
+    const watch = new MutationObserver(read);
+    watch.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-home-skin"],
+    });
+    return () => watch.disconnect();
+  }, []);
+  return wet;
+}
+
 function stops(list: Stop[]) {
   return list.map((s) => (
     <stop
@@ -121,6 +151,9 @@ function useWaterSkin(tone: Tone, live: boolean) {
 
   useLayoutEffect(() => {
     if (!live) return;
+    if (document.documentElement.getAttribute("data-home-skin") === "paper") {
+      return;
+    }
     const root = rootRef.current;
     const skin = skinRef.current;
     if (!root || !skin) return;
@@ -145,6 +178,10 @@ function useWaterSkin(tone: Tone, live: boolean) {
     if (surfaceRef.current) splashWater(surfaceRef.current);
   }, []);
 
+  const pebble = useCallback((clientX: number, clientY: number) => {
+    if (surfaceRef.current) dropPebble(surfaceRef.current, clientX, clientY);
+  }, []);
+
   const layers = (
     <>
       <span className="water__ambient" aria-hidden />
@@ -152,6 +189,7 @@ function useWaterSkin(tone: Tone, live: boolean) {
         <svg className="water__shade" aria-hidden focusable="false">
           <path
             ref={shadeRef}
+            className="water__stroke-shade"
             fill="none"
             stroke={tone.shade.color}
             strokeWidth={tone.shade.width}
@@ -179,18 +217,21 @@ function useWaterSkin(tone: Tone, live: boolean) {
           </defs>
           <path
             ref={dipRef}
+            className="water__stroke-dip"
             fill="none"
             stroke={`url(#${uid}dip)`}
             strokeWidth={tone.dipWidth}
           />
           <path
             ref={rimRef}
+            className="water__stroke-rim"
             fill="none"
             stroke={`url(#${uid}rim)`}
             strokeWidth={tone.rimWidth}
           />
           <path
             ref={specRef}
+            className="water__stroke-spec"
             fill="none"
             stroke={`url(#${uid}spec)`}
             strokeWidth={tone.specWidth}
@@ -200,7 +241,7 @@ function useWaterSkin(tone: Tone, live: boolean) {
     </>
   );
 
-  return { rootRef, layers, splash };
+  return { rootRef, layers, splash, pebble };
 }
 
 /** The hero composer, which is also the chat dock. Glass, wet at the edge. */
@@ -212,6 +253,8 @@ export function WaterPane({
   listening = false,
   variant = "pane",
   as: Tag = "div",
+  still = false,
+  kind,
 }: {
   children: ReactNode;
   className?: string;
@@ -220,10 +263,14 @@ export function WaterPane({
   listening?: boolean;
   variant?: "pane" | "bar" | "field";
   as?: "div" | "header";
+  /** Auth cards: always the still stadium, so the border stays readable. */
+  still?: boolean;
+  kind?: string;
 }) {
-  const live = useLiquidEnabled();
+  const ours = useOursWet();
+  const live = useLiquidEnabled() && !still && ours;
   const tone = TONES[variant];
-  const { rootRef, layers, splash } = useWaterSkin(tone, live);
+  const { rootRef, layers, splash, pebble } = useWaterSkin(tone, live);
 
   useEffect(() => {
     if (!listening || !live) return;
@@ -232,12 +279,51 @@ export function WaterPane({
     return () => window.clearInterval(id);
   }, [listening, live, splash]);
 
+  useEffect(() => {
+    if (variant !== "bar") return;
+    let clear = 0;
+    function hit(event: Event) {
+      const chip = (
+        event as CustomEvent<{ kind?: string; x?: number; y?: number }>
+      ).detail;
+      const root = rootRef.current;
+      if (!root) return;
+      const box = root.getBoundingClientRect();
+      const x = chip?.x ?? box.left + box.width * 0.58;
+      const y = chip?.y ?? box.top + box.height * 0.5;
+      const wake = harvestStyleFromDom().keep;
+      if (wake !== "quiet") pebble(x, y);
+      else splash();
+      root.style.setProperty(
+        "--keep-hit",
+        kindGlow(chip?.kind || "meaning")
+      );
+      root.style.setProperty(
+        "--keep-hit-x",
+        `${Math.max(8, Math.min(92, ((x - box.left) / box.width) * 100))}%`
+      );
+      root.classList.toggle("is-keep-glow", wake === "glow");
+      root.classList.add("is-keep-hit");
+      window.clearTimeout(clear);
+      clear = window.setTimeout(() => {
+        root.classList.remove("is-keep-hit", "is-keep-glow");
+      }, wake === "quiet" ? 420 : 860);
+    }
+    window.addEventListener("halo-keep-land", hit);
+    return () => {
+      window.removeEventListener("halo-keep-land", hit);
+      window.clearTimeout(clear);
+    };
+  }, [variant, splash, pebble, rootRef]);
+
   return (
     <Tag
       ref={(el) => {
         rootRef.current = el;
         if (elementRef && Tag === "div") elementRef.current = el;
       }}
+      data-keep-pond={variant === "bar" ? "true" : undefined}
+      data-kind={kind || undefined}
       className={`water water--pane water--${variant}${live ? "" : " water--still"}${
         listening ? " is-listening" : ""
       } ${className}`}
@@ -247,6 +333,71 @@ export function WaterPane({
       {layers}
       <div className="water__content">{children}</div>
     </Tag>
+  );
+}
+
+/** Home composer and chat dock. Paper is a plain stadium; Ours is WaterPane. */
+export function ComposeStadium({
+  children,
+  className,
+  style,
+  elementRef,
+  listening = false,
+  kind,
+}: {
+  children: ReactNode;
+  className: string;
+  style?: CSSProperties;
+  elementRef?: RefObject<HTMLDivElement | null>;
+  listening?: boolean;
+  kind?: string;
+}) {
+  const wet = useOursWet();
+  if (!wet) {
+    return (
+      <div
+        ref={elementRef}
+        className={`${className} is-paper-dry${listening ? " is-listening" : ""}`.trim()}
+        style={style}
+        data-kind={kind || undefined}
+      >
+        {children}
+      </div>
+    );
+  }
+  return (
+    <WaterPane
+      className={className}
+      style={style}
+      elementRef={elementRef}
+      listening={listening}
+      kind={kind}
+    >
+      {children}
+    </WaterPane>
+  );
+}
+
+/** Home and chat header. Paper is a plain bar; Ours is WaterPane. */
+export function ChromeBar({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className: string;
+}) {
+  const wet = useOursWet();
+  if (!wet) {
+    return (
+      <header className={`${className} is-paper-dry`} data-keep-pond="true">
+        <div className="water__content">{children}</div>
+      </header>
+    );
+  }
+  return (
+    <WaterPane as="header" variant="bar" className={className}>
+      {children}
+    </WaterPane>
   );
 }
 
@@ -264,7 +415,8 @@ export function WaterAction({
   onClick?: () => void;
   className?: string;
 }) {
-  const live = useLiquidEnabled();
+  const wet = useOursWet();
+  const live = useLiquidEnabled() && wet;
   const { rootRef, layers, splash } = useWaterSkin(TONES.action, live);
 
   return (
@@ -275,10 +427,14 @@ export function WaterAction({
       type={type}
       disabled={disabled}
       onClick={onClick}
-      onPointerDown={splash}
-      className={`water water--action${live ? "" : " water--still"} ${className}`}
+      onPointerDown={wet ? splash : undefined}
+      className={
+        wet
+          ? `water water--action${live ? "" : " water--still"} ${className}`
+          : `${className} is-paper-dry`
+      }
     >
-      {layers}
+      {wet ? layers : null}
       <span className="water__content">{children}</span>
     </button>
   );

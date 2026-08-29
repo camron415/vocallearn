@@ -1,0 +1,12 @@
+---
+description: Dump this chat into Atlas so overnight Sloane and the phone agent can see it
+alwaysApply: true
+---
+
+# Atlas session loop (Halo chats)
+
+Cursor chats are invisible to Atlas managers and the phone agent until dumped.
+
+- Start: if Atlas is up, `GET http://127.0.0.1:8787/agent/where_we_left_off` (Bearer `ATLAS_AGENT_TOKEN` from `atlas/server/.env`).
+- Wrap-up / "sync for phone" / shipping Halo work: `POST /agent/session_close` with a 3–8 bullet note and `"workspacePath"` set to this repo, or `cd atlas/server && npm run refresh-phone-knowledge -- --note "..."`.
+- Do not claim the phone agent is current until that dump succeeds.

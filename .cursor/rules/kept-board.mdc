@@ -1,0 +1,20 @@
+---
+description: Kept weekend desk — every turn read and update web/KEPT-BOARD.md so the chief chat can see other lanes without paste.
+alwaysApply: true
+---
+
+# Kept board contract
+
+Like Visual QA, but for coordination. Weekend V2 only.
+
+You cannot message other Composer tabs. You **can** read and write `web/KEPT-BOARD.md`. The chief chat treats that file as what the other lanes did.
+
+## Every turn (Kept / Halo loop / harvest / due / review)
+
+1. **Start** — Read `web/KEPT-BOARD.md` and `web/HALO-V2-SUNDAY.md`. If you are a worker, claim your lane (`claimed` / `in_progress`) and list the files you will touch under **Locks**. If another lane already holds those files, stop and write a blocker. Do not edit them.
+2. **Work** — One lane only. Spec in `web/HALO-V2-SUNDAY.md` wins. Do not retune harvest z-index 120 or morph `--travel` 1080ms. Do not promote unless Camron says promote.
+3. **End** — Update the board in the same turn: timestamp, your lane status, locks, blockers, and a 3–8 bullet **Log** line (what changed, what is next, what is blocked). Do not wait for Camron to ask. Do not dump diffs or SHAs.
+
+If you are the **chief** (this long-running planning chat): on “status”, “wrap”, or before spawning work, read the board first. You may search other local chats. Prefer launching workers from this chat (they report here) over extra tabs. Extra tabs still must keep the board current.
+
+Paste for a new tab: `Lane X. Read web/KEPT-BOARD.md and web/HALO-V2-SUNDAY.md. Claim the lane. Update the board every turn.`

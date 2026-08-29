@@ -1,7 +1,8 @@
 /* Ownership: Cove Lab Home — greeting, chips, composer hero, morph travel.
    Edit: .ask-hero, .ask-greeting, Keep beads, harvest chip colors, .compose
    morph (1080ms). Move rules; do not retune --travel, harvest physics, or Look.
-   Do not: overlay menus, Paper skin, water-edge.ts, chat bubbles.
+   Do not: overlay menus, Paper skin, water-edge.ts, chat bubbles,
+   or clip-path / overflow:hidden on live .capsule__glass (water-lock.css).
    Login/topbar/form chrome currently lives here because it sat on the shared
    stage — do not restyle Login as Home mixer. History/Learn/Mode CSS is in
    overlays.css. */
@@ -373,7 +374,7 @@
 
 .ask-hero {
   position: relative;
-  z-index: 2;
+  z-index: 8;
   min-height: calc(100dvh - 8rem);
   display: grid;
   /* Definite track: without it the column collapses to the greeting's
@@ -382,7 +383,7 @@
   align-content: center;
   justify-content: center;
   justify-items: center;
-  gap: 1.4rem;
+  gap: 1.85rem;
   text-align: center;
   /* The hero is a full-height sheet; let recents receive clicks through it. */
   pointer-events: none;
@@ -391,8 +392,7 @@
 .ask-hero .ask-greeting,
 .ask-hero .compose,
 .ask-hero .compose-stack,
-.ask-hero .compose-suggest,
-.ask-hero .learn-nudge {
+.ask-hero .compose-suggest {
   pointer-events: auto;
 }
 
@@ -400,6 +400,7 @@
   position: relative;
   z-index: 6;
   width: 100%;
+  padding: 0.38rem 0.48rem 0.38rem 0.9rem;
 }
 
 /* Keep the composer in the hero's center. Suggestions overlay below so
@@ -416,21 +417,25 @@
 }
 
 .compose-stack.is-open {
-  margin-top: -1.1rem;
+  /* Same 1080ms lift as before — greeting gap holds the descenders. */
+  margin-top: -1.05rem;
 }
 
 .compose-suggest {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 0.12rem 0 0.18rem;
   position: absolute;
   left: 0;
   right: 0;
-  top: calc(100% + 0.28rem);
+  top: 100%;
   display: grid;
-  gap: 0.38rem;
+  gap: 0;
   text-align: left;
-  z-index: 6;
+  z-index: 12;
+  border-radius: 0 0 1.05rem 1.05rem;
+  overflow: hidden;
+  background: var(--halo-stone);
   animation: compose-suggest-rise 1080ms cubic-bezier(0.33, 0.04, 0.2, 1) both;
 }
 
@@ -471,16 +476,24 @@ html[data-halo-motion="soft"] .compose-suggest {
   display: block;
   width: 100%;
   border: 0;
-  border-radius: 18px;
-  padding: 0.82rem 1rem;
+  border-radius: 0;
+  padding: 0.58rem 0.95rem;
   text-align: left;
   font: inherit;
-  font-size: 1.02rem;
-  font-weight: 500;
-  line-height: 1.4;
+  font-size: 0.94rem;
+  font-weight: 550;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
   color: var(--halo-ink);
-  background: var(--halo-stone);
+  background: transparent;
   cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.compose-suggest li + li .compose-suggest-item {
+  border-top: 1px solid color-mix(in srgb, var(--halo-ink) 10%, transparent);
 }
 
 .compose-suggest-item:hover,
@@ -491,17 +504,21 @@ html[data-halo-motion="soft"] .compose-suggest {
 }
 
 html[data-halo-theme="dark"] .compose-suggest-item {
-  background: var(--halo-stone);
+  background: transparent;
 }
 
 html[data-halo-theme="dark"] .compose-suggest-item:hover,
 html[data-halo-theme="dark"] .compose-suggest-item:focus-visible,
 html[data-halo-theme="dark"] .compose-suggest-item.is-active {
-  background: var(--halo-stone-hover);
+  background: color-mix(in srgb, #fff 8%, transparent);
+}
+
+html[data-halo-theme="dark"] .compose-suggest li + li .compose-suggest-item {
+  border-top-color: color-mix(in srgb, #fff 12%, transparent);
 }
 
 .ask-greeting {
-  margin: 0;
+  margin: 0 0 0.45rem;
   font-family: var(--font-display), Georgia, serif;
   font-size: clamp(1.75rem, 3.6vw, 2.5rem);
   font-weight: 600;
@@ -509,6 +526,21 @@ html[data-halo-theme="dark"] .compose-suggest-item.is-active {
   letter-spacing: -0.012em;
   color: var(--home-type);
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+
+.ask-greeting.is-clear {
+  animation: halo-clear-rise 1.6s var(--ease-gel) both;
+}
+
+@keyframes halo-clear-rise {
+  from {
+    opacity: 0.32;
+    transform: translate3d(0, 8px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 html[data-halo-theme="dark"] .ask-greeting,
@@ -538,11 +570,11 @@ html[data-halo-theme="dark"] .capsule__label {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  height: 2.2rem;
+  min-height: 2.2rem;
   min-width: 0.7rem;
-  max-width: 7.4rem;
-  flex: 0 0 auto;
-  overflow: visible;
+  max-width: min(24rem, 62vw);
+  flex: 0 1 auto;
+  overflow: hidden;
 }
 
 .keep-pocket.is-empty {
@@ -561,7 +593,7 @@ html[data-halo-theme="dark"] .capsule__label {
   padding: 0.15rem 0.1rem;
   font: inherit;
   color: inherit;
-  cursor: pointer;
+  cursor: default;
 }
 
 .keep-dock--count {
@@ -577,10 +609,50 @@ html[data-halo-theme="dark"] .capsule__label {
 }
 
 .keep-bead {
-  width: 0.62rem;
-  height: 0.62rem;
+  width: 0.82rem;
+  height: 0.82rem;
   border-radius: 999px;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45);
+}
+
+.keep-bead--rank-1 {
+  box-shadow: 0 0 0 1.5px #b08d57;
+}
+.keep-bead--rank-2 {
+  box-shadow: 0 0 0 1.5px #c5c8ce;
+}
+.keep-bead--rank-3,
+.keep-bead--master {
+  box-shadow: 0 0 0 1.5px #d4a84b;
+}
+
+.keep-bead--band {
+  margin-left: 0.38rem;
+}
+
+html[data-halo-cleared="1"] .keep-dock--beads {
+  animation: halo-keep-clear 1.1s var(--ease-gel) both;
+}
+
+@keyframes halo-keep-clear {
+  from {
+    opacity: 0.35;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.keep-master-n {
+  flex: 0 0 auto;
+  margin-right: 0.12rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--halo-ink);
+  opacity: 0.48;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 .keep-bead-stack {
@@ -614,7 +686,35 @@ html[data-halo-theme="dark"] .capsule__label {
 }
 
 .keep-dock--beads {
-  gap: 0.42rem;
+  --keep-n: 12;
+  --keep-gap: 0.22rem;
+  --keep-slot: 0.82rem;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  gap: var(--keep-gap);
+  max-width: min(28rem, 56vw);
+  overflow-x: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.keep-dock--beads::-webkit-scrollbar {
+  display: none;
+  height: 0;
+}
+
+.keep-dock--beads .keep-bead,
+.keep-bead.keep-bead--dock {
+  width: var(--keep-slot, 0.82rem);
+  height: var(--keep-slot, 0.82rem);
+  flex: 0 0 auto;
+}
+
+.keep-land {
+  width: 0;
+  height: 0.82rem;
+  flex: 0 0 auto;
+  pointer-events: none;
+  visibility: hidden;
 }
 
 /* Literal hex, same KEEP_HEX as chips. rgb(var(--bead-*)) can miss citrus. */
@@ -645,6 +745,21 @@ html[data-halo-theme="dark"][data-home-ink="halo"] {
   --keep-who-lo: #a67888;
   --keep-meaning-hi: #7aa884;
   --keep-meaning-lo: #5e8a68;
+}
+
+html[data-halo-theme="dark"] .keep-bead--rank-1 {
+  box-shadow: 0 0 0 1.5px #c9a36a;
+}
+html[data-halo-theme="dark"] .keep-bead--rank-2 {
+  box-shadow: 0 0 0 1.5px #d8dce4;
+}
+html[data-halo-theme="dark"] .keep-bead--rank-3,
+html[data-halo-theme="dark"] .keep-bead--master {
+  box-shadow: 0 0 0 1.5px #e8c56a;
+}
+
+html[data-halo-theme="dark"] .keep-master-n {
+  color: #f5f5f7;
 }
 
 html[data-halo-theme="dark"][data-home-ink="halo"] .keep-bead--when { background: #a88840; }
@@ -695,7 +810,10 @@ html[data-home-ink="dusk"] .keep-bead--meaning { background: #1cba96; }
 }
 
 .capsule--harvest .capsule__shade,
-.capsule--harvest .capsule__stroke-dip {
+.capsule--harvest .capsule__stroke-dip,
+.capsule--harvest .capsule__glass,
+.capsule--harvest .capsule__edge,
+.capsule--harvest .capsule__fill {
   display: none;
 }
 
@@ -923,6 +1041,30 @@ html[data-halo-theme="dark"] .harvest-span--meaning {
   will-change: left, top, transform, opacity;
 }
 
+.capsule--harvest,
+.capsule--harvest .capsule__label {
+  font-size: 0;
+  color: transparent;
+  line-height: 0;
+}
+
+.capsule--harvest .capsule__label {
+  display: none;
+}
+
+.capsule--harvest.capsule--kind-when {
+  background: #ffd978 !important;
+}
+.capsule--harvest.capsule--kind-where {
+  background: #a3d9ff !important;
+}
+.capsule--harvest.capsule--kind-who {
+  background: #fbcfe8 !important;
+}
+.capsule--harvest.capsule--kind-meaning {
+  background: #c5f3d4 !important;
+}
+
 .harvest-fly--drop,
 .harvest-fly--orb {
   width: 2.85rem;
@@ -932,6 +1074,13 @@ html[data-halo-theme="dark"] .harvest-span--meaning {
 .harvest-fly--orb {
   width: 3.05rem;
   height: 3.05rem;
+}
+
+.harvest-fly--pill {
+  width: auto;
+  height: auto;
+  min-width: 3.2rem;
+  min-height: 2.1rem;
 }
 
 .capsule--keep-album {
@@ -960,18 +1109,464 @@ html[data-halo-theme="dark"] .harvest-span--meaning {
 
 .home-bubbles .recent-slot.is-packed {
   transform: none;
+  transition:
+    top 1080ms cubic-bezier(0.33, 0.04, 0.2, 1),
+    left 1080ms cubic-bezier(0.33, 0.04, 0.2, 1);
+}
+
+/* First paint of keepSeat is a 4×4 grid. Hold chips until pack, then fade. */
+.home-bubbles .recent-slot:not(.is-packed) {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.home-bubbles.is-arriving .recent-slot.is-packed {
+  transition: none;
+  animation: halo-recents-in-packed var(--travel) var(--ease-travel) both !important;
+  animation-delay: var(--enter-delay, 0ms) !important;
+}
+
+.ask-stage.is-entering .ask-greeting {
+  animation: halo-greeting-in var(--travel) var(--ease-travel) both;
+}
+
+.ask-stage.is-entering .compose-stack,
+.ask-stage.is-entering .compose,
+.ask-stage.is-entering .stage--hero .compose-stack .compose,
+html[data-halo-morph] .stage--hero .compose-stack .compose,
+html[data-halo-morph] .ask-hero .compose,
+html[data-halo-morph] .compose-dock {
+  animation: none !important;
+  opacity: 1 !important;
+}
+
+html[data-halo-motion="soft"] .home-bubbles.is-arriving .recent-slot.is-packed,
+html[data-halo-perf="soft"] .home-bubbles.is-arriving .recent-slot.is-packed,
+html[data-halo-motion="soft"] .ask-stage.is-entering .ask-greeting,
+html[data-halo-perf="soft"] .ask-stage.is-entering .ask-greeting,
+html[data-halo-motion="soft"] .ask-greeting.is-clear,
+html[data-halo-perf="soft"] .ask-greeting.is-clear,
+html[data-halo-motion="soft"] .keep-dock--beads,
+html[data-halo-perf="soft"] .keep-dock--beads {
+  animation: none;
+  opacity: 1;
+}
+
+html[data-halo-motion="soft"] .home-play-choices .home-play-choice,
+html[data-halo-perf="soft"] .home-play-choices .home-play-choice {
+  animation: none;
+}
+
+.home-bubbles.is-learning .recent-slot.is-packed.is-cast {
+  z-index: 12;
+  opacity: 1;
+  will-change: transform;
+  transition:
+    transform 720ms var(--ease-travel),
+    opacity 560ms var(--ease-travel);
+}
+
+.home-bubbles.is-learning .recent-slot.is-recede {
+  opacity: 0;
+  filter: none;
+  pointer-events: none;
+  transition:
+    opacity 420ms var(--ease-travel),
+    filter 420ms var(--ease-travel);
+}
+
+.home-bubbles .recent-slot.is-lead .capsule {
+  filter: brightness(1.05);
+}
+
+.home-bubbles .recent-slot.is-miss .capsule {
+  animation: halo-play-miss 420ms var(--ease-travel) !important;
+}
+
+.home-bubbles.is-learning {
+  z-index: 12;
+}
+
+.home-bubbles .recent-slot.is-dropping {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
+.ask-stage.is-playing .ask-hero {
+  z-index: 16;
+  gap: 0;
+}
+
+.ask-stage.is-playing .compose-stack {
+  width: min(var(--halo-chat), 100%);
+  max-width: min(var(--halo-chat), 100%);
+}
+
+.compose-play-root {
+  width: 100%;
+}
+
+.ask-stage.is-playing .compose.is-play-lesson {
+  overflow: hidden;
+  max-height: 3.6rem;
+  border-radius: 1.85rem;
+  padding: 0.38rem 0.9rem;
+  width: 100%;
+  max-width: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  transition:
+    max-height var(--travel) var(--ease-travel),
+    padding var(--travel) var(--ease-travel);
+}
+
+.ask-stage.is-playing .compose.is-play-lesson.is-grown {
+  max-height: 42rem;
+  padding: 1.25rem 1.1rem 1.35rem;
+}
+
+.compose.is-play-lesson:not(.is-grown) .compose-play {
+  opacity: 0;
+}
+
+.compose.is-play-lesson.is-grown .compose-play {
+  opacity: 1;
+  transition: opacity 360ms var(--ease-travel) 420ms;
+}
+
+.compose.is-play-lesson[data-kind="when"] {
+  background: #e8dcc4;
+}
+.compose.is-play-lesson[data-kind="where"] {
+  background: #cddcea;
+}
+.compose.is-play-lesson[data-kind="who"] {
+  background: #e6d6e6;
+}
+.compose.is-play-lesson[data-kind="meaning"] {
+  background: #d3e4e0;
+}
+
+html[data-halo-theme="dark"] .compose.is-play-lesson[data-kind="when"] {
+  background: #5a5342;
+}
+html[data-halo-theme="dark"] .compose.is-play-lesson[data-kind="where"] {
+  background: #46545c;
+}
+html[data-halo-theme="dark"] .compose.is-play-lesson[data-kind="who"] {
+  background: #564e56;
+}
+html[data-halo-theme="dark"] .compose.is-play-lesson[data-kind="meaning"] {
+  background: #4a5652;
+}
+
+.compose-play {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.15rem;
+  width: 100%;
+  text-align: center;
+}
+
+.compose-play-head {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.85rem;
+  width: 100%;
+}
+
+.compose-play-kind {
+  margin: 0;
+  justify-self: start;
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--halo-ink) 55%, transparent);
+}
+
+.compose-play-bar {
+  justify-self: stretch;
+  height: 0.42rem;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(17, 17, 17, 0.16);
+}
+
+.compose-play-ink {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #111111;
+  transition: width 420ms var(--ease-travel);
+}
+
+.compose-play-prompt {
+  margin: 0;
+  max-width: 24ch;
+  font-size: clamp(1.55rem, 1.15rem + 1.5vw, 2.2rem);
+  font-weight: 750;
+  letter-spacing: -0.04em;
+  line-height: 1.18;
+  color: var(--halo-ink);
+}
+
+.compose-play-verdict {
+  margin: 0;
+  min-height: 1.15rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #e85d6a;
+}
+
+.compose-play-verdict--spacer {
+  visibility: hidden;
+}
+
+.home-play-choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.9rem;
+  width: 100%;
+  pointer-events: auto;
+}
+
+.home-play-choices--wait {
+  min-height: 11.5rem;
+}
+
+.home-play-choices .home-play-choice {
+  min-height: 5.35rem;
+  width: 100%;
+  max-width: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.15rem 1.3rem;
+  font-size: 1.22rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  pointer-events: auto;
+  isolation: isolate;
+  background: #ffffff;
+  background-color: #ffffff;
+  color: #111111;
+  animation: play-choice-in 520ms var(--ease-travel) both;
+  animation-delay: calc(480ms + var(--choice-i, 0) * 55ms);
+}
+
+@media (max-width: 640px) {
+  .ask-stage.is-playing .compose-stack {
+    width: calc(100vw - 1.25rem);
+    max-width: calc(100vw - 1.25rem);
+  }
+  .ask-stage.is-playing .compose.is-play-lesson.is-grown {
+    max-height: 36rem;
+  }
+  .home-play-choices {
+    gap: 0.65rem;
+  }
+  .home-play-choices .home-play-choice {
+    min-height: 3.75rem;
+    font-size: 1.05rem;
+    padding: 0.85rem 0.95rem;
+  }
+  .compose-play-prompt {
+    font-size: 1.32rem;
+    max-width: 16ch;
+  }
+  .compose-play {
+    gap: 0.85rem;
+  }
+}
+
+.home-play-choices .home-play-choice.is-miss {
+  animation: halo-play-miss 420ms var(--ease-travel) !important;
+}
+
+.home-play-choices .home-play-choice.is-miss,
+.home-play-choices .home-play-choice.is-miss .capsule__glass,
+.home-play-choices .home-play-choice.is-miss .capsule__label {
+  background: #e85d6a !important;
+  color: #fff !important;
+}
+
+html[data-home-skin="paper"] .home-play-choice.is-ok,
+html[data-home-skin="paper"] .home-play-choice.is-ok .capsule__label {
+  background: transparent !important;
+  background-color: transparent !important;
+  color: transparent !important;
+}
+
+.home-play-choices .home-play-choice.is-ok,
+.home-play-choices .home-play-choice.is-ok .capsule__label {
+  background: transparent !important;
+  background-color: transparent !important;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+  opacity: 0 !important;
+  box-shadow: none !important;
+  pointer-events: none;
+}
+
+.home-play-choices .home-play-choice.is-fall {
+  animation: play-choice-fall 480ms var(--ease-travel) both !important;
+  pointer-events: none;
+}
+
+@keyframes play-choice-in {
+  from {
+    opacity: 0;
+    transform: scale(0.72);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes play-choice-fall {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.28);
+  }
+}
+
+.loop-flight {
+  position: fixed;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #111;
+  transition:
+    left 620ms cubic-bezier(0.33, 0.04, 0.2, 1),
+    top 620ms cubic-bezier(0.33, 0.04, 0.2, 1),
+    width 620ms cubic-bezier(0.33, 0.04, 0.2, 1),
+    height 620ms cubic-bezier(0.33, 0.04, 0.2, 1),
+    font-size 620ms cubic-bezier(0.33, 0.04, 0.2, 1),
+    border-radius 620ms cubic-bezier(0.33, 0.04, 0.2, 1);
+}
+
+.loop-flight.is-bank {
+  font-size: 0;
+  color: transparent;
+}
+.loop-flight.is-bank.is-go {
+  font-size: 0;
+  border-radius: 999px;
+}
+
+.loop-flight--when { background: #ffd978; }
+.loop-flight--where { background: #a3d9ff; }
+.loop-flight--who { background: #fbcfe8; }
+.loop-flight--meaning { background: #c5f3d4; }
+
+.keep-bead.is-newest {
+  animation: keep-bead-in 520ms var(--ease-travel);
+}
+
+@keyframes keep-bead-in {
+  from {
+    transform: scale(0.2);
+    opacity: 0.2;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+.home-bubbles.is-choosing .recent-slot.is-recede {
+  opacity: 0;
+}
+
+html[data-halo-play="1"] .ask-greeting,
+html[data-halo-play="1"] .learn-nudge {
+  opacity: 0 !important;
+  visibility: hidden;
+  height: 0;
+  margin: 0;
+  overflow: hidden;
+  pointer-events: none !important;
+}
+
+.ask-stage:has(.home-bubbles.is-learning) .ask-greeting,
+.ask-stage:has(.home-bubbles.is-learning) .learn-nudge {
+  opacity: 0;
+  height: 0;
+  margin: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transition: opacity 280ms var(--ease-travel);
+}
+
+@keyframes halo-play-miss {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-7px);
+  }
+  75% {
+    transform: translateX(7px);
+  }
+}
+
+.home-bubbles {
+  --keep-chip-max: 15rem;
+}
+
+/* Seat-safe width — grow with the display, don’t pin to 18vw. */
+.home-bubbles .recent-slot[data-kind="keep"]:not(.keep-album__slot),
+.home-bubbles .recent-slot.keep-album__slot {
+  max-width: min(var(--keep-chip-max), 42vw);
+}
+
+/* Keep chip size is a constant. Layout used to write --keep-scale from
+   the field (0.84 on a laptop vs 1440×900). HMR often never ran that
+   pass so chips stayed large; a hard refresh always did and pinched
+   padding + type. Width cap still scales; seats do not. */
+.home-bubbles .recent-slot[data-kind="keep"] .capsule,
+.home-bubbles .recent-slot.keep-album__slot .capsule {
+  font-size: 1.12rem;
+  padding: 1.38rem 1.7rem;
 }
 
 .home-bubbles .capsule {
   max-width: none;
   width: max-content;
-  animation: none !important;
-  opacity: 1 !important;
-  transform: none !important;
   font-family: var(--font-chip), var(--font-body), sans-serif;
   font-weight: 800;
   letter-spacing: 0.01em;
   color: var(--home-type);
+}
+
+.home-bubbles .recent-slot[data-kind="keep"] .capsule,
+.home-bubbles .recent-slot.keep-album__slot .capsule {
+  max-width: 100%;
+}
+
+/* Kill drop-in on Home chips only while they are idle. Leave / dive must
+   be able to move the slot; do not !important-lock transform or opacity. */
+.ask-stage:not(.is-leaving) .home-bubbles .capsule {
+  animation: none;
 }
 
 .home-bubbles .capsule__label {
@@ -983,24 +1578,30 @@ html[data-halo-theme="dark"] .harvest-span--meaning {
   text-shadow: none;
 }
 
-/* Keep candy must stay a stadium even if the water clip-path
-   lags or a long path string is dropped. Does not freeze water. */
+.home-bubbles .recent-slot[data-kind="keep"] .capsule__label,
+.home-bubbles .recent-slot.keep-album__slot .capsule__label {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-align: center;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  -webkit-line-clamp: unset;
+}
+
+/* Overflow stays visible so the wet rim can lean past the box. */
 .home-bubbles .capsule.is-ask-keep,
 .home-bubbles .capsule--keep-album,
 .home-bubbles .capsule.is-kept {
-  overflow: hidden;
+  overflow: visible;
   border-radius: 999px;
 }
 
-/* Paint lives in the rest water inset. Hold-swell used to fill the
-   padding box and stay there as a larger outline after the pill settled.
-   Do not !important-clip the rim — that froze the liquid edge. */
-.home-bubbles .capsule.is-ask-keep .capsule__glass,
-.home-bubbles .capsule--keep-album .capsule__glass,
-.home-bubbles .capsule.is-kept .capsule__glass {
-  clip-path: inset(var(--water) round 999px);
-  -webkit-clip-path: inset(var(--water) round 999px);
-}
+/* Paper Home is dry. Ours Keep candy can still run water. Heat is not a
+   second palette — kind color stays who/where/when/meaning. */
+
+/* Candy paint follows the water path from the engine. Do not stadium-clip
+   the glass here — that froze the meniscus into a hard pill. */
 
 /* Keep candy uses literal hex custom props (--keep-when-hi). Do not
    put rgb(var(--bead) / a) here — Safari drops the whole paint on refresh. */
@@ -1238,6 +1839,7 @@ html[data-home-lamp="on"] .capsule.is-ask-keep.capsule--kind-meaning .capsule__g
   bottom: calc(0.95rem - var(--water));
   z-index: 20;
   margin: calc(0.6rem - var(--water)) auto 0;
+  padding: 0.38rem 0.48rem 0.38rem 0.9rem;
 }
 
 /* same object, arriving from where it was standing on the other screen */
@@ -1248,9 +1850,9 @@ html[data-home-lamp="on"] .capsule.is-ask-keep.capsule--kind-meaning .capsule__g
 }
 
 .compose[data-morph="moving"] {
-  transition:
-    --morph-x var(--travel) var(--ease-travel),
-    --morph-y var(--travel) var(--ease-travel);
+  /* Transform, not only the custom props: Safari will skip unregistered
+     --morph-* interpolation and the travel becomes a cut. */
+  transition: transform var(--travel) var(--ease-travel);
 }
 
 .compose-form {
@@ -1340,6 +1942,11 @@ html[data-home-lamp="on"] .capsule.is-ask-keep.capsule--kind-meaning .capsule__g
   display: block;
 }
 
+.home-bubbles.recents {
+  width: calc(100vw - 1.5rem);
+  max-width: none;
+}
+
 .recent-slot.is-converting {
   animation: none;
 }
@@ -1408,6 +2015,34 @@ html[data-home-lamp="on"] .capsule.is-ask-keep.capsule--kind-meaning .capsule__g
   transform: none;
 }
 
+.harvest-fly {
+  overflow: visible;
+}
+.harvest-fly .capsule--harvest {
+  max-width: none;
+  animation: none;
+}
+.harvest-fly .capsule--harvest-orb,
+.harvest-fly .capsule--harvest-drop {
+  width: 2.85rem;
+  height: 2.85rem;
+  min-width: 2.85rem;
+  padding: 0;
+  border-radius: 999px;
+}
+.harvest-fly .capsule--harvest-orb {
+  width: 3.05rem;
+  height: 3.05rem;
+  min-width: 3.05rem;
+}
+.harvest-fly .capsule--harvest-pill {
+  width: auto;
+  height: auto;
+  min-width: 0;
+  padding: 0.5rem 1.05rem;
+  border-radius: 999px;
+}
+
 .home-bubbles .recent-slot[data-kind="keep"]:not(.keep-album__slot) .capsule {
   animation: none !important;
   opacity: 1;
@@ -1433,11 +2068,6 @@ html[data-home-lamp="on"] .capsule.is-ask-keep.capsule--kind-meaning .capsule__g
   border-radius: inherit;
 }
 
-.capsule__glass {
-  clip-path: inset(0 round 999px);
-  -webkit-clip-path: inset(0 round 999px);
-}
-
 .capsule.is-ask-keep .capsule__shade,
 .capsule--keep-album .capsule__shade,
 .capsule.is-kept .capsule__shade {
@@ -1447,15 +2077,14 @@ html[data-home-lamp="on"] .capsule.is-ask-keep.capsule--kind-meaning .capsule__g
 .capsule.is-ask-keep .capsule__glass,
 .capsule--keep-album .capsule__glass,
 .capsule.is-kept .capsule__glass {
-  overflow: hidden;
+  overflow: visible;
   border-radius: 999px;
 }
 
 .home-bubbles .capsule.is-ask-keep .capsule__edge,
 .home-bubbles .capsule--keep-album .capsule__edge,
 .home-bubbles .capsule.is-kept .capsule__edge {
-  overflow: hidden;
-  border-radius: 999px;
+  overflow: visible;
 }
 
 
@@ -1684,17 +2313,17 @@ html:not([data-halo-theme="dark"])[data-home-ink="halo"] .capsule.is-ask-keep.ca
 .choice-picks {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.15rem;
+  gap: 0.4rem;
   align-items: center;
-  margin: 0 -0.35rem;
+  margin: 0;
 }
 
 .capsule--choice {
-  --water: 8px;
+  --water: 0;
   max-width: none;
-  min-width: 6.4rem;
-  padding: calc(var(--water) + 0.55rem) calc(var(--water) + 1.2rem);
-  font-size: 0.95rem;
+  min-width: 5.1rem;
+  padding: 0.5rem 0.95rem;
+  font-size: 0.85rem;
   text-align: center;
   animation: none;
   border-radius: 999px;
@@ -1792,26 +2421,29 @@ html:not([data-halo-theme="dark"])[data-home-ink="halo"] .capsule.is-ask-keep.ca
 
 .ask-stage.is-leaving .recent-slot.is-diving {
   z-index: 16;
-  animation: none !important;
-  opacity: 1;
+  animation: halo-fact-dive var(--travel) var(--ease-travel) both !important;
   pointer-events: none;
+}
+
+.ask-stage.is-leaving .recent-slot.is-diving.is-packed {
+  animation: halo-fact-dive-packed var(--travel) var(--ease-travel) both !important;
+}
+
+.ask-stage.is-leaving .recent-slot.is-chorus,
+.ask-stage.is-leaving .recent-slot.is-chorus.is-packed,
+.ask-stage.is-leaving .recent-slot.is-chorus.is-diving,
+.ask-stage.is-leaving .recent-slot.is-chorus.is-diving.is-packed {
+  z-index: 18;
+  animation: halo-chorus-hold var(--travel) var(--ease-travel) both !important;
+  pointer-events: none;
+}
+
+.ask-stage.is-leaving .recent-slot.is-chorus .capsule {
+  overflow: visible;
 }
 
 .ask-stage.is-leaving .recent-slot.is-diving .capsule {
   overflow: visible;
-}
-
-.ask-stage.is-leaving .recent-slot.is-diving[data-hue="when"] .capsule {
-  box-shadow: 0 10px 28px -6px rgb(var(--bead-when) / 0.55);
-}
-.ask-stage.is-leaving .recent-slot.is-diving[data-hue="where"] .capsule {
-  box-shadow: 0 10px 28px -6px rgb(var(--bead-where) / 0.55);
-}
-.ask-stage.is-leaving .recent-slot.is-diving[data-hue="who"] .capsule {
-  box-shadow: 0 10px 28px -6px rgb(var(--bead-who) / 0.55);
-}
-.ask-stage.is-leaving .recent-slot.is-diving[data-hue="meaning"] .capsule {
-  box-shadow: 0 10px 28px -6px rgb(var(--bead-meaning) / 0.55);
 }
 
 .ask-stage.is-leaving .ask-greeting,
@@ -1823,7 +2455,8 @@ html:not([data-halo-theme="dark"])[data-home-ink="halo"] .capsule.is-ask-keep.ca
 /* Composer stays. It is the same object as the chat dock. */
 .ask-stage.is-leaving .compose-stack,
 .ask-stage.is-leaving .compose {
-  animation: none;
+  animation: none !important;
+  opacity: 1 !important;
   z-index: 24;
 }
 
@@ -1849,14 +2482,50 @@ html:not([data-halo-theme="dark"])[data-home-ink="halo"] .capsule.is-ask-keep.ca
 @keyframes halo-recents-out {
   to {
     opacity: 0;
-    transform: translateX(-50%) translateY(10px);
+    transform: translateX(-50%) translateY(18px) scale(0.96);
   }
 }
 
 @keyframes halo-recents-out-packed {
   to {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(18px) scale(0.96);
+  }
+}
+
+@keyframes halo-fact-dive {
+  0%,
+  36% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(22px) scale(0.86);
+  }
+}
+
+@keyframes halo-fact-dive-packed {
+  0%,
+  36% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(22px) scale(0.86);
+  }
+}
+
+@keyframes halo-chorus-hold {
+  0%,
+  68% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.94);
   }
 }
 
@@ -1864,6 +2533,28 @@ html:not([data-halo-theme="dark"])[data-home-ink="halo"] .capsule.is-ask-keep.ca
   to {
     opacity: 0;
     transform: translateY(-8px);
+  }
+}
+
+@keyframes halo-greeting-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes halo-recents-in-packed {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
 
@@ -1878,15 +2569,7 @@ html:not([data-halo-theme="dark"])[data-home-ink="halo"] .capsule.is-ask-keep.ca
   }
 }
 
-html[data-halo-morph] .home-bubbles .recent-slot {
-  animation: halo-travel-fade var(--travel) var(--ease-travel) both;
-}
-
-@keyframes halo-travel-fade {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+html[data-halo-morph] .home-bubbles.is-arriving .recent-slot.is-packed {
+  animation: halo-recents-in-packed var(--travel) var(--ease-travel) both !important;
+  animation-delay: var(--enter-delay, 0ms) !important;
 }

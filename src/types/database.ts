@@ -494,6 +494,88 @@ export interface Database {
         };
         Relationships: [];
       };
+      ask_conversations: {
+        Row: {
+          id: string;
+          user_id: string;
+          title: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          title?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          title?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      ask_messages: {
+        Row: {
+          id: string;
+          conversation_id: string;
+          role: string;
+          content: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          conversation_id: string;
+          role: string;
+          content: string;
+          created_at?: string;
+        };
+        Update: {
+          content?: string;
+        };
+        Relationships: [];
+      };
+      proposed_facts: {
+        Row: {
+          id: string;
+          user_id: string;
+          source_conversation_id: string | null;
+          source_message_id: string | null;
+          content: string;
+          explanation: string | null;
+          tags: string[] | null;
+          why_worth_learning: string | null;
+          confidence: number;
+          status: string;
+          dedup_of_fact_id: string | null;
+          approved_fact_id: string | null;
+          created_at: string;
+          reviewed_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          source_conversation_id?: string | null;
+          source_message_id?: string | null;
+          content: string;
+          explanation?: string | null;
+          tags?: string[] | null;
+          why_worth_learning?: string | null;
+          confidence?: number;
+          status?: string;
+          dedup_of_fact_id?: string | null;
+          approved_fact_id?: string | null;
+          created_at?: string;
+          reviewed_at?: string | null;
+        };
+        Update: {
+          status?: string;
+          dedup_of_fact_id?: string | null;
+          approved_fact_id?: string | null;
+          reviewed_at?: string | null;
+        };
+        Relationships: [];
+      };
     };
     Views: {};
     Functions: {};

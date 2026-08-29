@@ -1,7 +1,8 @@
 @import "tailwindcss";
 
 /* Cove Lab CSS ownership split. Import order preserves today's cascade.
-   Edit the named file, not this manifest. Do not retune values here. */
+   Edit the named file, not this manifest. Do not retune values here.
+   water-lock.css is last so accidental Home/chat clips cannot freeze Ours water. */
 @import "./styles/tokens.css";
 @import "./styles/water.css";
 @import "./styles/home.css";
@@ -10,3 +11,4 @@
 @import "./styles/preview-mixer.css";
 @import "./styles/overlays.css";
 @import "./styles/skins-paper.css";
+@import "./styles/water-lock.css";

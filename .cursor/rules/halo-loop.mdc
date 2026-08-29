@@ -1,0 +1,20 @@
+---
+description: Halo product loop — Keep is not due, Home is due. No chip-motion experiments.
+alwaysApply: true
+---
+
+# Halo loop
+
+Ask → harvest beads into **Keep** (not due) → when due they sit on **Home** → clear a cluster → thin **You're clear** + Keep pulse + mastery rings → daily habit later.
+
+- **Keep (header beads) = not due.** One bead per banked fact, cap 30. Do not scatter these on Home.
+- Sort Keep **gold → silver → bronze → new** (Cove toward the right). Within a rank, chronological (older left, newer right). New harvests still grow on the right of the new band.
+- Rank is a metal ring on kind color. Do not gray bands. Do not resize beads.
+- **Home = due.** Individual chips, 16 seats. Click one to play its **cluster**.
+- Harvest lands in Keep, not on the Home field.
+- Due drops the other way — bead leaves Keep and grows into its Home seat.
+- Play-bank / due-drop flights are loop motion. Harvest flight and Home↔chat composer morph stay as they are. Do not retune harvest z-index 120.
+- Paper/mixer polish is frozen unless Camron files a Replay of a ship-blocker.
+- Lab `/preview` only until he says promote. Family `/ask` stays frozen.
+- Persist Keep in `web/src/lib/keep-memory.ts`. Lab Mix → Loop walks the full loop (due, miss, clear, mastered, empty Home).
+---

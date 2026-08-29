@@ -6,6 +6,9 @@ import { GlassButton } from "@/components/Glass";
 
 export type HistoryItem = { id: string; title: string };
 
+/** Lab (`demo`) History only reports the id. The parent must stay on `/preview`
+ *  — never `/ask/:id`. Family History still opens a real thread. */
+
 export function HistoryMenu({
   items,
   currentId,

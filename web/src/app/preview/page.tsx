@@ -1,8 +1,13 @@
 import { Suspense } from "react";
 import { AskLanding } from "@/components/AskLanding";
 import { ChatThread } from "@/components/ChatThread";
+import { InviteSetup } from "@/components/InviteSetup";
+import { LoginForm } from "@/components/LoginForm";
 import { PreviewSwitcher } from "@/components/PreviewSwitcher";
+import { STARTERS } from "@/lib/suggest-chips";
 import type { AskMessage } from "@/lib/types";
+
+export const dynamic = "force-dynamic";
 
 const RECENTS = [
   { id: "1", title: "Sourdough starter schedule", user_id: "x", created_at: "", updated_at: "" },
@@ -18,7 +23,7 @@ const MESSAGES: AskMessage[] = [
     id: "m1",
     conversation_id: "1",
     role: "user",
-    content: "How do I keep a sourdough starter alive if I bake once a week?",
+    content: "What's usually named as the longest river in the world?",
     created_at: "",
   },
   {
@@ -26,7 +31,7 @@ const MESSAGES: AskMessage[] = [
     conversation_id: "1",
     role: "assistant",
     content:
-      "## Weekly feed\n\nKeep the starter **in the fridge** and feed it once a week.[[1]](https://www.kingarthurbaking.com/blog/2018/01/05/feeding-sourdough-starter)\n\nThe night before you bake:\n\n- Take it out and let it warm up\n- Discard most of it\n- Feed **equal weights** of flour and water\n\nIt should *double in 4–8 hours* at room temperature. If it smells like acetone, it is hungry, not dead.\n\n### If you skip a week\n\nFeed it once, wait until it is lively, then feed again before you mix dough.[[2]](https://www.kingarthurbaking.com)\n\n## Sources\n\n1. [King Arthur Baking](https://www.kingarthurbaking.com/blog/2018/01/05/feeding-sourdough-starter)\n2. [King Arthur Baking](https://www.kingarthurbaking.com)",
+      "The **Nile** is usually named as the longest river in the world. It runs north through **Egypt** for about **4,130 miles** and empties into the Mediterranean.\n\nHerodotus called Egypt “the gift of the Nile.”",
     created_at: "",
   },
 ];
@@ -34,27 +39,47 @@ const MESSAGES: AskMessage[] = [
 export default async function PreviewPage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string }>;
+  searchParams: Promise<{
+    view?: string;
+    thread?: string;
+    orb?: string;
+    fly?: string;
+    keep?: string;
+    dock?: string;
+    play?: string;
+  }>;
 }) {
-  const { view } = await searchParams;
+  const { view, thread: threadId, orb, fly, keep, dock, play } = await searchParams;
+  const harvestKey = `${orb || "drop"}-${fly || "burst"}-${keep || "pebble"}-${dock || "beads"}-${play || "0"}`;
 
-  const thread =
+  const rec = RECENTS.find((row) => row.id === threadId) ?? RECENTS[0];
+  const screen =
     view === "chat" ? (
       <ChatThread
-        conversationId="1"
-        title="Sourdough starter schedule"
+        key={`${harvestKey}-${rec.id}`}
+        conversationId={rec.id}
+        title={rec.title}
         initialMessages={MESSAGES}
         conversations={RECENTS.map((c) => ({ id: c.id, title: c.title }))}
         homeHref="/preview"
         demo
       />
+    ) : view === "join" ? (
+      <InviteSetup token="preview" demo />
+    ) : view === "login" ? (
+      <LoginForm demo />
     ) : (
-      <AskLanding conversations={RECENTS} displayName="Camron" demo />
+      <AskLanding
+        conversations={RECENTS}
+        displayName="Camron"
+        demo
+        initialChips={STARTERS}
+      />
     );
 
   return (
     <>
-      {thread}
+      {screen}
       <Suspense>
         <PreviewSwitcher />
       </Suspense>

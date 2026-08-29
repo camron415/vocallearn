@@ -5,28 +5,37 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
+import { applyHaloBoot, writeHaloThemeCookie } from "@/lib/halo-boot";
 
 export type MotionIntensity = "reduced" | "full";
 export type HaloWallpaper = "mist" | "sky";
+export type HaloTheme = "light" | "dark";
+export type HaloEngine = "chromium" | "webkit" | "other";
 
 type MotionContextValue = {
   intensity: MotionIntensity;
   setIntensity: (value: MotionIntensity) => void;
   wallpaper: HaloWallpaper;
   setWallpaper: (value: HaloWallpaper) => void;
+  theme: HaloTheme;
+  setTheme: (value: HaloTheme) => void;
   prefersReduced: boolean;
   autoSoft: boolean;
   finePointer: boolean;
+  engine: HaloEngine;
 };
 
 const MotionContext = createContext<MotionContextValue | null>(null);
 
 const STORAGE_KEY = "halo-motion-intensity";
 const WALLPAPER_KEY = "halo-wallpaper";
+const THEME_KEY = "halo-theme";
 
 function detectWeakHardware(): boolean {
   if (typeof navigator === "undefined") return false;
@@ -71,6 +80,30 @@ export function MotionProvider({ children }: { children: ReactNode }) {
   const [finePointer, setFinePointer] = useState(true);
   const [intensity, setIntensityState] = useState<MotionIntensity>("full");
   const [wallpaper, setWallpaperState] = useState<HaloWallpaper>("mist");
+  const [theme, setThemeState] = useState<HaloTheme>("light");
+  const [engine, setEngine] = useState<HaloEngine>("other");
+
+  useLayoutEffect(() => {
+    applyHaloBoot();
+    const next = detectEngine();
+    setEngine(next);
+    document.documentElement.dataset.haloEngine = next;
+    try {
+      const urlTheme = new URLSearchParams(window.location.search).get("theme");
+      if (urlTheme === "light" || urlTheme === "dark") {
+        setThemeState(urlTheme);
+        document.documentElement.dataset.haloTheme = urlTheme;
+      } else {
+        const savedTheme = window.localStorage.getItem(THEME_KEY);
+        if (savedTheme === "light" || savedTheme === "dark") {
+          setThemeState(savedTheme);
+          document.documentElement.dataset.haloTheme = savedTheme;
+        }
+      }
+    } catch {
+      /* private browsing */
+    }
+  }, []);
 
   useEffect(() => {
     const reduceQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -86,21 +119,29 @@ export function MotionProvider({ children }: { children: ReactNode }) {
     const weak = detectWeakHardware();
     setAutoSoft(weak);
 
-    const saved = window.localStorage.getItem(STORAGE_KEY);
-    if (saved === "reduced" || saved === "full") {
-      setIntensityState(saved);
-    } else if (reduceQuery.matches || weak) {
-      setIntensityState("reduced");
-    }
+    try {
+      const saved = window.localStorage.getItem(STORAGE_KEY);
+      if (saved === "reduced" || saved === "full") {
+        setIntensityState(saved);
+      } else if (reduceQuery.matches || weak) {
+        setIntensityState("reduced");
+      }
 
-    const savedWallpaper = window.localStorage.getItem(WALLPAPER_KEY);
-    if (savedWallpaper === "mist" || savedWallpaper === "sky") {
-      setWallpaperState(savedWallpaper);
+      const urlTheme = new URLSearchParams(window.location.search).get("theme");
+      if (urlTheme === "light" || urlTheme === "dark") {
+        setThemeState(urlTheme);
+      } else {
+        const savedTheme = window.localStorage.getItem(THEME_KEY);
+        if (savedTheme === "light" || savedTheme === "dark") {
+          setThemeState(savedTheme);
+        }
+      }
+    } catch {
+      if (reduceQuery.matches || weak) setIntensityState("reduced");
     }
 
     const root = document.documentElement;
     if (weak) root.dataset.haloPerf = "soft";
-    root.dataset.haloEngine = detectEngine();
     if (
       !(
         window.CSS?.supports?.("backdrop-filter", "blur(4px)") ||
@@ -114,15 +155,7 @@ export function MotionProvider({ children }: { children: ReactNode }) {
     const markReady = () => {
       if (!cancelled) root.dataset.haloReady = "1";
     };
-    const fallback = window.setTimeout(markReady, 800);
-    const afterPaint = () => {
-      requestAnimationFrame(() => {
-        window.setTimeout(markReady, 140);
-      });
-    };
-    const fonts = document.fonts?.ready;
-    if (fonts) fonts.then(() => requestAnimationFrame(afterPaint));
-    else requestAnimationFrame(afterPaint);
+    markReady();
 
     const phone = window.matchMedia("(max-width: 720px)");
     const vv = window.visualViewport;
@@ -142,7 +175,6 @@ export function MotionProvider({ children }: { children: ReactNode }) {
 
     return () => {
       cancelled = true;
-      window.clearTimeout(fallback);
       reduceQuery.removeEventListener("change", sync);
       pointerQuery.removeEventListener("change", sync);
       vv?.removeEventListener("resize", syncHeight);
@@ -159,17 +191,39 @@ export function MotionProvider({ children }: { children: ReactNode }) {
   }, [effective]);
 
   useEffect(() => {
-    document.documentElement.dataset.haloBg = wallpaper;
-  }, [wallpaper]);
+    document.documentElement.dataset.haloBg = "mist";
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.dataset.haloTheme = theme;
+  }, [theme]);
 
   const setIntensity = useCallback((value: MotionIntensity) => {
     setIntensityState(value);
-    window.localStorage.setItem(STORAGE_KEY, value);
+    try {
+      window.localStorage.setItem(STORAGE_KEY, value);
+    } catch {
+      /* private browsing */
+    }
   }, []);
 
   const setWallpaper = useCallback((value: HaloWallpaper) => {
     setWallpaperState(value);
-    window.localStorage.setItem(WALLPAPER_KEY, value);
+    try {
+      window.localStorage.setItem(WALLPAPER_KEY, value);
+    } catch {
+      /* private browsing */
+    }
+  }, []);
+
+  const setTheme = useCallback((value: HaloTheme) => {
+    setThemeState(value);
+    try {
+      window.localStorage.setItem(THEME_KEY, value);
+      writeHaloThemeCookie(value);
+    } catch {
+      /* private browsing */
+    }
   }, []);
 
   const value = useMemo(
@@ -178,11 +232,14 @@ export function MotionProvider({ children }: { children: ReactNode }) {
       setIntensity,
       wallpaper,
       setWallpaper,
+      theme,
+      setTheme,
       prefersReduced,
       autoSoft,
       finePointer,
+      engine,
     }),
-    [intensity, setIntensity, wallpaper, setWallpaper, prefersReduced, autoSoft, finePointer]
+    [intensity, setIntensity, wallpaper, setWallpaper, theme, setTheme, prefersReduced, autoSoft, finePointer, engine]
   );
 
   return (
@@ -204,8 +261,35 @@ export function useEffectiveMotion(): MotionIntensity {
   return intensity;
 }
 
-/** Water edge needs a real pointer and permission to move. */
+/** Wet edge runs whenever motion is full — including touch. */
 export function useLiquidEnabled(): boolean {
-  const { finePointer } = useMotionSettings();
-  return useEffectiveMotion() === "full" && finePointer;
+  return useEffectiveMotion() === "full";
+}
+
+function subscribePaperLook(onChange: () => void) {
+  const watch = new MutationObserver(onChange);
+  watch.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["data-home-skin"],
+  });
+  return () => watch.disconnect();
+}
+
+function getPaperLookSnapshot() {
+  return document.documentElement.getAttribute("data-home-skin") === "paper";
+}
+
+function getPaperLookServerSnapshot() {
+  return false;
+}
+
+/** Paper Look is dry chrome. Ours and Harvest flight stay wet.
+ *  useState(false)+layout effect reset to wet on Safari refresh, and the
+ *  remounted .water__skin paints -apple-system-glass-material over the fill. */
+export function usePaperLook(): boolean {
+  return useSyncExternalStore(
+    subscribePaperLook,
+    getPaperLookSnapshot,
+    getPaperLookServerSnapshot
+  );
 }

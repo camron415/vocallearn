@@ -1,0 +1,22 @@
+/* Ownership: last-file lock for live water. Import after Paper.
+   Edit: Ours stays wet. Paper Home is dry (no engine). Do not retune
+   harvest flight, morph --travel, or restyle Paper chrome. */
+
+/* --------------------------------------------------------------------------
+   Live candy / composer water (Ours)
+   The silhouette is an inline path() from lib/water-edge.ts. Home.css used
+   to freeze that with stadium clip-path, overflow, and transform/opacity
+   !important. This file sits last so those accidents cannot stick on Ours.
+   -------------------------------------------------------------------------- */
+
+html:not([data-home-skin="paper"]) .capsule:not(.capsule--still),
+html:not([data-home-skin="paper"]) .capsule:not(.capsule--still) .capsule__edge,
+html:not([data-home-skin="paper"]) .capsule:not(.capsule--still) .capsule__glass {
+  overflow: visible;
+}
+
+html:not([data-home-skin="paper"]) .ask-stage.is-leaving .home-bubbles .capsule {
+  animation: unset;
+  opacity: unset;
+  transform: unset;
+}

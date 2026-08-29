@@ -100,8 +100,7 @@ html[data-halo-perf="soft"] body::before {
 /* Recents: hide, don't squeeze. Full view keeps all six. A bit smaller
    keeps the four corners and drops the side chips. Then they all go. */
 @media (max-width: 1239px) {
-  .keep-album.recents,
-  .home-bubbles.recents {
+  .keep-album.recents {
     position: relative;
     top: auto;
     bottom: auto;
@@ -117,22 +116,13 @@ html[data-halo-perf="soft"] body::before {
     gap: 0.45rem;
   }
 
-  .keep-album .recent-slot,
-  .home-bubbles .recent-slot {
+  .keep-album .recent-slot {
     position: relative;
     top: auto;
     left: auto;
     right: auto;
     max-width: none;
     transform: none;
-  }
-
-  .home-bubbles [data-kind="keep"] ~ [data-kind="keep"] ~ [data-kind="keep"] {
-    display: none;
-  }
-
-  .home-bubbles [data-kind="ask"] ~ [data-kind="ask"] {
-    display: none;
   }
 
   .keep-album .recent-slot:nth-child(n + 4) {
@@ -146,7 +136,7 @@ html[data-halo-perf="soft"] body::before {
   }
 
   html[data-preview]:not([data-preview-mixer="min"]) .home-bubbles.recents {
-    width: min(1480px, calc(100vw - 11.5rem));
+    width: calc(100vw - 11.5rem);
     left: calc(50% + 3.4rem);
   }
 

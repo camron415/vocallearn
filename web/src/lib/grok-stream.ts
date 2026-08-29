@@ -153,6 +153,7 @@ export async function* streamGrokChat(
     effort?: ReasoningEffort;
     tools?: boolean;
     answerLength?: "short" | "medium" | "long";
+    system?: string;
   }
 ): AsyncGenerator<GrokLiveEvent> {
   const effort = options?.effort || "none";

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { prepareAskTurn, saveAssistantReply } from "@/lib/ask-turn";
 import { attachmentsToGrokParts } from "@/lib/files";
-import { pickReasoningEffort } from "@/lib/grok";
+import { resolveAskRoute, liveLookupContext } from "@/lib/ask-route";
+import { ASK_SYSTEM_PROMPT } from "@/lib/constants";
 import { streamGrokChat } from "@/lib/grok-stream";
 import { grokCostMicros, estimateAskMicros } from "@/lib/limits";
 import { encodeHaloEvent, type HaloStreamEvent } from "@/lib/halo-stream";
@@ -9,6 +10,7 @@ import { extractRecipe, firstImageAttachment, isSaveRecipeCommand } from "@/lib/
 import { saveRecipePhoto } from "@/lib/recipe-photo";
 import { trackHaloEvent } from "@/lib/track";
 import { createClient } from "@/lib/supabase/server";
+import { attachSources } from "@/lib/markdown-plain";
 import type { AnswerLength, AskMessage, ChatAttachment } from "@/lib/types";
 
 export const maxDuration = 60;
@@ -151,8 +153,8 @@ export async function POST(request: Request) {
   }
 
   const encoder = new TextEncoder();
-  const effort = pickReasoningEffort(userText);
   const answerLength = await loadAnswerLength(supabase, user.id);
+  const route = resolveAskRoute(userText, attachments.length > 0);
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -161,17 +163,38 @@ export async function POST(request: Request) {
       };
 
       try {
+        let system: string | undefined;
+        let lookupSources: { label: string; url: string }[] = [];
+        const useLive = route.kind === "lookup" || route.seedLive;
+        if (useLive) {
+          send({ type: "status", status: "checking" });
+          const live = await liveLookupContext(userText, {
+            allowSearch: Boolean(route.tools),
+          });
+          lookupSources = live.sources;
+          system = `${ASK_SYSTEM_PROMPT}\n\n${live.systemExtra}`;
+          for (const src of lookupSources.slice(0, 4)) {
+            send({ type: "status", status: "reading", detail: src.label });
+          }
+        }
+
         for await (const live of streamGrokChat(history, {
-          effort,
+          effort: route.effort,
           answerLength,
+          model: route.model,
+          tools: route.tools,
+          system,
         })) {
           if (live.type === "done") {
+            const finalText = lookupSources.length
+              ? attachSources(live.text, lookupSources)
+              : live.text;
             const { assistantRow, assistantError } = await saveAssistantReply(
               supabase,
               conversationId,
               history,
               userText,
-              live.text
+              finalText
             );
             const costMicros = live.usage
               ? grokCostMicros(
@@ -182,7 +205,8 @@ export async function POST(request: Request) {
               : estimateAskMicros();
             await trackHaloEvent(supabase, user.id, "ask", {
               files: attachments.length,
-              search: live.text.includes("## Sources"),
+              search: route.tools,
+              route: route.kind,
               costMicros,
               inputTokens: live.usage?.inputTokens ?? 0,
               outputTokens: live.usage?.outputTokens ?? 0,
@@ -192,7 +216,7 @@ export async function POST(request: Request) {
                 id: `local-${Date.now()}`,
                 conversation_id: conversationId,
                 role: "assistant",
-                content: live.text,
+                content: finalText,
                 created_at: new Date().toISOString(),
               };
               send({ type: "done", conversationId, reply: fallback });
@@ -202,6 +226,19 @@ export async function POST(request: Request) {
                 conversationId,
                 reply: assistantRow as AskMessage,
               });
+            }
+            const harvested = await import("@/lib/learn-mine").then(
+              ({ mineLearnFromTurn }) =>
+                mineLearnFromTurn(
+                  supabase,
+                  user.id,
+                  conversationId,
+                  userText,
+                  live.text
+                )
+            );
+            if (harvested.length) {
+              send({ type: "harvest", chips: harvested });
             }
             continue;
           }

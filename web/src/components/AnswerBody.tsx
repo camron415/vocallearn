@@ -1,7 +1,7 @@
 "use client";
 
 import type { Components } from "react-markdown";
-import Markdown from "react-markdown";
+import Markdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
   collectSources,
@@ -10,6 +10,7 @@ import {
   stabilizeMarkdown,
   type DisplaySource,
 } from "@/lib/markdown-plain";
+import { harvestMarkdown, type HarvestChip } from "@/lib/harvest";
 
 function childText(children: unknown): string {
   if (typeof children === "string") return children;
@@ -18,6 +19,18 @@ function childText(children: unknown): string {
     return childText((children as { props?: { children?: unknown } }).props?.children);
   }
   return "";
+}
+
+function harvestMark(href: string, children: unknown) {
+  const rest = href.slice("harvest://".length);
+  const slash = rest.indexOf("/");
+  const id = slash >= 0 ? rest.slice(0, slash) : rest;
+  const kind = slash >= 0 ? rest.slice(slash + 1) : "meaning";
+  return (
+    <mark data-harvest={id} className={`harvest-span harvest-span--${kind}`}>
+      {children as string}
+    </mark>
+  );
 }
 
 function CitationMark({
@@ -52,6 +65,7 @@ function markdownComponents(sources: DisplaySource[]): Components {
   return {
     img: () => null,
     a: ({ href, children }) => {
+      if (href?.startsWith("harvest://")) return harvestMark(href, children);
       const text = childText(children).trim();
       const cite = text.match(/^\[(\d+)\]$/);
       if (cite) {
@@ -78,18 +92,30 @@ function markdownComponents(sources: DisplaySource[]): Components {
 export function AnswerBody({
   content,
   streaming = false,
+  harvest = [],
 }: {
   content: string;
   streaming?: boolean;
+  harvest?: HarvestChip[];
 }) {
   const sources = collectSources(content);
-  const markdown = stabilizeMarkdown(
-    linkifyBareCitations(promoteSourcesHeading(content), sources)
+  const markdown = harvestMarkdown(
+    stabilizeMarkdown(
+      linkifyBareCitations(promoteSourcesHeading(content), sources)
+    ),
+    harvest
   );
 
   return (
     <div className={`answer${streaming ? " answer--streaming" : ""}`}>
-      <Markdown remarkPlugins={[remarkGfm]} components={markdownComponents(sources)}>
+      <Markdown
+        key={harvest.map((chip) => chip.id).join("-") || "plain"}
+        remarkPlugins={[remarkGfm]}
+        urlTransform={(url) =>
+          url.startsWith("harvest://") ? url : defaultUrlTransform(url)
+        }
+        components={markdownComponents(sources)}
+      >
         {markdown}
       </Markdown>
       {streaming ? <span className="stream-caret" aria-hidden /> : null}

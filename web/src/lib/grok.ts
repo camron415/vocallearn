@@ -29,6 +29,12 @@ const requestedModel = process.env.GROK_CHAT_MODEL || "grok-4.3";
 const CHAT_MODEL = RETIRED_FAST.has(requestedModel)
   ? "grok-4.3"
   : requestedModel;
+
+/** Lookups and Learn grading. Build is cheaper than 4.3; skip search to save the real money. */
+const requestedFast = process.env.GROK_FAST_MODEL || "grok-build-0.1";
+export const FAST_MODEL = RETIRED_FAST.has(requestedFast)
+  ? "grok-build-0.1"
+  : requestedFast;
 const FAST_EFFORT: ReasoningEffort =
   (process.env.GROK_CHAT_REASONING as ReasoningEffort) || "none";
 const SMART_EFFORT: ReasoningEffort =
@@ -75,8 +81,7 @@ export function grokInput(
   options?: { answerLength?: "short" | "medium" | "long"; system?: string }
 ) {
   const system =
-    options?.system ||
-    `${ASK_SYSTEM_PROMPT}\n\n${lengthLine(options?.answerLength)}\n\n${clockLine()}`;
+    `${options?.system || ASK_SYSTEM_PROMPT}\n\n${lengthLine(options?.answerLength)}\n\n${clockLine()}`;
   return [
     {
       role: "system",

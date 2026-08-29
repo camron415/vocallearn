@@ -69,6 +69,8 @@ export default function RootLayout() {
           <Stack.Screen name="auth/register" options={{ title: "Create Account", headerShown: false }} />
           <Stack.Screen name="lesson/[id]" options={{ title: "Lesson", headerBackTitle: "Back" }} />
           <Stack.Screen name="session/[id]" options={{ title: "Session", headerShown: false, animation: "slide_from_bottom" }} />
+          <Stack.Screen name="ask/[id]" options={{ title: "Ask", headerBackTitle: "Ask" }} />
+          <Stack.Screen name="ask/approvals" options={{ title: "Approve facts", headerBackTitle: "Ask" }} />
         </Stack>
       </GestureHandlerRootView>
     </ErrorBoundary>

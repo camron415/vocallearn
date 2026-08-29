@@ -12,6 +12,8 @@
    Surfaces share a single pointer listener and a single frame loop.
    --------------------------------------------------------------------------- */
 
+import { isQuietHeat, type ChipHeat } from "@/lib/chip-heat";
+
 export type WaterPreset = {
   /** px of headroom kept around the resting shape, so the edge has somewhere to go */
   inset: number;
@@ -49,6 +51,8 @@ export type WaterPreset = {
   gradMin: number;
   /** Catmull-Rom divisor; 6 is the chip look. Higher = tighter, less overshoot. */
   curve: number;
+  /** 4th-harmonic idle ripple. On long stadiums this pinches the shoulders. */
+  wrinkle: number;
 };
 
 const BASE: WaterPreset = {
@@ -74,17 +78,93 @@ const BASE: WaterPreset = {
   gradScale: 0.62,
   gradMin: 28,
   curve: 6,
+  wrinkle: 0.22,
 };
 
-/** Recent chips. Hover numbers stay as signed off; breath is the idle rest. */
-export const WATER_CHIP: WaterPreset = { ...BASE, samples: 46, breath: 1.55 };
+/** Recent chips. Longer pills need denser samples and no 4-lobe wrinkle,
+ *  or the idle flow pinches in right before each end-cap. */
+export const WATER_CHIP: WaterPreset = {
+  ...BASE,
+  samples: 0,
+  spacing: 7,
+  curve: 12,
+  breath: 0,
+  wrinkle: 0,
+  meniscus: 3.6,
+};
 
-/** Settings name field: stadium, inset must match CSS --water. */
+/** Due: no idle boil — cursor lean and tap only. Fill stays unclipped. */
+export const WATER_CHIP_HOT: WaterPreset = {
+  ...WATER_CHIP,
+  inset: 0,
+  headroom: 0,
+  breath: 0,
+  wrinkle: 0,
+  meniscus: 9.4,
+  inflate: 2.6,
+  reach: 160,
+  tapGain: 2.6,
+  tapKick: 16,
+  springK: 124,
+  dampRatio: 0.26,
+  sigma: 28,
+  glowGain: 1.35,
+};
+
+/** Due soon: same stillness at rest, milder cursor lean. */
+export const WATER_CHIP_WARM: WaterPreset = {
+  ...WATER_CHIP,
+  inset: 0,
+  headroom: 0,
+  breath: 0,
+  wrinkle: 0,
+  meniscus: 5.2,
+  inflate: 1.1,
+  reach: 96,
+  tapGain: 1.5,
+  tapKick: 9,
+  glowGain: 0.72,
+};
+
+/** Rest / just-harvested: silhouette stays, no idle, no cursor lean. */
+export const WATER_CHIP_QUIET: WaterPreset = {
+  ...WATER_CHIP,
+  inset: 0,
+  headroom: 0,
+  breath: 0,
+  wrinkle: 0,
+  meniscus: 0,
+  inflate: 0,
+  reach: 0,
+  tapGain: 0,
+  tapKick: 0,
+  glowGain: 0.12,
+};
+
+/** Harvest flight: the drop is being yanked, so the edge keeps sloshing. */
+export const WATER_FLIGHT: WaterPreset = {
+  ...WATER_CHIP,
+  breath: 2.6,
+  wrinkle: 0.62,
+  meniscus: 9,
+  inflate: 2.4,
+  tapGain: 2.6,
+  tapKick: 16,
+  springK: 128,
+  dampRatio: 0.26,
+  sigma: 26,
+  reach: 120,
+};
+
+/** Settings name field: stadium, denser samples so wide pills stay round. */
 export const WATER_FIELD: WaterPreset = {
   ...WATER_CHIP,
   inset: 8,
-  samples: 40,
+  samples: 0,
+  spacing: 6,
+  curve: 10,
   breath: 1.15,
+  wrinkle: 0,
 };
 
 /** The composer / dock: same water, wider crest because the pane is wider. */
@@ -110,7 +190,7 @@ export const WATER_PANE: WaterPreset = {
 /** Header bar: a long stadium, same water as the composer, stretched wide. */
 export const WATER_BAR: WaterPreset = {
   ...WATER_PANE,
-  inset: 8,
+  inset: 11,
   radius: null,
   insideBand: 42,
   sigma: 78,
@@ -141,6 +221,13 @@ export const WATER_ACTION: WaterPreset = {
   curve: 14,
 };
 
+export function waterPresetForHeat(heat: ChipHeat | undefined): WaterPreset {
+  if (heat === "hot") return WATER_CHIP_HOT;
+  if (heat === "warm") return WATER_CHIP_WARM;
+  if (isQuietHeat(heat)) return WATER_CHIP_QUIET;
+  return WATER_CHIP;
+}
+
 const MAX_SAMPLES = 180;
 
 export type WaterSurface = {
@@ -164,6 +251,20 @@ export type WaterSurface = {
   w: number;
   h: number;
   asleep: boolean;
+  /** extra attention used when the drop is flying, not being pointed at */
+  force: number;
+  ripples: WaterRipple[];
+  heat: ChipHeat;
+};
+
+export type WaterRipple = {
+  x: number;
+  y: number;
+  t0: number;
+  speed: number;
+  life: number;
+  amp: number;
+  band: number;
 };
 
 export function createWaterSurface(init: {
@@ -173,7 +274,9 @@ export function createWaterSurface(init: {
   grad: SVGRadialGradientElement | null;
   preset: WaterPreset;
   phase?: number;
+  heat?: ChipHeat;
 }): WaterSurface {
+  const heat = init.heat ?? "warm";
   return {
     root: init.root,
     skin: init.skin,
@@ -193,13 +296,84 @@ export function createWaterSurface(init: {
     w: 0,
     h: 0,
     asleep: false,
+    force: 0,
+    ripples: [],
+    heat,
   };
 }
 
 /** A drop landing: inner illumination spreading out, then settle. */
-export function splashWater(surface: WaterSurface) {
+export function splashWater(surface: WaterSurface, force = false) {
+  if (isQuietHeat(surface.heat) && !force) return;
   surface.tap = 1;
-  surface.vel += surface.preset.tapKick;
+  surface.vel += (isQuietHeat(surface.heat) ? WATER_CHIP.tapKick : surface.preset.tapKick);
+  surface.asleep = false;
+  start();
+}
+
+/** A pebble in the pond: a ring that runs out to both ends, then dies. */
+export function dropPebble(
+  surface: WaterSurface,
+  clientX: number,
+  clientY: number,
+  force = false
+) {
+  if (isQuietHeat(surface.heat) && !force) return;
+  const box = surface.root.getBoundingClientRect();
+  const lw = surface.root.offsetWidth || box.width;
+  const lh = surface.root.offsetHeight || box.height;
+  if (box.width < 4 || lw < 4) return;
+  const x = ((clientX - box.left) / box.width) * lw;
+  const y = ((clientY - box.top) / box.height) * lh;
+  const now = performance.now();
+  const hot = surface.heat === "hot" || force;
+  surface.ripples.push(
+    {
+      x,
+      y,
+      t0: now,
+      speed: hot ? 0.72 : 0.78,
+      life: hot ? 1520 : 820,
+      amp: hot ? 10.4 : 7.2,
+      band: hot ? 30 : 26,
+    },
+    {
+      x,
+      y,
+      t0: now + (hot ? 160 : 110),
+      speed: hot ? 0.54 : 0.62,
+      life: hot ? 1380 : 760,
+      amp: hot ? 6.2 : 4.4,
+      band: hot ? 34 : 30,
+    }
+  );
+  surface.tap = 1;
+  surface.vel +=
+    (isQuietHeat(surface.heat) ? WATER_CHIP.tapKick : surface.preset.tapKick) * 0.7;
+  surface.asleep = false;
+  start();
+}
+
+/** Snap back to rest so a hold-grow silhouette cannot freeze at max size. */
+export function restWater(surface: WaterSurface) {
+  surface.energy = 0;
+  surface.vel = 0;
+  surface.tap = 0;
+  surface.force = 0;
+  surface.ripples.length = 0;
+  surface.asleep = false;
+}
+
+/** Keep the meniscus racing around the rim while a chip is magnetized. */
+export function tumbleWater(surface: WaterSurface, time: number) {
+  const w = surface.w || surface.rect?.width || 88;
+  const h = surface.h || surface.rect?.height || 40;
+  const ang = time * 2.4;
+  surface.fx = w * (0.5 + Math.cos(ang) * 0.4);
+  surface.fy = h * (0.5 + Math.sin(ang * 1.35) * 0.34);
+  surface.force = 1;
+  surface.tap = Math.max(surface.tap, 0.82);
+  surface.vel += surface.preset.tapKick * 0.22;
   surface.asleep = false;
 }
 
@@ -246,13 +420,15 @@ function toPath(pts: Float64Array, n: number, curve: number) {
 
 const pointer = { x: -9999, y: -9999, live: false };
 
-function shape(s: WaterSurface, time: number, breathing: boolean) {
-  const rect = s.rect;
-  if (!rect || rect.width < 8 || rect.height < 8) return;
+function shape(s: WaterSurface, time: number, breathing: boolean, nowMs: number) {
+  const box = s.rect;
+  const lw = s.root.offsetWidth;
+  const lh = s.root.offsetHeight;
+  if (lw < 8 || lh < 8) return;
 
   const p = s.preset;
-  const w = rect.width - p.inset * 2;
-  const h = rect.height - p.inset * 2;
+  const w = lw - p.inset * 2;
+  const h = lh - p.inset * 2;
   if (w < 6 || h < 6) return;
 
   const r = p.radius == null ? h / 2 : Math.min(p.radius, w / 2, h / 2);
@@ -280,12 +456,17 @@ function shape(s: WaterSurface, time: number, breathing: boolean) {
 
   // How much attention the surface is paying to the pointer right now.
   let target = 0;
-  if (pointer.live) {
-    const lx = pointer.x - rect.left;
-    const ly = pointer.y - rect.top;
+  if (s.force > 0.02) {
+    target = s.force;
+    s.force *= 0.88;
+  }
+  const listen = pointer.live && !isQuietHeat(s.heat);
+  if (listen && box && box.width > 0.5) {
+    const lx = (pointer.x - box.left) * (lw / box.width);
+    const ly = (pointer.y - box.top) * (lh / box.height);
     const outside = Math.max(0, sdRoundRect(lx, ly, cx, cy, w / 2, h / 2, r));
     if (outside < p.reach) {
-      target = (1 - outside / p.reach) ** 1.6;
+      target = Math.max(target, (1 - outside / p.reach) ** 1.6);
       s.fx = lx;
       s.fy = ly;
     }
@@ -295,27 +476,31 @@ function shape(s: WaterSurface, time: number, breathing: boolean) {
   const damp = 2 * Math.sqrt(p.springK) * p.dampRatio;
   s.vel += (-p.springK * (s.energy - target) - damp * s.vel) * dt;
   s.energy += s.vel * dt;
-  s.tap *= 0.9;
+  s.tap *= s.heat === "hot" ? 0.945 : 0.9;
   if (s.tap < 0.002) s.tap = 0;
+
+  s.ripples = s.ripples.filter((wave) => nowMs - wave.t0 < wave.life + 40);
+  const rippling = s.ripples.length > 0;
 
   const alive = breathing && p.breath > 0;
   if (
     !alive &&
+    !rippling &&
     target === 0 &&
+    s.force < 0.02 &&
     s.tap === 0 &&
     Math.abs(s.energy) < 6e-4 &&
     Math.abs(s.vel) < 6e-3
   ) {
     s.energy = 0;
     s.vel = 0;
-    // Resting and unchanged: the outline is already on screen.
-    if (s.asleep && s.w === rect.width && s.h === rect.height) return;
+    if (s.asleep && s.w === lw && s.h === lh) return;
     s.asleep = true;
   } else {
     s.asleep = false;
   }
-  s.w = rect.width;
-  s.h = rect.height;
+  s.w = lw;
+  s.h = lh;
 
   const n = p.samples
     ? p.samples
@@ -340,8 +525,8 @@ function shape(s: WaterSurface, time: number, breathing: boolean) {
   const pts = s.buf;
 
   let bestDist = Infinity;
-  let bestX = rect.width / 2;
-  let bestY = rect.height * p.specRestY;
+  let bestX = lw / 2;
+  let bestY = lh * p.specRestY;
 
   for (let i = 0; i < n; i++) {
     const t = (i / n) * perim;
@@ -402,7 +587,7 @@ function shape(s: WaterSurface, time: number, breathing: boolean) {
     let push =
       breath *
       (Math.sin(u * Math.PI * 2 + time * 0.62 + s.phase) * 0.85 +
-        Math.sin(u * Math.PI * 4 - time * 0.28 + s.phase * 1.4) * 0.22);
+        Math.sin(u * Math.PI * 4 - time * 0.28 + s.phase * 1.4) * p.wrinkle);
 
     if (amp !== 0 || s.tap !== 0) {
       const dx = s.fx - x;
@@ -421,32 +606,47 @@ function shape(s: WaterSurface, time: number, breathing: boolean) {
     }
 
     push += swell;
+    if (rippling) {
+      for (let r = 0; r < s.ripples.length; r++) {
+        const wave = s.ripples[r];
+        const elapsed = nowMs - wave.t0;
+        if (elapsed < 0 || elapsed > wave.life) continue;
+        const fade = 1 - elapsed / wave.life;
+        const radius = elapsed * wave.speed;
+        const dist = Math.hypot(x - wave.x, y - wave.y);
+        const ring = Math.abs(dist - radius);
+        const fall = Math.exp(-(ring * ring) / (2 * wave.band * wave.band));
+        push += wave.amp * fade * fade * fall;
+      }
+    }
     if (push > maxOut) push = maxOut;
     else if (push < -p.pushIn) push = -p.pushIn;
 
     // Keep the silhouette inside the element. Catmull-Rom on a small pill
     // otherwise overshoots and the outline looks thrown across the page.
-    pts[i * 2] = Math.min(rect.width - 0.4, Math.max(0.4, x + nx * push));
-    pts[i * 2 + 1] = Math.min(rect.height - 0.4, Math.max(0.4, y + ny * push));
+    pts[i * 2] = Math.min(lw - 0.4, Math.max(0.4, x + nx * push));
+    pts[i * 2 + 1] = Math.min(lh - 0.4, Math.max(0.4, y + ny * push));
   }
 
   const d = toPath(pts, n, p.curve);
-  s.skin.style.clipPath = `path("${d}")`;
+  const clip = `path("${d}")`;
+  s.skin.style.setProperty("clip-path", clip);
+  s.skin.style.setProperty("-webkit-clip-path", clip);
   for (let i = 0; i < s.paths.length; i++) {
     s.paths[i]?.setAttribute("d", d);
   }
 
   // Light gathers where the pointer touches. At rest it crawls slowly
   // around the rim so the surface still feels wet with the mouse idle.
-  const restX = rect.width / 2;
-  const restY = rect.height * p.specRestY;
+  const restX = lw / 2;
+  const restY = lh * p.specRestY;
   const pull = Math.max(0, Math.min(1, Math.abs(energy)));
   let wantX = bestDist === Infinity ? restX : bestX;
   let wantY = bestDist === Infinity ? restY : bestY;
   if (alive && pull < 0.08 && p.breath > 0) {
     const a = time * 0.38 + s.phase;
-    wantX = restX + Math.cos(a) * Math.min(34, rect.width * 0.2);
-    wantY = restY + Math.sin(a) * Math.min(9, rect.height * 0.14);
+    wantX = restX + Math.cos(a) * Math.min(34, lw * 0.2);
+    wantY = restY + Math.sin(a) * Math.min(9, lh * 0.14);
   }
   const destX = pull >= 0.08 ? restX + (wantX - restX) * pull : wantX;
   const destY = pull >= 0.08 ? restY + (wantY - restY) * pull : wantY;
@@ -458,14 +658,14 @@ function shape(s: WaterSurface, time: number, breathing: boolean) {
     s.grad.setAttribute("cy", s.specY.toFixed(1));
     s.grad.setAttribute(
       "r",
-      Math.max(p.gradMin, rect.width * p.gradScale).toFixed(1)
+      Math.max(p.gradMin, lw * p.gradScale).toFixed(1)
     );
   }
 
   const glow = (Math.max(0, Math.min(1, energy)) * p.glowGain).toFixed(3);
   const tap = s.tap.toFixed(3);
-  const specX = `${((s.specX / rect.width) * 100).toFixed(1)}%`;
-  const specY = `${((s.specY / rect.height) * 100).toFixed(1)}%`;
+  const specX = `${((s.specX / lw) * 100).toFixed(1)}%`;
+  const specY = `${((s.specY / lh) * 100).toFixed(1)}%`;
   // Write on root and skin. Skin is what paints; --glow is registered +
   // inherited, but a leftover stylesheet `--glow: 0` on .water/.capsule can
   // make getComputedStyle(root) look dead while the outline is still moving.
@@ -493,10 +693,12 @@ function clearPaintVars(s: WaterSurface) {
     el.style.removeProperty("--spec-y");
   }
   s.skin.style.removeProperty("clip-path");
+  s.skin.style.removeProperty("-webkit-clip-path");
 }
 
 function wakeAll() {
   surfaces.forEach((s) => {
+    if (isQuietHeat(s.heat) && !s.ripples.length) return;
     s.asleep = false;
   });
 }
@@ -504,6 +706,8 @@ function wakeAll() {
 function onMove(e: PointerEvent) {
   pointer.x = e.clientX;
   pointer.y = e.clientY;
+  // Finger-scroll should not drag every chip. Press-and-hold still leans
+  // because pointerdown sets live; only mouse/pen keep following moves.
   pointer.live = e.pointerType !== "touch";
   if (!pointer.live) return;
   // Soft → Full remounts every surface. The loop can die in that gap, and
@@ -511,6 +715,18 @@ function onMove(e: PointerEvent) {
   // first hover after a motion toggle is enough.
   wakeAll();
   start();
+}
+
+function onDown(e: PointerEvent) {
+  pointer.x = e.clientX;
+  pointer.y = e.clientY;
+  if (e.pointerType === "touch") pointer.live = true;
+  wakeAll();
+  start();
+}
+
+function onUp(e: PointerEvent) {
+  if (e.pointerType === "touch") pointer.live = false;
 }
 
 function onOut() {
@@ -527,18 +743,25 @@ function tick(now: number) {
   const cost = now - last;
   last = now;
   // If the machine is struggling, stop the idle ripple and only react.
-  if (cost > 26) {
-    if (++slow > 30) breathing = false;
+  if (cost > 32) {
+    if (++slow > 48) breathing = false;
   } else if (slow > 0) {
     slow -= 1;
+    if (slow < 12) breathing = true;
   }
 
   const time = now / 1000;
-  // Read every rect first, then write — no layout thrash.
   surfaces.forEach((s) => {
+    const idleQuiet =
+      isQuietHeat(s.heat) &&
+      s.asleep &&
+      s.ripples.length === 0 &&
+      s.force < 0.02 &&
+      s.tap === 0;
+    if (idleQuiet) return;
     s.rect = s.root.getBoundingClientRect();
+    shape(s, time, breathing, now);
   });
-  surfaces.forEach((s) => shape(s, time, breathing));
 
   if (!running || surfaces.size === 0) {
     running = false;
@@ -573,6 +796,9 @@ export function registerWater(surface: WaterSurface) {
 
   if (!listening) {
     window.addEventListener("pointermove", onMove, { passive: true });
+    window.addEventListener("pointerdown", onDown, { passive: true });
+    window.addEventListener("pointerup", onUp, { passive: true });
+    window.addEventListener("pointercancel", onUp, { passive: true });
     window.addEventListener("blur", onOut);
     document.addEventListener("pointerleave", onOut);
     document.addEventListener("visibilitychange", onVisibility);
@@ -587,9 +813,35 @@ export function registerWater(surface: WaterSurface) {
     stop();
     pointer.live = false;
     window.removeEventListener("pointermove", onMove);
+    window.removeEventListener("pointerdown", onDown);
+    window.removeEventListener("pointerup", onUp);
+    window.removeEventListener("pointercancel", onUp);
     window.removeEventListener("blur", onOut);
     document.removeEventListener("pointerleave", onOut);
     document.removeEventListener("visibilitychange", onVisibility);
     listening = false;
   };
+}
+
+export function rippleWaterRoot(
+  root: HTMLElement | null,
+  clientX: number,
+  clientY: number,
+  force = false
+) {
+  if (!root) return;
+  surfaces.forEach((surface) => {
+    if (surface.root !== root) return;
+    dropPebble(surface, clientX, clientY, force);
+    splashWater(surface, force);
+  });
+}
+
+export function setWaterHeat(surface: WaterSurface, heat: ChipHeat) {
+  surface.heat = heat;
+  if (surface.preset === WATER_FLIGHT) return;
+  surface.preset = waterPresetForHeat(heat);
+  if (isQuietHeat(heat)) restWater(surface);
+  surface.asleep = false;
+  start();
 }
