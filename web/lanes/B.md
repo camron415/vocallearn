@@ -1,35 +1,30 @@
-# Lane B — Closed ladder / play card (paste this as the first message)
+# Lane B — Round / play card (paste this as the first message)
 
 You are **play-card frontend** on Kept V2. Camron is release/QA. The long Composer chat that owns `web/KEPT-BOARD.md` is tech lead.
 
 Read first, in order:
 1. `web/KEPT-BOARD.md` — claim lane **B**, lock your files, update every turn
-2. `web/HALO-V2-SUNDAY.md` (Play card contract + closed ladder)
-3. `web/HALO-LOOP.md`
-4. `.cursor/rules/cursor-visual-qa.mdc` if you change anything visible
+2. `web/HALO-V2-SUNDAY.md` (Lab lock — it wins; timings and copy are exact)
+3. `.cursor/rules/cursor-visual-qa.mdc` if you change anything visible
 
 ## You own
 
-The **one** review GUI: composer grows into the lesson sheet (`.compose.is-play-lesson`, portal into `[data-halo-play-root]`, `.compose-play`).
+`web/src/components/HomeBubbles.tsx` and play CSS in `home.css` / LoopSkin **only where the play sheet is**.
 
-Tonight: **closed facts** (short token — Nile, 1776).
-
-| Rank | Game | Where it lives |
-| --- | --- | --- |
-| Bronze (clears 0) | Matching / MC — **already built** | Keep it. Do not restyle the shell. |
-| Silver (clears 1) | Cued: same card, inner area is type-the-token or a tighter choice set | Swap **only** `.home-play-choices` (and verdict/prompt as needed) |
-| Gold (clears 2) | Unaided type-in of the token | Same shell. Speak optional via existing dictate, not required. |
-
-Same card, same width (`var(--halo-chat)`), same grow (`max-height` over `--travel` 1080ms), same kind wash, same progress bar, same Who/Where/When/Meaning label. White tiles stay for choices. Paper attach/dictate stay ghost. Do not invent a second overlay or a new page.
-
-Open-fact games are **not** your build tonight. Leave a clean hook (rank + `chip` kind) so the scorer can plug in later. Do not design a different card for open.
+- Same sheet width `var(--halo-chat)` (~832px). Inner content column ~440px centered.
+- One tap → **SEE match all facts, then SAY type all facts**. 220ms cross-fade. No extra SEE→SAY pause.
+- Miss: `Not quite —` + harvested sentence + retry same fact. No 1s skip. No red. No X.
+- Correct hold 500ms (700ms on retry-correct). End card holds until **Done**. Copy `You did good.`
+- Dot meter (not the hairline bar). Cue ladder by round index from keep-memory.
+- SAY: underline field, Enter only, no Check button, first-letter cue as `g—— —— ——` on r1.
+- Kind as 44px top band; no full-card wash. Pills per the lock. Day-cap line on Home when A says blocked.
 
 ## You do not own
 
-`keep-memory.ts` scheduler math, `learn-mine.ts`, new `open-score.ts`, LoopSkin Paper chrome, harvest flight, morph.
+`keep-memory.ts` math, KeepPocket rims, HaloHeader gold badge, harvest miner, morph, harvest z-index 120, Home chip **positions**.
 
 ## Do not
 
-New kind colors, gray Keep bands, harvest z-index 120, promote, History, fireworks.
+Narrow the sheet to 440px (column only). Resize beads. New overlay/page. Open/gist games. Sound, confetti, percent, promote.
 
-When done: board `done`, Mix → Tutorial, play a bronze then a silver (after one Clear / one pass). Same sheet, different inner game.
+When done: board `done`. Mix proof in `web/HALO-V2-SUNDAY.md` (six items, miss reteach, end holds, 2-fact = 4 dots).

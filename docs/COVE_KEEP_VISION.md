@@ -19,7 +19,7 @@ Sit **Duolingo-side of Quizlet**, not a full game.
 
 Games convert and retain; they also pick a player tribe. We have no audience yet. Do not pick “students” vs “curious AI people” vs “gamers” until family actually uses Ask + a due drop. Until then: Ask-first for everyone, daily tidy for people who tap chips.
 
-**Fine-tune / Fable-5 brute-force overhaul:** not the plan. Frozen spec + Lab slices + Camron taste. Grok 4.6 is the workhorse.
+**Fine-tune / Fable-5 brute-force overhaul:** not the plan. Frozen spec + Lab slices + Camron taste. **Dev:** Composer 2.5 for lanes/planning; Grok 4.6 only for hard blocks (thin brief). **Ask (post-V2):** Luna default, Grok 4.3 + search when needed — see `web/V2-CHIEF-HANDOFF.md`.
 
 ---
 

@@ -1,102 +1,121 @@
-# Kept V2 — Sunday family slice
+# Kept V2 — Lab lock (weekend slice)
 
-One page. If a weekend chat disagrees with this file, this file wins.
-Product name: **Kept**. Loop bank: **Keep**. Site/project: **Halo / Cove**. Do not rename this weekend.
+If a weekend chat disagrees with this file, this file wins.
+Product: **Kept**. Loop bank: **Keep**. Site: **Halo / Cove**. Do not rename.
 
-Audience: wife + parents (Early access). Not public. Not every mini-game. Not VocalLearn voice.
+Audience: wife + parents (Early access). Lab `/preview` until Camron says **promote**. Family `/ask` frozen.
 
-Gamification stays a **5**. Kingdom/monsters stay a metaphor in our heads, not the UI.
+Need: keep what they just asked. Closed tokens prove the loop. Open/gist GUI is **out** this weekend.
 
-## What V2 must feel like
+Gamification **5**: the **round** is the product. No XP, streaks, hearts, leagues, percent.
 
-Ask something → facts harvest into Keep → next day (or Mix Due now) they sit on Home → you clear a cluster → beads rank up (bronze / silver / gold) → Home says You're clear. Miss stays on Home until you get it.
+## Frozen (do not touch)
 
-If that loop works on a phone in Safari, V2 is shippable. Extra games, extra practice, and six-month pulls wait.
+Paper look, harvest fly-to-header, Home↔Chat morph, Home chip **seating**, bead **diameter**. Harvest z-index 120. Morph `--travel` 1080ms.
 
-## Sunday in / Sunday out
+The play sheet **stays composer width (~832px / `var(--halo-chat)`)** because the morph shares it. Proportion happens in a **centered inner content column capped at ~440px**; the sheet’s own edges are unchanged.
 
-| In | Out until after Sunday |
-| --- | --- |
-| Closed facts: matching (have) + one harder step (type or cued) | Full 4×2 mini-game matrix |
-| Open facts: harvest can *flag* them; one type-in paraphrase scored on meaning | Voice / production-effect as required |
-| Due: real calendar interval after a pass (1d → 3d → 7d is enough) | Full SM-2 + 30/90/180 mastered pulls |
-| Home still caps **16**. Extra due wait in Keep | Overflow UI / practice mode |
-| 3 oks → gold / mastered mark we already have | Cove achievements sheet as a product |
-| Thin You're-clear (have). No fireworks | Haptics, sound pack, Paper retune |
-| Persist Keep (`halo-keep-v1` + server later if we have time) | Hybrid routing / cheap weather APIs |
-| Lab `/preview` until Camron says **promote** | Public share, Reddit, Loom-to-strangers |
+## The round
 
-Cost: family Ask is already cheap. Do not add Grok+search on every review. Closed reviews are free. Open paraphrase: one cheap score call per card, cap it.
+One Home tap opens **one round** on the existing sheet: the 2–4 fact cluster from a single Ask, run as **SEE (match) across all facts, then SAY (type) across all facts**. Three facts = six retrievals, 90–150 seconds. Items cross-fade at 220ms; the SEE→SAY transition gets no extra delay. **Day cap: 2 rounds.**
 
-Promote to Early access only after Safari iPhone + Chrome desktop + Safari desktop on the real loop. Camron says the word.
+Nothing on screen but the kind band, dot meter, prompt, and answer surface. No fact counter, no timer, no score, no percent, no cluster name.
 
-## Review ladder (lock this)
+Home still **caps 16 due chips**; extras wait in Keep. Day cap only limits **rounds played today**, not how many chips sit on the field.
 
-Same three clears for both kinds. Games get harder as rank goes up. Long-term re-checks (months later) stay **easy confirmation**, not a harder boss. Extra-hard drills are a later Practice mode.
+## Correct
 
-**Closed** (one word / short token — Nile, 1776) — **Lane B, same play card:**
+Chosen pill (or typed answer) inks in the kind color over **140ms**, other options drop to 35% opacity, **hold 500ms**, advance 220ms. On a retry-correct the hold is **700ms**. No checkmarks, no "Correct!", no sound, no confetti.
 
-1. Bronze — matching / multiple-choice (built). Do not restyle the shell.
-2. Silver — cued: prompt + type the token, or a tighter choice set. **Inner area only.**
-3. Gold — unaided recall: type (speak optional if dictate already works). **Inner area only.**
+## Miss — replaces "Not that one" and the 1s auto-advance
 
-**Open** (a sentence in their own words) — **Lane C scores; Lane B’s card later:**
+Wrong pill inks and locks over 120ms. Copy `Not quite —` on its own line, then the **harvested chat sentence** as a quote block with the answer span emphasized in the kind color, fading in over 180ms. Sentence **holds a minimum of 1600ms** and stays visible through the retry. The **same fact is re-asked in the same format** — no "Try again" button, the answer surface simply goes live again; the wrong pill stays locked. Sentence fades out 200ms after the retry lands. The correct answer is never revealed as a labeled answer. No red anywhere on this sheet, no X, no miss counter.
 
-1. Bronze — meaning check: two or three paraphrases, pick the true one.
-2. Silver — cued paraphrase: type 1–2 sentences, cheap model scores gist.
-3. Gold — free recall: same scorer, less cue.
+## Dot meter (replaces the hairline bar)
 
-Do not build all six this weekend. **Must:** closed 1 (have) + closed 2. **Should:** open flag + scorer lib. **Skip tonight:** open GUI, speak-required, variation/application, monster UI.
+Six 8px dots at the left edge of the content column, 7px gap, with a **24px gap between dot 3 and dot 4** so SEE and SAY read as two groups. Filled = solid kind color; current = transparent with a 2px inset kind-color rim; upcoming = 10% black. Dots appear left→right at 30ms on round open and fill over **180ms on advance, not on answer**. A miss never regresses a dot and never turns it red — the dot fills when the retry lands.
 
-## Play card contract (Lane B — GUI mutex)
+2-fact cluster = 4 dots (gap after 2). Scale the mid-gap to the SEE|SAY split.
 
-There is **one** review surface for every rank and both fact types:
+## Cue ladder — by round index, never by date
 
-- Composer becomes `.is-play-lesson` and grows into `[data-halo-play-root]`.
-- Shell stays: kind label, progress bar, prompt, verdict, kind wash, width `var(--halo-chat)`, grow `--travel` 1080ms.
-- Ranks only swap the **inner** play (`.home-play-choices` / type field). No second overlay, no new route, no new card dimensions.
-- Paper chrome, harvest z-index 120, morph, Keep dock, Home seats: frozen.
+| Round | SEE | SAY |
+| --- | --- | --- |
+| r1 (~day 1) | 4-option match | type-in, first-letter cue |
+| r2 (~day 3) | 4-option match | type-in, no cue |
+| r3 (~day 7) | skipped | two SAY beats per fact — **different prompts** (see below) |
 
-Lane C must not invent UI. Lane A must not invent UI.
+**r3 SAY prompts (never the same copy twice in one round):**
 
-## Scheduler (lock this)
+- **SAY-a:** full `chip.prompt` (e.g. “About how long is the Nile usually said to be?”)
+- **SAY-b:** production cue — `Type the token:` + kind label, or `chip.hint` when set. Not a repeat of SAY-a.
 
-- Pass → next due in 1 day, then 3, then 7. Third pass can mark mastered (gold) and **stop daily Home** for now.
-- Miss → stays due today. No penalty theater on the chip.
-- If more than 16 are due, Home shows 16; the rest wait. No second page.
-- Mastered returning in 30/90/180 days: spec only, not Sunday code.
+Dictate / speak on SAY-b is **post-V2** unless dictate already works on the play sheet without new UI. V2 differentiates by **prompt shape**, not duplicate questions.
 
-## Parallel work (file locks)
+**Closed grading (SAY beats):** one shared normalizer (Lane B, or chief if B is busy). Accept if normalized `said` matches normalized `token` or `answer`. Rules: case-insensitive; strip punctuation; **commas in numbers optional** (`4130` = `4,130`); optional trailing unit words (`miles`, `km`) ignored when token is numeric; leading `the` ignored; letter cue prefix ignored on r1. Document edge cases in a short comment block, not a new page of rules.
 
-Do not put two agents on the same file. Camron merges and Replays.
+Cue renders in the placeholder as first letter plus em-dashes (`g—— —— ——`) at 32% opacity. No hint button, no difficulty label, no round number on screen. A miss never downgrades the cue mid-round. After a clean r3 the fact goes gold.
+
+Calendar may *schedule* when r2/r3 become due. Difficulty is **round index**, not “how late they showed up.”
+
+## End — replaces the 0.7s dump
+
+Cross-fade the **content column inside the same sheet** at 260ms; the band stays, the six filled dots stay. Headline `You did good.` at ~28px/500. Beneath it one line per fact — `Egypt — gift of the Nile`, cue at 50% black, answer at 85% — staggered 60ms, 12px rows. Text button `Done` in the kind color, bottom-right of the content column. **No auto-dismiss.** No percent, no miss count, no time, no "next review in 3 days," no rank change, no share.
+
+## Day cap
+
+On the third chip tap of a day, one line fades in over the Home field at 200ms, dismissing on any tap or after 3000ms:
+
+`That's enough for today. These are waiting for tomorrow.`
+
+Chips stay visible and stay looking tappable but do not open. No modal, no countdown, no "continue anyway."
+
+## Gold
+
+Gold beads **leave the Keep dock** on end-card dismiss: the bead fades at its dock position over 260ms while the badge integer cross-fades up. No flight, no arc — nothing that reads as the harvest motion. The badge sits immediately right of the Cove word on the same baseline: a small filled ring in the gold tone plus an integer (`◎ 7`); at zero it renders at 30% opacity with no number. Press opens a **plain panel anchored under the icon** — not a page, not an overlay over the field — at composer width, left-aligned inside: header `Kept — 7`, then one static row per gold fact (cue left, answer right, hairline divider). **Rows are not tappable.** No bead, no date, no rank pip, no chevron, no replay this weekend. Dismiss on outside tap or Esc.
+
+Keep dock = **in progress only** (new / bronze / silver). Sort silver → bronze → new, older left, newer right within a band. Do not gray bands.
+
+## Visual pass (the whole visual scope)
+
+1. **Rank on beads:** `box-shadow: inset 0 0 0 3px <metal>`, never `border`. Metals: bronze `#A0703C`, silver `#8C97A0`, gold `#B98A1E`. **Second channel** is type on the **sheet** (kind label + end-card answers), not lettering on the dots: bronze 400 / silver 500 / gold 600.
+2. **Kind as a top band, not a full wash:** 44px band across the full 832px at ~18% kind alpha, radius `20px 20px 0 0`; card body `#FCFCFB`. Kind label in the band at ~11px, 0.08em tracking, weight 600, full-saturation kind color.
+3. **Option pills:** press = `scale(0.985)` + `inset 0 1px 3px rgba(0,0,0,0.10)` over 90ms. Enter staggered 40ms apart, `translateY(6px)→0`, 160ms. Correct = kind at 22% fill + 2px inset kind rim + weight 600. Wrong = 18% black inset rim, 40% opacity, locked.
+4. **SAY input is not a box:** no border, transparent background, `border-bottom: 2px solid <kind at 30%>`, centered text at the pill label’s size and weight, kind-color caret, focus thickens the underline to full alpha over 120ms. Enter only — no submit button — with a single 120ms underline pulse on send.
+5. **Wide-card compensation:** `box-shadow: 0 8px 28px rgba(0,0,0,0.07)` under the sheet; optical center above vertical middle. Dot meter aligns to the content column’s left edge, not the sheet’s.
+6. **Home, seating-safe:** due chips get a 1px outer edge in their kind color at ~40% alpha so due reads outlined and Keep beads read filled — same positions, same diameter.
+
+Dark Paper: same rules, invert the 10% black / `#FCFCFB` to the existing dark paper fills.
+
+## Mix proof before anyone calls this done
+
+Due now → tap a Nile chip → all six items → Clear. Loop for the miss step (sentence appears, same fact re-asked), the clear step (end card holds indefinitely), and the mastered step (bead leaves dock, badge increments after dismiss). Due now ×3 → tap three chips for the day cap. Dot counts: 6 for a 3-fact cluster, 4 for a 2-fact.
+
+## Out of scope
+
+Replay from the shelf, per-fact history, sound, haptics, fireworks, mastery rings on Home, calendar UI, scorer GUI, any second overlay, extra exercise types, open/gist facts, XP, streaks, hearts, leagues, percent, Paper retune, promote unless Camron says promote.
+
+## Known bugs (still fix this weekend)
+
+- Lab Chat canned Nile harvest **must not** restamp existing due chips off Home (`addKeepChip` merge).
+- Miner/Keep dedupe by token/answer, not prompt-only.
+- Distractors same shape as the token (no phrase vs city, no miles vs km).
+
+## Lanes (when Camron says go)
 
 | Lane | Owns | Must not touch |
 | --- | --- | --- |
-| **A Scheduler** | `web/src/lib/keep-memory.ts`, harvest chip `dueAt` / `clears` | HomeBubbles play UI, Paper CSS |
-| **B Closed ladder** | `web/src/components/HomeBubbles.tsx` play card only | keep-memory scheduler, harvest miner |
-| **C Open scorer** | new `web/src/lib/open-score.ts` + harvest kind/flag | LoopSkin, composer morph |
-| **D Harvester QA** | `web/src/lib/learn-mine.ts` / harvest tests, fixtures | Visual CSS |
-| **Camron** | Replay, Safari/Chrome, promote call, this spec | — |
+| **A** | `keep-memory.ts`: round index, 1d/3d/7d after a **clean round**, day cap 2, gold off dock, harvest merge must not demote due | Play inner GUI |
+| **B** | `HomeBubbles.tsx` + play CSS: SEE-all then SAY-all, miss, dots, end card, inner 440 column, pills, SAY underline | keep-memory math, harvest z-index, morph |
+| **Chief** | KeepPocket 3px inset rims; HaloHeader gold badge + static panel; Chat harvest stomp; distractor copy; LoopSkin | — |
+| **Camron** | Replay Mix proof, Safari rings, promote call | — |
 
-Harvest z-index 120 and morph `--travel` 1080ms stay locked. Family `/ask` stays frozen until promote.
+Same working copy. File locks on `web/KEPT-BOARD.md`. Do not GitFlow.
 
-## Team (tonight)
+## Post-Sunday (not blocking this ship)
 
-| Role | Who | Does |
-| --- | --- | --- |
-| Release / QA | Camron | Replay, Safari/Chrome, promote call, first messages in tabs A and B |
-| Tech lead | Chief chat (this long thread) | Spec, board, lanes C + D in-chat, merge advice |
-| Backend | Tab A | Due intervals |
-| Play GUI | Tab B | Closed silver/gold **inside the existing card** |
-| Scorer | Chief → C | Library only |
-| Harvest QA | Chief → D | Fixtures / miner, no CSS |
+Handoff: `web/V2-CHIEF-HANDOFF.md`.
 
-**Git:** trunk-based. Same working copy. File locks on the board, not four long branches. Do not GitFlow. Short branches only after Camron snapshots the current Lab Paper onto git. Two agents must never hold the same file.
-
-Paste the whole file `web/lanes/A.md` or `web/lanes/B.md` as the first message in that tab.
-
-Slack, extra MCPs, Atlas 24-7: skip. Desk: `web/KEPT-BOARD.md`. Max two extra tabs (A and B). C and D run from the chief chat.
-
-## Done when
-
-A family member can: ask → see beads → next session Home has due chips → play bronze then a harder closed card → miss stays → pass ranks the ring → empty Home says You're clear. Open facts may still be MC-only if the scorer missed the cut.
+- **Ask cost:** default GPT-5.6 Luna, web search off; escalate Grok 4.3 + search only when files, depth, or free live feeds are not enough. Luna search costs more per call than Grok — savings are cheaper tokens + fewer searches, not cheaper search.
+- **Metering:** track tool invocations in spend (today `limits.ts` is token-only).
+- **Cursor:** Composer 2.5 for planning/workers; premium models only with thin briefs. Do not load Visual QA contract on non-visual turns.

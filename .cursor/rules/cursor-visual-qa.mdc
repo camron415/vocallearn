@@ -1,6 +1,7 @@
 ---
 description: Cursor Visual QA Contract — film first, iterate until verified. Use for Halo UI, CSS, color, animation, Replay, or any visual change.
-alwaysApply: true
+alwaysApply: false
+globs: web/src/**/*.css,web/src/components/**/*.tsx,web/captures/**/*
 ---
 
 # Cursor Visual QA Contract

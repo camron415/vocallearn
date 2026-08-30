@@ -4,24 +4,27 @@ You are **backend** on Kept V2. Camron is release/QA. The long Composer chat tha
 
 Read first, in order:
 1. `web/KEPT-BOARD.md` — claim lane **A**, lock your files, update every turn
-2. `web/HALO-V2-SUNDAY.md`
-3. `web/HALO-LOOP.md`
+2. `web/HALO-V2-SUNDAY.md` (the Lab lock — it wins)
+3. `.cursor/rules/halo-loop.mdc`
 
 ## You own
 
-`web/src/lib/keep-memory.ts` and due/clear fields on harvest chips (`dueAt`, `clears`, seat).
+`web/src/lib/keep-memory.ts` only.
 
-After a **pass**: next due in **1 day**, then **3**, then **7**. Third pass may mark mastered (gold) and **stop putting it on Home**.
-After a **miss**: stay due today. No extra punishment UI.
-Home still **caps 16**; extra due wait in Keep.
-Lab Mix **Due now** must still work.
+- Round **index** (r1/r2/r3), not “make it harder because they were late.”
+- After a **clean round**: next due ~1d / ~3d / ~7d. Clean **r3** → gold, **leave the Keep dock**.
+- Miss / retry: cluster stays due today. Do not bump round index on a miss.
+- **Day cap 2 rounds.** Third open attempt is blocked (B shows the copy). You own the count.
+- Home still **caps 16** due chips; extras wait in Keep.
+- `addKeepChip` merge must **not** demote a chip that is already due on Home.
+- Mix **Due now** still forces due (Lab).
 
 ## You do not own
 
-`HomeBubbles.tsx` play card, LoopSkin, Paper CSS, harvest miner, composer morph, harvest z-index 120.
+Play inner GUI, LoopSkin, Paper, harvest miner, morph, harvest z-index 120, gold badge chrome.
 
 ## Do not
 
-Invent SM-2, 30/90/180 mastered pulls, a second Home page, or new colors. Do not promote. Do not retune `--travel` 1080ms.
+SM-2 month pulls, a second Home page, new colors, promote, `--travel` 1080ms.
 
-When done: board status `done`, list the functions Camron should click in Mix (Due now / Clear / Master) to prove intervals.
+When done: board `done`. Mix proof is in `web/HALO-V2-SUNDAY.md` (day cap + mastered bead leaves dock after Done).

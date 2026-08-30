@@ -6,10 +6,11 @@ alwaysApply: false
 
 # Kept V2 Sunday
 
-Before changing Keep, harvest, due, or review play, read `web/HALO-V2-SUNDAY.md`. That page wins for this weekend.
+Before changing Keep, harvest, due, or review play, read `web/HALO-V2-SUNDAY.md`. That page wins.
 
 - Product is **Kept**. Do not rename Halo/Cove this weekend.
-- Sunday in: closed matching + one harder closed step, crude 1d/3d/7d due, Home cap 16, miss stays, 3 oks → gold.
-- Sunday out: 4×2 mini-game matrix, required voice, SM-2 month pulls, practice mode, Paper/morph retune, promote unless Camron says promote.
+- Round: SEE all then SAY all, miss shows chat span, end holds for Done, cue by round index, day cap 2, gold badge not gold-in-dock.
+- Frozen: Paper, harvest fly, morph 1080ms, Home seating, bead diameter, sheet width 832px.
 - One lane per chat. Do not edit files another lane owns.
-- Do not retune harvest z-index 120 or morph `--travel` 1080ms.
+- Do not retune harvest z-index 120. Do not promote unless Camron says promote.
+---
