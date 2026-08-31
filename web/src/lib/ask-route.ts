@@ -1,18 +1,19 @@
-import { FAST_MODEL, pickReasoningEffort, type ReasoningEffort } from "@/lib/grok";
+import { pickReasoningEffort, type ReasoningEffort } from "@/lib/grok";
 import { gatherLiveBriefs } from "@/lib/live-lookups";
 import type { DisplaySource } from "@/lib/markdown-plain";
 
 export type AskRoute = {
   kind: "lookup" | "reason";
-  model?: string;
   tools: boolean;
   effort: ReasoningEffort;
-  /** Fetch free feeds even when 4.3 + search will run (why / more / explain). */
+  /** 0 = search off. Default reason = 1. Depth = 2. */
+  maxToolCalls: number;
+  /** Fetch free feeds even when search will run (why / more / explain). */
   seedLive?: boolean;
 };
 
 const LOOKUP =
-  /\b(weather|forecast|rain|snow|temperature|umbrella|sunrise|sunset|air quality|aqi|news|headline|stock|ticker|market|nasdaq|dow|s&p|crypto|bitcoin|ethereum|btc|eth|sport|score|game last night|world cup|nfl|nba|mlb|nhl|hockey|f1|formula 1|flight|airfare|traffic|commute|movie times|what'?s playing|tv show|tv series|exchange rate|dollar to|euro to|currency|forex|holiday|earthquake|quake|define|definition of|meaning of|capital of|population of|time in|what time is it|isbn|who wrote|author of)\b/i;
+  /\b(weather|forecast|rain|snow|temperature|umbrella|sunrise|sunset|air quality|aqi|news|headline|stock|ticker|market|nasdaq|dow|s&p|crypto|bitcoin|ethereum|btc|eth|sport|score|game last night|world cup|nfl|nba|mlb|nhl|hockey|f1|formula 1|flights?|airfare|traffic|commute|movie times|what'?s playing|tv show|tv series|exchange rate|dollar to|euro to|currency|forex|holiday|earthquake|quake|define|definition of|meaning of|capital of|population of|time in|what time is it|isbn|who wrote|author of)\b/i;
 
 const DEPTH =
   /\b(why|how come|what happened|what caused|tell me more|more detail|in depth|in detail|detailed|explain|should i|is it (a )?good|news about|behind (the |this )|analy[sz]e|compare|trade-?offs?)\b/i;
@@ -22,35 +23,50 @@ export function isLookupAsk(text: string) {
 }
 
 export function wantsDeeperAsk(text: string) {
-  return DEPTH.test(text) || pickReasoningEffort(text) !== "none";
+  return DEPTH.test(text) || pickReasoningEffort(text) !== "low";
+}
+
+/** Depth asks: nudge the model to surface quiz-worthy closed facts in the reply. */
+export function harvestAnswerHint(userText: string) {
+  if (!wantsDeeperAsk(userText) || isLookupAsk(userText)) return "";
+  return [
+    "Review-friendly facts: when you explain history, science, or how something works,",
+    "weave in 2–4 stable closed facts (a year, a place, a name, a key term) spelled out in the answer.",
+    "Spread kinds when natural (when / where / who / meaning). Do not pad or list trivia for its own sake.",
+  ].join(" ");
 }
 
 export function resolveAskRoute(
   userText: string,
   hasFiles: boolean
 ): AskRoute {
-  const effort = pickReasoningEffort(userText);
-  if (hasFiles) {
-    return { kind: "reason", tools: true, effort };
-  }
-
   const lookup = isLookupAsk(userText);
   const deeper = wantsDeeperAsk(userText);
 
   if (lookup && !deeper) {
     return {
       kind: "lookup",
-      model: FAST_MODEL,
       tools: false,
       effort: "none",
+      maxToolCalls: 0,
+    };
+  }
+
+  if (hasFiles || lookup || deeper) {
+    return {
+      kind: "reason",
+      tools: true,
+      effort: deeper ? "medium" : "low",
+      maxToolCalls: deeper ? 2 : 1,
+      seedLive: lookup,
     };
   }
 
   return {
     kind: "reason",
     tools: true,
-    effort,
-    seedLive: lookup,
+    effort: "low",
+    maxToolCalls: 1,
   };
 }
 

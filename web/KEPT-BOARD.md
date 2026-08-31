@@ -6,23 +6,58 @@ Shared desk for weekend V2. Not Atlas. Not Slack. One file every lane updates.
 
 **Spec:** `web/HALO-V2-SUNDAY.md` (Opus Lab lock, 2026-08-28). This board is status only.
 
-Updated: 2026-08-29T20:35-06:00  
-By: chief (planning commit)
+**Harvest ops (telemetry, QA, mobile, promote):** [`web/HARVEST-OPS.md`](./HARVEST-OPS.md) — read before tuning or early access.
+
+Updated: 2026-08-30T18:35-06:00  
+By: H Harvest polish (this chat)
 
 ## Lanes
 
 | Lane | Status | Holder | Files | Last |
 | --- | --- | --- | --- | --- |
-| A Scheduler | idle | tab A | `keep-memory.ts` — round index, day cap 2, gold off dock | waiting go |
-| B Round GUI | idle | tab B | `HomeBubbles.tsx` + play CSS — SEE/SAY, miss, dots, end | waiting go |
-| Chief | idle | this chat | Keep rims, gold badge, Chat stomp, distractors | waiting go |
-| Camron | waiting | Camron | Replay Mix proof, Safari, promote | lock pasted |
+| A Auth paper | done | tab A | `AuthShell`, `LoginForm`, `InviteSetup`, `halo-boot`, `LoopSkin` auth | 13:52 |
+| S Settings audit | **done** | this tab | unlocked | 13:48 |
+| B Round GUI | idle | — | unlocked | 22:02 |
+| Chief | done | this chat | briefs only | 13:45 |
+| M Menu+chat unify | done | this chat | unlocked | 12:35 |
+| Camron | **waiting** | Camron | Hard-refresh iPhone. Retest: capital of Maine (highlight+flyer); population of that city (number+flyer); largest city in the world (2 flyers even if marks partial). | — |
+| Chief QA fixes | done | prior chat | unlocked | 14:28 |
+| QA-2 | done | prior chat | unlocked | 17:30 |
+| QA-3 | done | this chat | unlocked | 18:08 |
+| H Harvest polish | **done** | this chat | unlocked | 18:35 |
 
 Status: `idle` · `claimed` · `in_progress` · `blocked` · `done`
 
 ## Locks
 
-No files locked. Waiting for Camron **go**.
+- Lane H — unlocked.
+- Lane A — unlocked.
+- Lane S — unlocked.
+- Chief QA — unlocked.
+- QA-2 — unlocked.
+- QA-3 — unlocked.
+
+## Blockers
+
+- Camron retest on iPhone (hard refresh): capital of Maine; population of that city; largest city in the world — expect highlights when the name/number is in the reply, and flyers even if a mark is missing.
+
+## Log (newest first)
+
+- 2026-08-30 H — Harvest polish shipped. H1: `findHarvestNeedle` (exact → case → markdown-stripped → fact key / digits) in `harvestMarkdown` + `splitHarvestText`; miner keeps cards via token/answer if span misses; prompt nudges capital + population. H2: flyers fall back to last assistant bubble; silent instant only for reduced motion. Tests 3/3. Untouched: z-index 120, morph 1080, beads, seating, Keep sync.
+- 2026-08-30 chief — Camron sign-off except harvest: capital asks inconsistent; Jakarta/largest-city got beads, no highlights, no flyers. Diagnosed: strict `indexOf` in `harvestMarkdown` + `spanInReply`; `HarvestFlights` silent instant after 36 frames. Wrote `web/V2-LANE-HARVEST-POLISH.md` — H1 fuzzy match + miner nudge, H2 flyer fallback from assistant bubble. Speed/mobile/sync OK. Untouched: z-index 120, morph 1080.
+- 2026-08-30 QA-3 — Phone dice-5 seats above greeting/composer (`home-pack` PHONE_MASTER, composer wall). Chat: wrap + 100% width chain, composer grid so Attach/Dictate/Send sit on a second row. Cove + ◎ left-aligned with History/Settings. Kept panel `position:fixed` inset + wrap. Keep sync: `halo_keep_state` + `GET/PUT /api/keep` + debounce push on persist. Need Camron to run migration 015. Untouched: harvest 120, morph 1080, bead diameter, desktop 16-seat map.
+- 2026-08-30 QA-2 — Reverted visualViewport stage pin (`--app-top` / `--app-height`). Keyboard sets `--kb-inset` only; pad Home/Chat/play. Stages use `100dvh`, `top: 0`. Chat: wrap + 12px inline, `width: auto` bubbles. Phone History/Settings icon-only. Typeahead 2 rows above field. Play SAY: preventScroll focus, scroll into play card. Untouched: harvest 120, morph 1080, bead diameter, seating.
+- 2026-08-30 QA-2 — Mobile pass 3 (recording + extra QA). Keyboard: `data-halo-kb` from visualViewport; ask-stage fixed like chat so iOS doesn't crush SAY/composer; no idle suggest on phone (first tap focuses); typeahead stacks above field. Chat: grid `minmax(0,1fr)` + break-word so answers wrap. Harvest burst clamped to viewport; land box clamped. Ghost on Chat→Home cleared when auto-soft skips morph (gray stadium). Play miss: sheet scrolls inside, extra bottom buffer, shorter pills. Header beads: keep full diameter, pocket ~3 visible, stronger left fade. Keep still localStorage — not synced. Camron hard-refresh iPhone.
+- 2026-08-30 QA-2 — Camron mobile QA pass 2. Harvest fly skipped on iPhone: auto-soft set `reduced` and ChatThread skipped flights — now only `prefers-reduced-motion`. Play pills: single column, rounded rect (not egg ovals), centered; play sheet vertically centered on phone. Chat: restore horizontal padding, kill scrollbar-gutter clip. Home: one-tap composer focus; `ask-stage` overflow hidden; hero lifts when suggest open (no page scroll). Due chips slightly larger on phone. Camron retest harvest fly in chat + composer tap + play WHO/MEANING.
+- 2026-08-30 QA-2 — Claimed. Camron retest: history scroll + Keep wipe good; resume still needs `?`; capital of Maine no harvest; white thinking panel still there. Next: retry resume after remount (do not abort same-id cleanup), exempt lookup replies from minReplyLength 40, remove `.work-thinking::after` on paper.
+- 2026-08-30 chief — QA bugs shipped. Resume: keep `halo-ask-live` until stream ok; abort no longer eats the generating lock. Hold: `askId` on harvest, live `/ask/{uuid}` not `"1"`/`/preview`. History: card `overflow:hidden`, list scrolls. Thinking fade uses `--paper-card`. Harvest: closed facts (capital/counts) no longer skipped; weather/news still skip; miner prompt keeps closed facts; min ask 8 chars. Keep store `halo-keep-v2` (empty start). Live Home cap 16; mixer `chips` null no longer clamps to 1. Harvest still lands Keep until due. Tests: 3/3 harvest fixtures, 8/8 dry smoke. Untouched: z-index 120, morph 1080ms, pack algorithm.
+- 2026-08-30 chief — Camron screen recording (~115s) frame review. Confirmed: chat resume fails ~8s after morph (needs `?`); hold → preview Nile + Mix; history card scroll; work-thinking `#fff` gradient; play round 2 dots = 1 due chip; day-cap line at end. Harvest: lookup skip blocks Spain; fresh harvest stays Keep until due. Next: fix resume + hold routing + history overflow + thinking CSS; decide harvest policy for closed lookups on real `/ask`.
+- 2026-08-30 A — Done. `/login` + `/invite` paper: no WaterPane, inset fields, stone submit. `halo-boot` forces `data-home-skin=paper` on those routes only (`isAuthPaperPath`). LoopSkin auth card/field/button + dark parity. HTML 200: login, preview login/join, invalid invite. Browser MCP down — Camron still needs light/dark eyes. Unlocked.
+- 2026-08-30 S — **Fix:** `/ask` was still V1 glass because `halo-boot` forced `data-home-skin=ours` on every non-preview route (and re-applied on `pageshow`). Now all signed-in routes default paper; only `/preview` mixer can pick Ours. Layout SSR default flipped to paper. Hard refresh `/ask` to see V2. Paper on `/ask` without taking halo-boot: middleware `x-halo-home-skin=paper` off-preview; `APP_PAPER_INLINE` + `AppPaperSkin` after boot (halo-boot still snaps /ask to Ours). Settings: dry inset name field, admin invites + Family activity, usage $, **Sign out for everyone**. Invite URL uses paper inset. `/admin` inset list. `isAdmin` already wired Ask + Chat. Unblocked a 500: duplicate `PREVIEW_SKIN_COOKIE` in halo-boot (A mid-edit) — A should keep one export. Next: Camron Settings QA after A lands.
+- 2026-08-30 chief — **Pre-promote gaps:** login + invite still V1 glass (`WaterPane` in `AuthShell`). Worker briefs: `web/V2-LANE-A-AUTH-PAPER.md` (Lane A), `web/V2-LANE-S-SETTINGS.md` (Lane S). Settings **already has** admin invites, usage $, sign-out — S lane audits paper skin + `isAdmin` wiring. Camron QA order: A → S → `deploy:lab` → `/ask`. Harvest smoke 11/11 green.
+- 2026-08-30 chief — Preview **Harvest lab** in mixer (Chat screen): Canned / Live Nile / Skip weather / Live Rome / Re-visit / Reset. `POST /api/dev/harvest-mine` localhost only. Highlights + flights via `halo-harvest-live` event. `npm run test:harvest:live` (gate + Grok miner), `test:harvest:live:dry` (gate only). Reports in `web/reports/harvest-smoke-latest.md`. `mineLearnFromReply` for API-free miner tests. 11 cases: 8 ephemeral gates, Nile cluster, Rome, Nile dedup. `harvest-policy.ts` (V2 closed-only, lookup skip, ephemeral reply guard). `learn-mine.ts` exports `shouldSkipHarvest`, `parseMinerJson`, `cardsFromMinerJson`, `sameShapeAsAnswer`. Fixtures: 6 ephemeral API types, Nile cluster, dedup, distractor shape, open rejection. `harvest-client-fixtures` for re-flight dedup. `npm run test:harvest` → 3/3 suites pass. `flights?` on lookup regex. Typeahead = whole-string prefix only; `prefix-seeds.json` (~3/letter). Light paper tokens unchanged.
+- 2026-08-30 M — Menu + chat Paper unify shipped in Lab. New `MenuSheet.tsx` = one shell + one motion for History and Settings, growing from whichever composer is on screen (Home Ask composer, Chat follow-up dock); dock-first anchor query so both entries share the code path. New tokens `--menu-grow` 520ms / `--menu-shrink` 380ms on the play-sheet easing — play sheet and morph stay 1080ms. `data-halo-sheet` fades the source composer out on grow, back in at the start of the shrink; veil is field at 94% + blur so the field stays readable behind. Added `--paper-sunk` (`#ECEBE7` / `#3A3A3C`) for the chat user bubble. Lock: `opus-locks/2026-08-30-menu-chat-unify.md`.
+- 2026-08-30 chief — Opus follow-up: fill-first paper ladder. Card = `#F3F2F0`/`#2C2C2E` + shadow, no outline. Inset hairline both modes (`0.05` / `0.06`). User bubble inset no border; AI bubble card no border; highlights untouched. History/Settings = centered 832px card, Close in-header, section labels match play-sheet kind type, History rows stone hover, segmented stone / `#171719`. Verified History + Settings light/dark and Chat light. Untouched: harvest 120, `--travel` 1080ms, seating, beads, rims, stone hex tokens.
 
 ## Blockers
 
@@ -30,6 +65,18 @@ None.
 
 ## Log (newest first)
 
+- 2026-08-29 chief — Opus Brief 4 implemented: `--paper-field` / `--paper-card` / `--paper-inset` in LoopSkin; play card/pill flip; band `color-mix` off bead + card; History/Settings/composer/chat assistant wired; Kept panel card + inset rows. Lock: `opus-locks/2026-08-29-visual-unify.md`. Build green. Camron: replay same 8 screenshots light/dark.
+ Fixed broken dark-mode rule in home.css (orphan `}`). TS: AskLanding null guard, HarvestFlights `flight.chip.id`, excluded lane C/D lib-check files from tsconfig. Preview should load. Camron: re-run replay suite (partial credit + bank flight + r2/r3). End card always `You did good.`; passed above failed; Banked / Still working only when mixed; passed full + bead band +1 at 60ms row / 200ms band; failed 55% no flight. Done → batch `LoopFlights` bank then A’s `finishRound([{id, passed}])`. Miss-once = fail (stay Home). SAY shuffled vs SEE; per-chip `roundIndex` so r3-fail plays r1 SEE+cue. Dots centered in play CSS. Day-cap line when `recordRoundOpen(clusterId)` false. No keep-memory. Unlocked HomeBubbles + home.css. Mix proof is Camron Replay — browser tool was down here.
+- 2026-08-29 A — Done. Per-chip `finishRound([{id, passed}])` splits cluster; failed stay Home; r3 fail → `clears` 0 / r1. `DAY_ROUND_CAP` 3. `recordRoundOpen(clusterId)`: first same-cluster remainder re-tap is free; further consume. `isRemainderFreeTap` / `roundOpenWasFree` / `canOpenRound(clusterId)`. `roundsLifetime` on dismiss except free retry; on `readLoopStats`. Legacy `finishRound(ids, "clean"|"miss")` still works. Unlocked keep-memory.
+- 2026-08-29 chief — Kept panel = `Kept` + summary + prompt/answer/kind (~40vh). Larger ◎ and dock beads. Light play sheet white + 1px edge (LoopSkin). Day-cap `top: 22%`. Dots centered (LoopSkin). Re-harvest flies only new facts. Nile token `4,130 miles`. Waiting A `roundsLifetime` on `readLoopStats`. Did not touch keep-memory / HomeBubbles / home.css.
+- 2026-08-29 A — Claimed keep-memory. Per-chip finishRound split, day cap 3, remainder-free first re-tap, roundsLifetime on dismiss (not free retry), r3 fail → r1. No GUI.
+- 2026-08-29 chief — Camron amend: day cap 3, 1st remainder retry free, r3→r1+bronze visual. A/B prompts issued; chief waits go.
+- 2026-08-29 chief — Camron partial-credit lock: per-fact pass/fail, cluster split, end-card bead rows + band + bank flight; failed chips stay Home; re-round = missed only, still SEE+SAY. Docs: `V2-PARTIAL-CREDIT-LOCK.md`, `V2-OPUS-BRIEFS.md` (one Opus call for edge cases, not per CSS fix).
+- 2026-08-29 B — Done. Same 832px sheet, inner 440. SEE-all then SAY-all (r3 = two SAY prompts). Dots with SEE|SAY gap. Miss: `Not quite —` + quote, retry same fact, no red. Correct hold 500/700. End `You did good.` + Done. SAY underline, Enter only, r1 cue `N—— —— ——`. Wired A’s `roundIndex` / `recordRoundOpen` / `finishRound`. Play-sheet LoopSkin: body `#FCFCFB`, no full wash, no red miss. Unlocked HomeBubbles + home.css. Mix proof is Camron Replay — browser tool was down here.
+- 2026-08-29 chief — Rims are 3px inset metals (`#A0703C` / `#8C97A0` / `#B98A1E`) on LoopSkin + Paper. Keep dock hides gold; badge `◎ N` right of Cove opens a static Kept panel (Esc / outside). Chat + header skip re-harvest of due/gold facts; miner dedupes token/answer; Nile miles distractors are all miles. Home due chips get a 1px kind outline in LoopSkin (seats untouched). Next: Mix gold fade + Safari rims once B’s round lands. Preview is up at localhost:3000/preview.
+- 2026-08-29 A — Done. `roundIndex` from clears (not lateness). Clean round → 1d/3d/7d; clean r3 → gold, `sortKeepBeads` drops them. Miss keeps cluster due today, no index bump. `recordRoundOpen` day cap 2 (third tap false). Home cap 16. Harvest merge + cluster bank do not demote Home due. Mix: Tutorial → Due now → Clear ×3 for gold off dock; Miss stays; Demo pack → Due now = 16; Master then Due now stays off Home; Bank undoes. B: `roundIndex`, `recordRoundOpen`, `finishRound(ids, "clean"|"miss")`. Unlocked keep-memory.
+- 2026-08-29 A — Claimed keep-memory. Round index, clean-round 1d/3d/7d, day cap 2, gold off dock, harvest merge must not demote due. No GUI.
+- 2026-08-29 B — Claimed. Round GUI: SEE-all then SAY-all, miss reteach, dots, end card, inner 440. No keep-memory.
 - 2026-08-29 chief — Planning snapshot committed; lane src reset to `84c76c9` (`keep-memory`, `HomeBubbles`, `home.css`, `harvest`, `learn-mine`). Chief C/D libs left untracked. Camron spawning A/B tabs next.
 - 2026-08-29 planning — Arcs parked. r3 = two different SAY prompts (not duplicate). Grading normalizer in spec. A/B paste ready. Commit planning before go recommended. Luna post-V2.
 - 2026-08-29 planning — Cost/model handoff in `web/V2-CHIEF-HANDOFF.md`. Post-Sunday Luna tier noted in Sunday spec. Still waiting **go**. No lane claims.

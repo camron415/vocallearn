@@ -1,4 +1,5 @@
 import ranked from "@/data/common-prompts.json";
+import seeds from "@/data/prefix-seeds.json";
 
 export type RankedPrompt = { text: string; freq: number };
 
@@ -33,29 +34,30 @@ function insert(root: TrieNode, key: string, row: RankedPrompt) {
   node.hits.push(row);
 }
 
+/** Whole-string prefix only — like search autocomplete, not mid-phrase word match. */
 function buildTrie(rows: RankedPrompt[]): TrieNode {
   const root = emptyNode();
   for (const row of rows) {
     const key = fold(row.text);
     if (!key) continue;
     insert(root, key, row);
-    for (const match of key.matchAll(/(?:^| )([a-z0-9])/g)) {
-      const at = match.index ?? 0;
-      const start = match[0].startsWith(" ") ? at + 1 : at;
-      if (start > 0) insert(root, key.slice(start), row);
-    }
   }
   return root;
 }
 
-const ROOT = buildTrie(ranked as RankedPrompt[]);
+const RANKED: RankedPrompt[] = [
+  ...(ranked as RankedPrompt[]),
+  ...(seeds as RankedPrompt[]),
+];
+
+const ROOT = buildTrie(RANKED);
 
 function collect(node: TrieNode, into: RankedPrompt[]) {
   into.push(...node.hits);
   for (const kid of node.kids.values()) collect(kid, into);
 }
 
-/** Prefix walk. Highest frequency first. Empty prefix returns nothing. */
+/** Prefix walk from the start of the prompt. Highest frequency first. */
 export function matchPrompts(prefix: string, limit = 5): string[] {
   const key = fold(prefix);
   if (!key) return [];
@@ -75,6 +77,24 @@ export function matchPrompts(prefix: string, limit = 5): string[] {
     seen.add(text);
     out.push(text);
     if (out.length >= limit) break;
+  }
+  return out;
+}
+
+/** Idle composer chips — top prompts by freq, rotated daily. No DB; bundled JSON. */
+export function topIdlePrompts(limit: number, seed = 0): string[] {
+  const sorted = [...RANKED].sort(
+    (a, b) => b.freq - a.freq || a.text.localeCompare(b.text)
+  );
+  if (!sorted.length || limit <= 0) return [];
+  const start = seed % sorted.length;
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (let i = 0; i < sorted.length && out.length < limit; i += 1) {
+    const text = sorted[(start + i) % sorted.length].text;
+    if (seen.has(text)) continue;
+    seen.add(text);
+    out.push(text);
   }
   return out;
 }

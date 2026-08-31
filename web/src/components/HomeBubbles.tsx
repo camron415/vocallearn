@@ -26,6 +26,7 @@ import {
 } from "@/lib/home-style";
 import {
   formatChipLabel,
+  isPhoneHomeView,
   keepChipMaxRem,
   keepFieldScale,
   mixKeepOrder,
@@ -34,24 +35,53 @@ import {
   type HomeBox,
 } from "@/lib/home-pack";
 import { LoopFlights, type LoopFlight } from "@/components/LoopFlights";
-import { keepLandBox } from "@/lib/keep-land";
+import { goldLandBox, keepLandBox } from "@/lib/keep-land";
 import { usePaperLook } from "@/components/MotionProvider";
 import {
   pinAsk,
   isDueChip,
   isBankedChip,
-  gradeChips,
+  roundIndex,
+  wouldMasterOnPass,
+  recordRoundOpen,
+  finishRound,
+  keepRank,
   readKeepChips,
   readPinnedAsks,
   seedKeepDemo,
   subscribeKeep,
   unpinAsk,
+  HOME_SEAT_CAP,
+  type ChipRoundResult,
 } from "@/lib/keep-memory";
 import { rippleWaterRoot } from "@/lib/water-edge";
 import type { BubbleItem } from "@/components/BubbleField";
 
 const PIN_KINDS = ["who", "where", "meaning", "when"] as const;
 const GATHER_MS = 720;
+const HOLD_OK_MS = 500;
+const HOLD_RETRY_MS = 700;
+const MISS_HOLD_MS = 1600;
+const UNITS = new Set([
+  "miles",
+  "mile",
+  "mi",
+  "km",
+  "kilometers",
+  "kilometres",
+  "kilometer",
+  "kilometre",
+  "m",
+  "meters",
+  "metres",
+  "meter",
+  "metre",
+  "ft",
+  "feet",
+  "foot",
+]);
+const PLACE_PREFIX = /^(mount|mt|lake|the|a|an)\s+/;
+const MIN_NAME_LEN = 3;
 
 function clusterKey(chip: HarvestChip) {
   return chip.cluster || chip.id;
@@ -75,14 +105,27 @@ type PlayChoice = {
   correct: boolean;
 };
 
+type PlayFace = "see" | "say" | "say-b";
+type PlayRound = 1 | 2 | 3;
+
+type PlayBeat = {
+  id: string;
+  chipId: string;
+  face: PlayFace;
+};
+
 type LearnPlay = {
   cluster: string;
   family: string[];
-  order: string[];
+  beats: PlayBeat[];
   index: number;
-  mode: "gather" | "play" | "done";
-  miss: string | null;
-  hit: string | null;
+  mode: "gather" | "play" | "end";
+  round: PlayRound;
+  missId: string | null;
+  hitId: string | null;
+  retrying: boolean;
+  missed: string[];
+  quote: boolean;
   choices: PlayChoice[];
 };
 
@@ -97,8 +140,13 @@ function shuffleChoices(list: PlayChoice[]) {
   return next;
 }
 
+function choiceLabel(chip: HarvestChip) {
+  return (chip.answer || chip.token).trim();
+}
+
 function choicesFor(chip: HarvestChip): PlayChoice[] {
-  const seen = new Set<string>([chip.token.toLowerCase()]);
+  const correct = choiceLabel(chip);
+  const seen = new Set<string>([correct.toLowerCase()]);
   const wrong: PlayChoice[] = [];
   for (const label of chip.distractors ?? []) {
     const key = label.toLowerCase();
@@ -108,9 +156,257 @@ function choicesFor(chip: HarvestChip): PlayChoice[] {
     if (wrong.length >= 3) break;
   }
   return shuffleChoices([
-    { id: chip.id, label: chip.token, correct: true },
+    { id: chip.id, label: correct, correct: true },
     ...wrong.slice(0, 3),
   ]);
+}
+
+function shuffleBeats(list: PlayBeat[]) {
+  const next = [...list];
+  for (let i = next.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const hold = next[i];
+    next[i] = next[j];
+    next[j] = hold;
+  }
+  return next;
+}
+
+function roundOf(chip: HarvestChip): PlayRound {
+  return roundIndex(chip);
+}
+
+/** SEE in cluster order; SAY (and r3 SAY-b) shuffled vs that order. Per-chip round so r3-fail → r1. */
+function beatsFor(family: HarvestChip[]): PlayBeat[] {
+  const see: PlayBeat[] = [];
+  const say: PlayBeat[] = [];
+  const sayB: PlayBeat[] = [];
+  for (const chip of family) {
+    const round = roundOf(chip);
+    if (round >= 3) {
+      say.push({ id: `${chip.id}:say`, chipId: chip.id, face: "say" });
+      sayB.push({ id: `${chip.id}:say-b`, chipId: chip.id, face: "say-b" });
+    } else {
+      see.push({ id: `${chip.id}:see`, chipId: chip.id, face: "see" });
+      say.push({ id: `${chip.id}:say`, chipId: chip.id, face: "say" });
+    }
+  }
+  return [...see, ...shuffleBeats(say), ...shuffleBeats(sayB)];
+}
+
+function foldPrompt(text: string) {
+  return text.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+/** r3 SAY-b is a second standalone question. Never hint. Never reuse prompt. */
+function sayBPrompt(chip: HarvestChip) {
+  const a = chip.prompt.trim();
+  const b = (chip.promptB ?? "").trim();
+  if (b && foldPrompt(b) !== foldPrompt(a)) return b;
+  const span = (chip.span || chip.token || chip.answer).trim();
+  const fallback: Record<HarvestChip["kind"], string> = {
+    when: `Give the year or date for “${span}”.`,
+    where: `Which place is “${span}”?`,
+    who: `Who or what is named in “${span}”?`,
+    meaning: `What exact figure or phrase is “${span}”?`,
+  };
+  const next = fallback[chip.kind];
+  if (foldPrompt(next) !== foldPrompt(a)) return next;
+  return `Recall the ${KIND_LABEL[chip.kind].toLowerCase()} for “${span}”.`;
+}
+
+function cuePlaceholder(token: string) {
+  const letter = token.trim().charAt(0);
+  if (!/[A-Za-z0-9]/.test(letter)) return "";
+  return `${letter}—— —— ——`;
+}
+
+/**
+ * Closed SAY grading — word-for-word closed recall, not open paraphrase.
+ * Normalize: case, punctuation, commas in numbers, unit aliases, leading the.
+ * Who: full name or distinctive last name (≥3 chars), never first-only or 1-letter.
+ * Where: full place after Mount/Lake/the strip — exact, not prefix.
+ * When / numeric meaning: full digit string must match.
+ * Meaning text: exact, or 1-edit if both sides are long (≥8).
+ */
+function foldClosed(text: string) {
+  return text
+    .toLowerCase()
+    .replace(/,/g, "")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function stripThe(text: string) {
+  return text.replace(/^(the|a|an)\s+/, "");
+}
+
+function stripUnits(text: string) {
+  let next = text;
+  for (let i = 0; i < 2; i++) {
+    const parts = next.split(" ");
+    if (parts.length < 2) break;
+    const last = parts[parts.length - 1];
+    if (!UNITS.has(last)) break;
+    const head = parts.slice(0, -1).join(" ");
+    if (!/\d/.test(head)) break;
+    next = head;
+  }
+  return next;
+}
+
+function stripPlace(text: string) {
+  return text.replace(PLACE_PREFIX, "").trim();
+}
+
+function digitsOf(text: string) {
+  return text.replace(/\D/g, "");
+}
+
+function edits1(a: string, b: string) {
+  if (a === b) return true;
+  const la = a.length;
+  const lb = b.length;
+  if (Math.abs(la - lb) > 1) return false;
+  let i = 0;
+  let j = 0;
+  let skip = 0;
+  while (i < la && j < lb) {
+    if (a[i] === b[j]) {
+      i += 1;
+      j += 1;
+      continue;
+    }
+    skip += 1;
+    if (skip > 1) return false;
+    if (la > lb) i += 1;
+    else if (lb > la) j += 1;
+    else {
+      i += 1;
+      j += 1;
+    }
+  }
+  return skip + (la - i) + (lb - j) <= 1;
+}
+
+function gradeAgainst(said: string, target: string, kind: HarvestChip["kind"]) {
+  if (!said || !target) return false;
+  if (said === target) return true;
+  if (said.length < 2) return false;
+
+  const saidDigits = digitsOf(said);
+  const targetDigits = digitsOf(target);
+  const numericTarget = /\d/.test(target);
+
+  if (kind === "when" || (numericTarget && saidDigits && targetDigits)) {
+    return saidDigits.length >= 2 && saidDigits === targetDigits;
+  }
+
+  if (kind === "who") {
+    const a = stripPlace(said);
+    const b = stripPlace(target);
+    if (!a || !b) return false;
+    if (a === b) return true;
+    const saidParts = a.split(" ").filter(Boolean);
+    const targetParts = b.split(" ").filter(Boolean);
+    if (saidParts.length === 1 && targetParts.length >= 2) {
+      const last = targetParts[targetParts.length - 1]!;
+      const first = targetParts[0]!;
+      return (
+        saidParts[0]!.length >= MIN_NAME_LEN &&
+        saidParts[0] === last &&
+        saidParts[0] !== first
+      );
+    }
+    return false;
+  }
+
+  if (kind === "where") {
+    const a = stripPlace(said);
+    const b = stripPlace(target);
+    if (!a || !b || a.length < MIN_NAME_LEN) return false;
+    return a === b;
+  }
+
+  if (kind === "meaning" && numericTarget) {
+    return saidDigits.length >= 2 && saidDigits === targetDigits;
+  }
+
+  if (
+    kind === "meaning" &&
+    !saidDigits &&
+    said.length >= 8 &&
+    target.length >= 8 &&
+    edits1(said, target)
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+function closedHit(said: string, chip: HarvestChip, cue = "") {
+  const variants = [said.trim()];
+  if (cue && !said.trim().toLowerCase().startsWith(cue.toLowerCase())) {
+    variants.push(cue + said.trim());
+  }
+  const targets = [chip.answer, chip.token, chip.span]
+    .map((t) => (t ?? "").trim())
+    .filter(Boolean);
+
+  return variants.some((raw) => {
+    const a = stripUnits(stripThe(foldClosed(raw)));
+    if (!a) return false;
+    return targets.some((target) =>
+      gradeAgainst(a, stripUnits(stripThe(foldClosed(target))), chip.kind)
+    );
+  });
+}
+
+function quoteParts(chip: HarvestChip) {
+  const hit = chip.span?.trim() || chip.token;
+  const hay = chip.answer?.trim() || hit;
+  const at = hay.toLowerCase().indexOf(hit.toLowerCase());
+  if (at >= 0) {
+    return {
+      before: hay.slice(0, at),
+      hit: hay.slice(at, at + hit.length),
+      after: hay.slice(at + hit.length),
+    };
+  }
+  return { before: "", hit: hay, after: "" };
+}
+
+function EndBead({
+  chipId,
+  rank,
+  upgrade,
+  delay,
+  kind,
+}: {
+  chipId: string;
+  rank: number;
+  upgrade: boolean;
+  delay: number;
+  kind: HarvestChip["kind"];
+}) {
+  const [up, setUp] = useState(false);
+  useEffect(() => {
+    if (!upgrade) return;
+    const id = window.setTimeout(() => setUp(true), delay);
+    return () => window.clearTimeout(id);
+  }, [upgrade, delay]);
+  const shown = Math.max(0, Math.min(3, up ? rank + 1 : rank));
+  return (
+    <span
+      data-end-chip={chipId}
+      className={`keep-bead keep-bead--${kind} keep-bead--rank-${shown} compose-play-recap-bead${
+        up ? " is-up" : ""
+      }`}
+      aria-hidden
+    />
+  );
 }
 
 export function HomeBubbles({
@@ -122,7 +418,7 @@ export function HomeBubbles({
   demo?: boolean;
   white?: BubbleItem[];
   onAsk: (item: BubbleItem, el: HTMLButtonElement | null) => void;
-  onOpenSource: () => void;
+  onOpenSource: (chip: HarvestChip) => void;
 }) {
   const [kept, setKept] = useState<HarvestChip[]>([]);
   const [pins, setPins] = useState(() => readPinnedAsks());
@@ -135,10 +431,17 @@ export function HomeBubbles({
     {}
   );
   const [play, setPlay] = useState<LearnPlay | null>(null);
+  const [typed, setTyped] = useState("");
+  const [capLine, setCapLine] = useState(false);
   const [cooled, setCooled] = useState<Record<string, ChipHeat>>({});
   const [arrived, setArrived] = useState(false);
   const fieldRef = useRef<HTMLDivElement>(null);
+  const typeRef = useRef<HTMLInputElement>(null);
   const answering = useRef(false);
+  const holdTimer = useRef(0);
+  const pendingBank = useRef<Set<string>>(new Set());
+  const pendingCommit = useRef<ChipRoundResult[] | null>(null);
+  const pendingGoldPulse = useRef(false);
   const paper = usePaperLook();
   const packedRef = useRef(packed);
   const keepIdsRef = useRef<Set<string> | null>(null);
@@ -169,8 +472,9 @@ export function HomeBubbles({
 
   const scatter = home.scatter / 100;
   packedRef.current = packed;
+  const dueCap = demo ? home.keepCount : HOME_SEAT_CAP;
   const board = mixKeepOrder(
-    kept.filter(isDueChip).slice(0, home.keepCount)
+    kept.filter(isDueChip).slice(0, dueCap)
   );
   const pale = white.slice(0, 4);
   const packKey = `${board.length}|${board
@@ -202,11 +506,16 @@ export function HomeBubbles({
     function layout() {
       const origin = stage.getBoundingClientRect();
       if (origin.width < 40 || origin.height < 40) return;
-      const scale = keepFieldScale({ w: origin.width, h: origin.height });
-      /* Chip padding/type are CSS constants. Scale only the long-label cap. */
+      const view = { w: origin.width, h: origin.height };
+      const phone = isPhoneHomeView(view);
+      const scale = keepFieldScale(view);
+      /* Chip padding/type are CSS constants. Scale only the long-label cap.
+         Phone dice needs a tighter cap so five chips fit above the composer. */
       stage.style.setProperty(
         "--keep-chip-max",
-        `${(keepChipMaxRem(board.length) * scale).toFixed(2)}rem`
+        phone
+          ? "6.8rem"
+          : `${(keepChipMaxRem(board.length) * scale).toFixed(2)}rem`
       );
       void stage.offsetWidth;
       const slots = [...stage.querySelectorAll<HTMLElement>(".recent-slot")];
@@ -231,9 +540,12 @@ export function HomeBubbles({
           },
         ];
       });
-      // Seats avoid the suggest corridor by design. Do not wall off compose —
-      // that shoved corner seats into a heart ring.
-      const walls = [".ask-greeting", ".topbar"].flatMap((sel) => {
+      // Desktop: greeting/topbar only — compose is a corridor seats avoid.
+      // Phone: also wall off the composer so dice-5 cannot sit behind it.
+      const wallSels = phone
+        ? [".ask-greeting", ".topbar", ".compose-stack"]
+        : [".ask-greeting", ".topbar"];
+      const walls = wallSels.flatMap((sel) => {
         const node = document.querySelector(sel);
         if (!node) return [];
         const box = node.getBoundingClientRect();
@@ -246,11 +558,7 @@ export function HomeBubbles({
           },
         ];
       });
-      const seeds = seedKeepField(
-        measured,
-        { w: origin.width, h: origin.height },
-        walls
-      );
+      const seeds = seedKeepField(measured, view, walls);
       const byId = new Map(seeds.map((seed) => [seed.id, seed]));
       const boxes: HomeBox[] = measured.map((item) => {
         const seed = byId.get(item.id);
@@ -265,9 +573,8 @@ export function HomeBubbles({
           y: seed?.y ?? 0,
         };
       });
-      const next = packHomeChips(boxes, walls, {
-        w: origin.width,
-        h: origin.height,
+      const next = packHomeChips(boxes, walls, view, {
+        shoveLargeWalls: phone,
       });
       const spots: Record<string, { x: number; y: number }> = {};
       for (const box of next) {
@@ -321,12 +628,16 @@ export function HomeBubbles({
     const timer = window.setTimeout(() => {
       setPlay((prev) => {
         if (!prev) return prev;
-        const lead = board.find((item) => item.id === prev.order[0]);
+        const leadId = prev.beats[0]?.chipId;
+        const lead = board.find((item) => item.id === leadId);
+        const face = prev.beats[0]?.face ?? "see";
         return {
           ...prev,
           mode: "play",
-          hit: null,
-          choices: lead ? choicesFor(lead) : prev.choices,
+          hitId: null,
+          missId: null,
+          quote: false,
+          choices: face === "see" && lead ? choicesFor(lead) : [],
         };
       });
     }, GATHER_MS);
@@ -334,11 +645,31 @@ export function HomeBubbles({
   }, [play?.cluster, play?.mode, board]);
 
   useEffect(() => {
+    if (!play || play.mode !== "play") return;
+    if (play.beats[play.index]?.face !== "say") return;
+    if (typeof window !== "undefined" && window.matchMedia("(max-width: 720px)").matches) {
+      return;
+    }
+    const id = window.requestAnimationFrame(() => {
+      typeRef.current?.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(id);
+  }, [play?.mode, play?.index]);
+
+  useEffect(() => {
     if (!play) return;
     function onKey(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
+      const currentPlay = play;
+      if (!currentPlay) return;
+      if (currentPlay.mode === "end") {
+        closeRound(currentPlay, true);
+        return;
+      }
       answering.current = false;
+      window.clearTimeout(holdTimer.current);
       setPlay(null);
+      setTyped("");
       setGatherAt({});
     }
     window.addEventListener("keydown", onKey);
@@ -375,24 +706,43 @@ export function HomeBubbles({
     };
   }
 
+  function chipById(id: string) {
+    return kept.find((item) => item.id === id) ?? board.find((item) => item.id === id);
+  }
+
   function startLearn(chip: HarvestChip, el: HTMLButtonElement | null) {
     if (play) return;
     if (!isDueChip(chip)) return;
+    if (!recordRoundOpen(clusterKey(chip))) {
+      setCapLine((open) => {
+        if (open) return false;
+        window.setTimeout(() => setCapLine(false), 3000);
+        return true;
+      });
+      return;
+    }
     const family = familyOf(chip, board);
     if (!family.some((item) => item.id === chip.id)) return;
-    const order = [chip, ...family.filter((item) => item.id !== chip.id)].map(
-      (item) => item.id
-    );
-    const familyIds = order;
+    const ordered = [chip, ...family.filter((item) => item.id !== chip.id)];
+    const familyIds = ordered.map((item) => item.id);
+    const round = roundOf(chip);
+    const beats = beatsFor(ordered);
+    const lead = beats[0];
+    const leadChip = ordered.find((item) => item.id === lead?.chipId) ?? chip;
+    setTyped("");
     setPlay({
       cluster: clusterKey(chip),
       family: familyIds,
-      order,
+      beats,
       index: 0,
       mode: "gather",
-      miss: null,
-      hit: null,
-      choices: choicesFor(chip),
+      round,
+      missId: null,
+      hitId: null,
+      retrying: false,
+      missed: [],
+      quote: false,
+      choices: lead?.face === "see" ? choicesFor(leadChip) : [],
     });
     if (paper) return;
     const x = el?.getBoundingClientRect().left ?? 0;
@@ -422,7 +772,7 @@ export function HomeBubbles({
       );
       if (cap) rippleWaterRoot(cap, box?.left ?? 0, box?.top ?? 0, true);
     }
-    onOpenSource();
+    onOpenSource(chip);
   }
 
   function pocketRect() {
@@ -433,82 +783,196 @@ export function HomeBubbles({
     setLoopFlights((prev) => [...prev, flight]);
   }
 
-  function finishPlay() {
-    setPlay((prev) =>
-      prev ? { ...prev, mode: "done", miss: null, hit: null, choices: [] } : prev
-    );
-    window.setTimeout(() => {
+  function splitRound(from: LearnPlay) {
+    const missed = new Set(from.missed);
+    return {
+      passed: from.family.filter((id) => !missed.has(id)),
+      failed: from.family.filter((id) => missed.has(id)),
+    };
+  }
+
+  function resultsFor(from: LearnPlay): ChipRoundResult[] {
+    const missed = new Set(from.missed);
+    return from.family.map((id) => ({ id, passed: !missed.has(id) }));
+  }
+
+  function commitRound(results: ChipRoundResult[]) {
+    if (results.length) finishRound(results);
+  }
+
+  function closeRound(from: LearnPlay, grade: boolean) {
+    window.clearTimeout(holdTimer.current);
+    answering.current = false;
+    if (!grade) {
       setPlay(null);
+      setTyped("");
       setGatherAt({});
-      answering.current = false;
-    }, 720);
-  }
-
-  function advanceFrom(from: LearnPlay) {
-    const due = readKeepChips().filter(isDueChip);
-    for (let i = from.index + 1; i < from.order.length; i++) {
-      const nextChip = due.find((item) => item.id === from.order[i]);
-      if (!nextChip) continue;
-      answering.current = false;
-      setPlay({
-        ...from,
-        index: i,
-        miss: null,
-        hit: null,
-        mode: "play",
-        choices: choicesFor(nextChip),
-      });
       return;
     }
-    finishPlay();
-  }
-
-  function answerChoice(choice: PlayChoice, el: HTMLButtonElement | null) {
-    if (!play || play.mode !== "play" || answering.current) return;
-    const chipId = play.order[play.index];
-    const chip = board.find((item) => item.id === chipId);
-    if (!choice.correct) {
-      answering.current = true;
-      gradeChips([chipId], "miss");
-      setPlay({ ...play, miss: choice.id, hit: null });
-      window.setTimeout(() => advanceFrom(play), 1100);
-      return;
-    }
-    answering.current = true;
-    const from = el?.getBoundingClientRect();
+    const { passed } = splitRound(from);
+    const results = resultsFor(from);
     const pocket = pocketRect();
-    setPlay({ ...play, miss: null, hit: choice.id });
-    if (from && pocket && chip) {
-      addLoopFlight({
-        id: `bank-${chip.id}-${Date.now()}`,
-        chipId: chip.id,
+    const gold = goldLandBox();
+    const flights: LoopFlight[] = [];
+    const now = Date.now();
+    let goldFlights = 0;
+    for (const id of passed) {
+      const chip = chipById(id);
+      const row = document.querySelector(`[data-end-chip="${id}"]`);
+      const box = row?.getBoundingClientRect();
+      const master = chip ? wouldMasterOnPass(chip) : false;
+      const dest = master ? gold ?? pocket : pocket;
+      if (!chip || !box || !dest) continue;
+      if (master) goldFlights += 1;
+      flights.push({
+        id: `bank-${id}-${now}`,
+        chipId: id,
         token: chip.token,
         kind: chip.kind,
         mode: "bank",
-        from: { x: from.left, y: from.top, w: from.width, h: from.height },
+        from: { x: box.left, y: box.top, w: box.width, h: box.height },
         to: {
-          x: pocket.left,
-          y: pocket.top,
-          w: pocket.width,
-          h: pocket.height,
+          x: dest.left,
+          y: dest.top,
+          w: dest.width,
+          h: dest.height,
         },
       });
-    } else {
-      gradeChips([chipId], "ok");
     }
-    window.setTimeout(() => advanceFrom(play), 720);
+    setPlay(null);
+    setTyped("");
+    setGatherAt({});
+    if (!flights.length) {
+      commitRound(results);
+      if (goldFlights) {
+        window.dispatchEvent(new Event("halo-gold-pulse"));
+      }
+      return;
+    }
+    pendingBank.current = new Set(flights.map((item) => item.id));
+    pendingCommit.current = results;
+    pendingGoldPulse.current = goldFlights > 0;
+    setLoopFlights((prev) => [...prev, ...flights]);
+  }
+
+  function advanceFrom(from: LearnPlay) {
+    const next = from.index + 1;
+    if (next >= from.beats.length) {
+      answering.current = false;
+      setTyped("");
+      setPlay({
+        ...from,
+        mode: "end",
+        index: from.beats.length,
+        hitId: null,
+        missId: null,
+        quote: false,
+        retrying: false,
+        choices: [],
+      });
+      return;
+    }
+    const beat = from.beats[next];
+    const nextChip = chipById(beat.chipId);
+    answering.current = false;
+    setTyped("");
+    setPlay({
+      ...from,
+      index: next,
+      missId: null,
+      hitId: null,
+      quote: false,
+      retrying: false,
+      mode: "play",
+      choices: beat.face === "see" && nextChip ? choicesFor(nextChip) : [],
+    });
+  }
+
+  function landCorrect(from: LearnPlay) {
+    answering.current = true;
+    const wait = from.retrying ? HOLD_RETRY_MS : HOLD_OK_MS;
+    window.clearTimeout(holdTimer.current);
+    holdTimer.current = window.setTimeout(() => advanceFrom(from), wait);
+  }
+
+  function answerChoice(choice: PlayChoice) {
+    if (!play || play.mode !== "play" || answering.current) return;
+    const beat = play.beats[play.index];
+    if (!beat || beat.face !== "see") return;
+    if (play.missId === choice.id) return;
+    if (!choice.correct) {
+      answering.current = true;
+      setPlay({
+        ...play,
+        missId: choice.id,
+        hitId: null,
+        quote: true,
+        retrying: true,
+        missed: play.missed.includes(beat.chipId)
+          ? play.missed
+          : [...play.missed, beat.chipId],
+      });
+      window.clearTimeout(holdTimer.current);
+      holdTimer.current = window.setTimeout(() => {
+        answering.current = false;
+      }, MISS_HOLD_MS);
+      return;
+    }
+    setPlay({
+      ...play,
+      hitId: choice.id,
+      quote: false,
+    });
+    landCorrect({ ...play, hitId: choice.id, quote: false });
+  }
+
+  function answerTyped() {
+    if (!play || play.mode !== "play" || answering.current) return;
+    const beat = play.beats[play.index];
+    if (!beat || beat.face === "see") return;
+    const chip = chipById(beat.chipId);
+    if (!chip) return;
+    const cue =
+      roundOf(chip) === 1 && beat.face === "say" ? chip.token.trim().charAt(0) : "";
+    if (!typed.trim()) return;
+    if (!closedHit(typed, chip, /[A-Za-z0-9]/.test(cue) ? cue : "")) {
+      answering.current = true;
+      setPlay({
+        ...play,
+        hitId: null,
+        quote: true,
+        retrying: true,
+        missed: play.missed.includes(beat.chipId)
+          ? play.missed
+          : [...play.missed, beat.chipId],
+      });
+      window.clearTimeout(holdTimer.current);
+      holdTimer.current = window.setTimeout(() => {
+        answering.current = false;
+      }, MISS_HOLD_MS);
+      return;
+    }
+    setPlay({ ...play, hitId: "typed", quote: false });
+    landCorrect({ ...play, hitId: "typed", quote: false, retrying: play.retrying });
   }
 
   const learning = Boolean(play);
+  const beat = play?.beats[Math.min(play.index, play.beats.length - 1)];
   const current =
-    play && play.mode !== "done"
-      ? board.find((item) => item.id === play.order[play.index]) ??
-        board.find((item) => item.id === play.order[0])
-      : null;
+    play && play.mode !== "end" && beat ? chipById(beat.chipId) : null;
   const prompt =
-    play?.mode === "done"
-      ? "Nice — that set can rest."
-      : current?.prompt ?? "";
+    play?.mode === "end"
+      ? "You did good."
+      : beat?.face === "say-b" && current
+        ? sayBPrompt(current)
+        : current?.prompt ?? "";
+  const playKind = current?.kind ?? (play?.mode === "end" ? chipById(play.family[0])?.kind : undefined);
+  const seeCount = play?.beats.filter((item) => item.face === "see").length ?? 0;
+  const sayCount = play?.beats.filter((item) => item.face === "say").length ?? 0;
+  const splitAfter = seeCount || sayCount;
+  const currentRound = current ? roundOf(current) : play?.round ?? 1;
+  const rankWeight =
+    currentRound === 3 ? 600 : currentRound === 2 ? 500 : 400;
 
   useEffect(() => {
     if (!learning) {
@@ -520,12 +984,14 @@ export function HomeBubbles({
     if (play?.mode === "gather") return;
     window.dispatchEvent(
       new CustomEvent("halo-home-play", {
-        detail: { prompt, miss: play?.miss ?? null, kind: current?.kind ?? "" },
+        detail: { prompt, miss: play?.missId ?? null, kind: playKind ?? "" },
       })
     );
     document.documentElement.dataset.haloPlay = "1";
     function grab() {
-      setLessonRoot(document.querySelector("[data-halo-play-root]"));
+      setLessonRoot(
+        document.querySelector("[data-halo-play-root]") as HTMLElement | null
+      );
     }
     grab();
     const frame = window.requestAnimationFrame(grab);
@@ -536,7 +1002,7 @@ export function HomeBubbles({
       window.cancelAnimationFrame(frame);
       window.clearTimeout(later);
     };
-  }, [learning, prompt, play?.miss, play?.mode, current?.kind]);
+  }, [learning, prompt, play?.missId, play?.mode, playKind]);
 
   useEffect(() => {
     const banked = new Set(kept.filter(isBankedChip).map((chip) => chip.id));
@@ -577,77 +1043,227 @@ export function HomeBubbles({
     <div
       ref={fieldRef}
       className={`recents home-bubbles${learning ? " is-learning" : ""}${
-        play?.mode === "play" ? " is-choosing" : ""
+        play?.mode === "play" || play?.mode === "end" ? " is-choosing" : ""
       }${!arrived ? " is-arriving" : ""}`}
       aria-label="Home bubbles"
     >
+      {capLine ? (
+        <p className="home-day-cap" role="status">
+          That&apos;s enough for today. These are waiting for tomorrow.
+        </p>
+      ) : null}
       {lessonRoot && play
         ? createPortal(
-            <div className="compose-play" data-kind={current?.kind ?? ""}>
-              <div className="compose-play-head">
+            <div
+              className="compose-play"
+              data-kind={playKind ?? ""}
+              data-play-round={String(play.round)}
+              style={{ "--play-weight": String(rankWeight) } as CSSProperties}
+            >
+              <div className="compose-play-band">
                 <p className="compose-play-kind">
-                  {current ? KIND_LABEL[current.kind] : ""}
+                  {current
+                    ? KIND_LABEL[current.kind]
+                    : playKind
+                      ? KIND_LABEL[playKind]
+                      : ""}
                 </p>
-                <div
-                  className="compose-play-bar"
-                  role="progressbar"
-                  aria-valuemin={0}
-                  aria-valuemax={play.order.length}
-                  aria-valuenow={
-                    play.mode === "done" ? play.order.length : play.index
-                  }
-                  aria-label={`Card ${play.index + 1} of ${play.order.length}`}
-                >
-                  <span
-                    className="compose-play-ink"
-                    style={{
-                      width: `${
-                        play.mode === "done"
-                          ? 100
-                          : (play.index / play.order.length) * 100
-                      }%`,
-                    }}
-                  />
-                </div>
               </div>
-              {play.miss ? (
-                <p className="compose-play-verdict" role="status">
-                  Not that one
-                </p>
-              ) : (
-                <p className="compose-play-verdict compose-play-verdict--spacer" aria-hidden>
-                  {" "}
-                </p>
-              )}
-              <p className="compose-play-prompt">{prompt}</p>
-              {play.mode === "play" && current ? (
-                <div
-                  className="home-play-choices"
-                  role="group"
-                  aria-label="Choices"
-                  key={play.order[play.index]}
+              <div className="compose-play-col">
+                <ol
+                  className="compose-play-dots"
+                  aria-label="Round progress"
                 >
-                  {play.choices.map((choice, i) => (
-                    <WaterCapsule
-                      key={choice.id}
-                      still
-                      className={`home-play-choice${
-                        play.miss === choice.id ? " is-miss" : ""
-                      }${play.hit === choice.id ? " is-ok" : ""}${
-                        play.hit && play.hit !== choice.id ? " is-fall" : ""
-                      }`}
-                      phase={i + 40}
-                      title={choice.label}
-                      style={{ "--choice-i": String(i) } as CSSProperties}
-                      onClick={(el) => answerChoice(choice, el)}
+                  {play.beats.map((item, i) => {
+                    const filled =
+                      play.mode === "end" || i < play.index;
+                    const currentDot =
+                      play.mode !== "end" && i === play.index;
+                    const split = i === splitAfter;
+                    return (
+                      <li
+                        key={item.id}
+                        className={`compose-play-dot${
+                          filled ? " is-filled" : currentDot ? " is-current" : ""
+                        }${split ? " is-split" : ""}`}
+                        style={{ "--dot-i": String(i) } as CSSProperties}
+                      />
+                    );
+                  })}
+                </ol>
+                {play.mode === "end" ? (
+                  <div className="compose-play-end" key="end">
+                    <p className="compose-play-headline">You did good.</p>
+                    {(() => {
+                      const { passed, failed } = splitRound(play);
+                      const mixed = passed.length > 0 && failed.length > 0;
+                      const renderRows = (
+                        ids: string[],
+                        fail: boolean,
+                        start: number
+                      ) =>
+                        ids.map((id, i) => {
+                          const chip = chipById(id);
+                          if (!chip) return null;
+                          const rank = keepRank(chip);
+                          return (
+                            <li
+                              key={id}
+                              className={`compose-play-recap-row${
+                                fail ? " is-fail" : ""
+                              }`}
+                              style={
+                                {
+                                  "--row-i": String(start + i),
+                                } as CSSProperties
+                              }
+                            >
+                              <EndBead
+                                chipId={id}
+                                rank={rank}
+                                upgrade={!fail}
+                                delay={(start + i) * 60 + 200}
+                                kind={chip.kind}
+                              />
+                              <span className="compose-play-recap-cue">
+                                {chip.token}
+                              </span>
+                              <span className="compose-play-recap-gap">
+                                {" "}
+                                —{" "}
+                              </span>
+                              <span className="compose-play-recap-answer">
+                                {chip.answer}
+                              </span>
+                            </li>
+                          );
+                        });
+                      return (
+                        <div className="compose-play-recap-wrap">
+                          {mixed ? (
+                            <p className="compose-play-recap-label">Banked</p>
+                          ) : null}
+                          {passed.length ? (
+                            <ul className="compose-play-recap">
+                              {renderRows(passed, false, 0)}
+                            </ul>
+                          ) : null}
+                          {mixed ? (
+                            <p className="compose-play-recap-label">
+                              Still working
+                            </p>
+                          ) : null}
+                          {failed.length ? (
+                            <ul className="compose-play-recap">
+                              {renderRows(failed, true, passed.length)}
+                            </ul>
+                          ) : null}
+                        </div>
+                      );
+                    })()}
+                    <button
+                      type="button"
+                      className="stone-btn compose-play-done"
+                      onClick={() => closeRound(play, true)}
                     >
-                      {choice.label}
-                    </WaterCapsule>
-                  ))}
-                </div>
-              ) : (
-                <div className="home-play-choices home-play-choices--wait" />
-              )}
+                      Done
+                    </button>
+                  </div>
+                ) : (
+                  <div
+                    className="compose-play-beat"
+                    key={beat?.id ?? play.index}
+                  >
+                    {play.quote && current ? (
+                      <div className="compose-play-miss" role="status">
+                        <p className="compose-play-miss-kicker">Not quite —</p>
+                        <blockquote className="compose-play-quote">
+                          {(() => {
+                            const parts = quoteParts(current);
+                            return (
+                              <>
+                                {parts.before}
+                                <em>{parts.hit}</em>
+                                {parts.after}
+                              </>
+                            );
+                          })()}
+                        </blockquote>
+                      </div>
+                    ) : null}
+                    <p className="compose-play-prompt">{prompt}</p>
+                    {play.mode === "play" && current && beat?.face === "see" ? (
+                      <div
+                        className="home-play-choices"
+                        role="group"
+                        aria-label="Choices"
+                      >
+                        {play.choices.map((choice, i) => (
+                          <button
+                            key={choice.id}
+                            type="button"
+                            className={`home-play-choice${
+                              play.missId === choice.id ? " is-locked" : ""
+                            }${play.hitId === choice.id ? " is-ok" : ""}${
+                              play.hitId && play.hitId !== choice.id
+                                ? " is-dim"
+                                : ""
+                            }`}
+                            style={{ "--choice-i": String(i) } as CSSProperties}
+                            disabled={
+                              play.missId === choice.id || Boolean(play.hitId)
+                            }
+                            onClick={() => answerChoice(choice)}
+                          >
+                            {choice.label}
+                          </button>
+                        ))}
+                      </div>
+                    ) : play.mode === "play" && current ? (
+                      <input
+                        ref={typeRef}
+                        className={`home-play-say${
+                          play.hitId === "typed" ? " is-ok" : ""
+                        }${play.quote ? " is-miss" : ""}`}
+                        value={typed}
+                        onChange={(event) => setTyped(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key !== "Enter") return;
+                          event.preventDefault();
+                          answerTyped();
+                        }}
+                        placeholder={
+                          roundOf(current) === 1 && beat?.face === "say"
+                            ? cuePlaceholder(current.token)
+                            : ""
+                        }
+                        autoComplete="off"
+                        autoCorrect="off"
+                        spellCheck={false}
+                        enterKeyHint="done"
+                        inputMode="text"
+                        onPointerDown={(event) => {
+                          if (!window.matchMedia("(max-width: 720px)").matches) {
+                            return;
+                          }
+                          event.preventDefault();
+                          typeRef.current?.focus({ preventScroll: true });
+                        }}
+                        onFocus={() => {
+                          typeRef.current?.scrollIntoView({
+                            block: "nearest",
+                            inline: "nearest",
+                          });
+                        }}
+                        disabled={Boolean(play.hitId)}
+                        aria-label="Type the answer"
+                      />
+                    ) : (
+                      <div className="home-play-choices home-play-choices--wait" />
+                    )}
+                  </div>
+                )}
+              </div>
             </div>,
             lessonRoot
           )
@@ -655,10 +1271,7 @@ export function HomeBubbles({
       <LoopFlights
         flights={loopFlights}
         onDone={(flight) => {
-          if (flight.mode === "bank" && flight.chipId) {
-            gradeChips([flight.chipId], "ok");
-          }
-          if (flight.chipId) {
+          if (flight.chipId && flight.mode !== "bank") {
             setDropping((prev) => {
               const next = { ...prev };
               delete next[flight.chipId as string];
@@ -666,13 +1279,23 @@ export function HomeBubbles({
             });
           }
           setLoopFlights((prev) => prev.filter((item) => item.id !== flight.id));
+          if (!pendingBank.current.has(flight.id)) return;
+          pendingBank.current.delete(flight.id);
+          if (pendingBank.current.size === 0 && pendingCommit.current) {
+            const results = pendingCommit.current;
+            const pulse = pendingGoldPulse.current;
+            pendingCommit.current = null;
+            pendingGoldPulse.current = false;
+            commitRound(results);
+            if (pulse) window.dispatchEvent(new Event("halo-gold-pulse"));
+          }
         }}
       />
       {board.map((chip, i) => {
         const point = keepSeat(i, scatter);
         const heat = heatOf(chip);
         const cast = Boolean(play?.family.includes(chip.id));
-        const recede = Boolean(play && (!cast || play.mode === "play"));
+        const recede = Boolean(play && (!cast || play.mode !== "gather"));
         const title = `${chip.token} · click to review · hold for the chat`;
         return (
           <div

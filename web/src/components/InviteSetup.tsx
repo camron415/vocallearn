@@ -2,8 +2,6 @@
 
 import { FormEvent, useState } from "react";
 import { AuthShell } from "@/components/AuthShell";
-import { GlassButton } from "@/components/Glass";
-import { WaterPane } from "@/components/WaterSurface";
 import {
   authErrorMessage,
   emailError,
@@ -87,7 +85,7 @@ export function InviteSetup({
         <label className="field-label" htmlFor="join-name">
           Name
         </label>
-        <WaterPane variant="field" className="settings-name-pane" still>
+        <div className="settings-name-pane">
           <input
             id="join-name"
             className="field"
@@ -98,11 +96,11 @@ export function InviteSetup({
             maxLength={40}
             required
           />
-        </WaterPane>
+        </div>
         <label className="field-label" htmlFor="join-email">
           Email
         </label>
-        <WaterPane variant="field" className="settings-name-pane" still>
+        <div className="settings-name-pane">
           <input
             id="join-email"
             className="field"
@@ -113,11 +111,11 @@ export function InviteSetup({
             onChange={(e) => setEmail(e.target.value)}
             required
           />
-        </WaterPane>
+        </div>
         <label className="field-label" htmlFor="join-password">
           Password
         </label>
-        <WaterPane variant="field" className="settings-name-pane" still>
+        <div className="settings-name-pane">
           <input
             id="join-password"
             className="field"
@@ -129,15 +127,15 @@ export function InviteSetup({
             minLength={MIN_PASSWORD}
             required
           />
-        </WaterPane>
+        </div>
         <p className="login-hint">
           At least {MIN_PASSWORD} characters, with a letter and a number. Apple’s
           suggested password is fine.
         </p>
         {error ? <p className="form-error">{error}</p> : null}
-        <GlassButton type="submit" disabled={loading} className="login-submit">
+        <button type="submit" disabled={loading} className="stone-btn login-submit">
           {loading ? "Creating…" : "Create account"}
-        </GlassButton>
+        </button>
       </form>
     </AuthShell>
   );

@@ -1,0 +1,7 @@
+# Halo Learn feature brainstorming, cost optimization, and privacy discussion - August 18 2026
+**Date:** 2026-08-18T23:23:13.165Z · **Project:** vocallearn
+
+Discussed recent Halo/Cove updates including the three-ring access system (head developer, close family ring 2, broader family/friends ring 3) and the new recipe feature. Deep dive on cost optimization for Grok 4.3: web_search tool at $5 per 1k calls plus token overhead makes basic factual queries like weather ~2-2.5 cents each; solution is hybrid routing of top 10 transient lookups (weather, stocks, news, sports, crypto, currency, flights, traffic, movies, local events) to dedicated free APIs or cheaper non-reasoning models (Grok 4.1 Fast / Build 0.1), reserving 4.3 only for reasoning tasks. For the Learn feature: initial MVP as effortless daily mini-review of 2-3 specific facts actually asked the previous day (via fact miner on opted-in conversations only); strictly opt-in to honor privacy promises to family; no inferring broader topics—only explicit facts proposed by the miner. Use Supabase Row Level Security so each user's facts are confidential even to admin queries. Fact miner must filter out transient lookups and only propose stable conceptual or interview-worthy facts. Ideas for gamified, seamless UX with positive feedback, streaks, and animations to drive engagement and tempt users into premium full-lesson features later. No formal decisions made—planning notes for Cursor team to implement. Full call transcript available in this conversation history.
+
+## Action items
+_None listed._

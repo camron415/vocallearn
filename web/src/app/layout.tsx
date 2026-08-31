@@ -2,7 +2,9 @@ import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import { Fraunces, Manrope, Nunito } from "next/font/google";
 import { MotionProvider } from "@/components/MotionProvider";
+import { AppPaperSkin } from "@/components/AppPaperSkin";
 import { LoopSkin } from "@/components/LoopSkin";
+import { APP_PAPER_INLINE } from "@/lib/app-paper-skin";
 import { HALO_BOOT_INLINE } from "@/lib/halo-boot";
 import "./globals.css";
 
@@ -173,7 +175,7 @@ export default async function RootLayout({
 }>) {
   const hdrs = await headers();
   const previewSkin = hdrs.get("x-halo-home-skin");
-  const homeSkin = previewSkin === "paper" ? "paper" : "ours";
+  const homeSkin = previewSkin === "ours" ? "ours" : "paper";
   const homeTheme = hdrs.get("x-halo-theme") === "dark" ? "dark" : "light";
   return (
     <html
@@ -189,9 +191,11 @@ export default async function RootLayout({
     >
       <body className="min-h-full antialiased">
         <script dangerouslySetInnerHTML={{ __html: HALO_BOOT_INLINE }} />
+        <script dangerouslySetInnerHTML={{ __html: APP_PAPER_INLINE }} />
         <div className="halo-filter-warmup" aria-hidden />
         <HaloFilters />
         <LoopSkin />
+        <AppPaperSkin />
         <MotionProvider>{children}</MotionProvider>
         {/* Future overlay portal. No UI. Do not bolt menus onto HaloHeader. */}
         <div id="cove-overlay" />

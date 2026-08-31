@@ -157,6 +157,7 @@ export function GlassButton({
     <button
       type={type}
       title={title}
+      aria-label={title}
       disabled={disabled}
       onClick={onClick}
       className={`stone-btn ${className}`}

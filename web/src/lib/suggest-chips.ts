@@ -78,7 +78,7 @@ export const GENERIC_POOL: SuggestChip[] = [
   },
 ];
 
-/** Six that fit the bubbles and cover the widest net. */
+/** Four starters — idle list stays short so chips on the field stay visible. */
 export const STARTERS: SuggestChip[] = GENERIC_POOL.slice(0, 4);
 
 const PERSONALIZE_AFTER = 8;

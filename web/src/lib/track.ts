@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-type EventKind = "ask" | "recipe_save" | "join" | "onboard" | "error" | "suggest";
+type EventKind = "ask" | "recipe_save" | "join" | "onboard" | "error" | "suggest" | "harvest";
 
 export async function trackHaloEvent(
   supabase: SupabaseClient,

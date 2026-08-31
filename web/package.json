@@ -1,14 +1,19 @@
 {
   "name": "halo-web",
   "description": "Halo — invite-only family Ask chat with Cove/Keep learning loop (Next.js, TypeScript, Supabase, Grok).",
-  "version": "0.1.0",
+  "version": "1.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:lan": "node scripts/dev-lan.mjs",
     "preview": "node scripts/preview-up.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test:harvest": "tsx src/lib/v2-lib-check.ts",
+    "test:harvest:live": "tsx --env-file=.env.local src/lib/harvest-smoke-live.ts",
+    "test:harvest:live:dry": "tsx src/lib/harvest-smoke-live.ts --dry",
+    "harvest:export": "tsx --env-file=.env.local scripts/harvest-export.mjs",
     "deploy:lab": "vercel deploy --yes",
     "deploy:early": "vercel deploy --prod --yes",
     "capture:sink": "node scripts/harvest-sink.mjs"
@@ -32,6 +37,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.0",
     "tailwindcss": "^4",
+    "tsx": "^4.20.5",
     "typescript": "^5"
   }
 }

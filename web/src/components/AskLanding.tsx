@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AttachButton } from "@/components/AttachButton";
+import { AttachButton, AttachList } from "@/components/AttachButton";
 import { HomeBubbles } from "@/components/HomeBubbles";
 import { ComposeField } from "@/components/ComposeField";
 import { ComposeSuggest } from "@/components/ComposeSuggest";
@@ -20,9 +20,10 @@ import {
   clearComposeHandoff,
 } from "@/components/SpringStage";
 import { ComposeStadium, WaterAction } from "@/components/WaterSurface";
-import { matchPrompts } from "@/lib/prompt-trie";
+import { matchPrompts, topIdlePrompts } from "@/lib/prompt-trie";
 import { suggestChips, type SuggestChip } from "@/lib/suggest-chips";
 import { readAttachments } from "@/lib/read-files";
+import { stashAskAttachments } from "@/lib/pending-attach";
 import {
   isBankedChip,
   isDueChip,
@@ -31,6 +32,7 @@ import {
   subscribeKeep,
 } from "@/lib/keep-memory";
 import { isLabPreviewPath, labPreviewChatHref } from "@/lib/lab-preview";
+import { useCoarsePointer } from "@/lib/coarse-pointer";
 import type { ChipKind } from "@/lib/harvest";
 import type { AskConversation, HaloProfile } from "@/lib/types";
 
@@ -60,6 +62,7 @@ export function AskLanding({
 }) {
   const router = useRouter();
   const soft = useEffectiveMotion() === "reduced";
+  const coarse = useCoarsePointer();
   const [draft, setDraft] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [sending, setSending] = useState(false);
@@ -167,9 +170,10 @@ export function AskLanding({
   useLayoutEffect(() => {
     const el = composeRef.current;
     if (!el) return;
+    const node = el;
     function save() {
-      if (el.dataset.morph === "moving") return;
-      rememberHeroCompose(el);
+      if (node.dataset.morph === "moving") return;
+      rememberHeroCompose(node);
     }
     save();
     const id = window.setTimeout(save, COMPOSE_TRAVEL_MS + 80);
@@ -219,26 +223,57 @@ export function AskLanding({
       setIdleReady(false);
       return;
     }
+    if (coarse) {
+      setIdleReady(false);
+      return;
+    }
     const wait = soft ? 0 : IDLE_MS;
     const id = window.setTimeout(() => setIdleReady(true), wait);
     return () => window.clearTimeout(id);
-  }, [composeOpen, query, soft]);
+  }, [composeOpen, query, soft, coarse]);
 
   const hints = useMemo(() => {
     if (query) {
       if (filled) return [];
-      return matchPrompts(query, TYPE_COUNT).map((title, i) => ({
+      const n = coarse ? 2 : TYPE_COUNT;
+      return matchPrompts(query, n).map((title, i) => ({
         id: `a${i}`,
         title,
       }));
     }
+    // Phone keyboard eats the idle list. Skip it so the first tap focuses.
+    if (coarse) return [];
     if (!composeOpen || !idleReady) return [];
-    return chips.slice(0, IDLE_COUNT);
-  }, [chips, composeOpen, filled, idleReady, query]);
+    const used = new Set<string>();
+    const out: { id: string; title: string }[] = [];
+    for (const chip of chips) {
+      const title = chip.title.trim();
+      if (!title || used.has(title)) continue;
+      used.add(title);
+      out.push({ id: chip.id, title });
+      if (out.length >= IDLE_COUNT) return out;
+    }
+    const daySeed = Math.floor(Date.now() / 86_400_000);
+    for (const title of topIdlePrompts(IDLE_COUNT, daySeed)) {
+      if (used.has(title)) continue;
+      used.add(title);
+      out.push({ id: `t${out.length}`, title });
+      if (out.length >= IDLE_COUNT) break;
+    }
+    return out;
+  }, [chips, composeOpen, filled, idleReady, query, coarse]);
 
   useEffect(() => {
     setActiveHint(0);
   }, [hints]);
+
+  function focusComposeField() {
+    window.clearTimeout(composeFocus.current);
+    setComposeOpen(true);
+    window.requestAnimationFrame(() => {
+      composeRef.current?.querySelector("textarea")?.focus({ preventScroll: true });
+    });
+  }
 
   function fillDraft(title: string) {
     setDraft(title);
@@ -246,7 +281,7 @@ export function AskLanding({
     setComposeOpen(true);
     setActiveHint(0);
     window.requestAnimationFrame(() => {
-      composeRef.current?.querySelector("textarea")?.focus();
+      composeRef.current?.querySelector("textarea")?.focus({ preventScroll: true });
     });
   }
 
@@ -283,6 +318,10 @@ export function AskLanding({
     setListening(false);
     setSending(true);
     setError(null);
+    setDraft("");
+    setComposeOpen(false);
+    setFilled(false);
+    composeRef.current?.querySelector("textarea")?.blur();
 
     if (demo || isLabPreviewPath()) {
       window.dispatchEvent(new Event("halo-home-play-end"));
@@ -312,6 +351,7 @@ export function AskLanding({
       if (!res.ok) {
         throw new Error(data.error || "Failed to send");
       }
+      stashAskAttachments(data.conversationId, attachments);
       goAfterLeave(() => {
         sessionStorage.setItem(`halo-ask-live:${data.conversationId}`, "1");
         router.push(`/ask/${data.conversationId}`);
@@ -362,7 +402,7 @@ export function AskLanding({
         onAsk={(item, el) => {
           void startAsk(item.prompt, el);
         }}
-        onOpenSource={() => {
+        onOpenSource={(chip) => {
           window.dispatchEvent(new Event("halo-home-play-end"));
           setPlaying(false);
           setGrown(false);
@@ -373,7 +413,11 @@ export function AskLanding({
             });
             return;
           }
-          openChat("1");
+          const dest = chip.askId?.trim();
+          if (!dest || /^[1-6]$/.test(dest)) return;
+          goAfterLeave(() => {
+            router.push(`/ask/${dest}`);
+          });
         }}
       />
 
@@ -389,7 +433,21 @@ export function AskLanding({
                 : greetingForHour()
             }, ${displayName}`}
           </p>
-          <div className={`compose-stack${hints.length && !playing ? " is-open" : ""}`}>
+          <div
+            className={`compose-stack${hints.length && !playing ? " is-open" : ""}`}
+            onPointerDown={(event) => {
+              if (playing) return;
+              const target = event.target as HTMLElement;
+              if (
+                target.closest(".compose-actions") ||
+                target.closest(".compose-suggest") ||
+                target.closest("button")
+              ) {
+                return;
+              }
+              focusComposeField();
+            }}
+          >
           <ComposeStadium
             className={`compose${playing ? " is-play-lesson" : ""}${
               playing && grown ? " is-grown" : ""
@@ -404,23 +462,12 @@ export function AskLanding({
             ) : (
             <form onSubmit={onSubmit} className="compose-form">
               {error ? <p className="form-error">{error}</p> : null}
-              {files.length ? (
-                <ul className="attach-list">
-                  {files.map((file) => (
-                    <li key={`${file.name}-${file.size}`}>
-                      <span>{file.name}</span>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setFiles((prev) => prev.filter((f) => f !== file))
-                        }
-                      >
-                        Remove
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
+              <AttachList
+                files={files}
+                onRemove={(file) =>
+                  setFiles((prev) => prev.filter((f) => f !== file))
+                }
+              />
               <label className="sr-only" htmlFor="mind">
                 What’s on your mind?
               </label>
@@ -434,10 +481,6 @@ export function AskLanding({
                     setDraft(value);
                   }}
                   disabled={sending}
-                  onPointerDown={() => {
-                    window.clearTimeout(composeFocus.current);
-                    setComposeOpen(true);
-                  }}
                   onFocus={() => {
                     window.clearTimeout(composeFocus.current);
                     setComposeOpen(true);
@@ -476,6 +519,7 @@ export function AskLanding({
                     files={files}
                     onFiles={setFiles}
                     disabled={sending}
+                    onError={setError}
                   />
                   <DictateButton
                     value={draft}
@@ -483,6 +527,7 @@ export function AskLanding({
                     listening={listening}
                     onListeningChange={setListening}
                     disabled={sending}
+                    onBlocked={setError}
                   />
                   <WaterAction
                     className="action-btn"

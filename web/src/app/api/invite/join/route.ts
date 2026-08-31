@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import {
   authErrorMessage,
   emailError,
@@ -6,7 +6,8 @@ import {
   normalizeEmail,
   passwordError,
 } from "@/lib/account";
-import { createClient } from "@/lib/supabase/server";
+import { createRouteClient } from "@/lib/supabase/route";
+import { publicOrigin, publicUrl } from "@/lib/public-origin";
 
 export const dynamic = "force-dynamic";
 
@@ -25,9 +26,8 @@ function fail(
   if (wantsJson(request)) {
     return NextResponse.json({ error }, { status });
   }
-  const origin = process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin;
   const path = token ? `/invite/${encodeURIComponent(token)}` : "/login";
-  const url = new URL(path, origin);
+  const url = publicUrl(request, path);
   url.searchParams.set("error", error);
   return NextResponse.redirect(url, 303);
 }
@@ -57,7 +57,7 @@ async function readBody(request: Request) {
   };
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   let fields: {
     token: string;
     name: string;
@@ -80,7 +80,13 @@ export async function POST(request: Request) {
   if (first) return fail(request, first, 400, token);
 
   const email = normalizeEmail(fields.email);
-  const supabase = await createClient();
+  const origin = publicOrigin(request);
+  const askUrl = publicUrl(request, "/ask");
+  const { supabase, response } = createRouteClient(request, () =>
+    wantsJson(request)
+      ? NextResponse.json({ ok: true, next: "/ask" })
+      : NextResponse.redirect(askUrl, 303)
+  );
 
   const reserved = await supabase.rpc("halo_reserve_invite", { tok: token });
   if (reserved.error) {
@@ -101,9 +107,6 @@ export async function POST(request: Request) {
       return fail(request, message, 409, token);
     }
   }
-
-  const origin =
-    process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin;
 
   const { data, error: signUpError } = await supabase.auth.signUp({
     email,
@@ -159,8 +162,5 @@ export async function POST(request: Request) {
       .eq("id", userId);
   }
 
-  if (wantsJson(request)) {
-    return NextResponse.json({ ok: true, next: "/ask" });
-  }
-  return NextResponse.redirect(new URL("/ask", origin), 303);
+  return response();
 }

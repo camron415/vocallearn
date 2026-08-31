@@ -48,6 +48,12 @@ type Body = HomeBox;
 /** Laptop-sized Home is the “looks right” frame. Grow on big monitors, shrink on small. */
 const DESIGN_W = 1440;
 const DESIGN_H = 900;
+/** Match `motion.css` phone breakpoint. Dice seats live above greeting/composer. */
+export const PHONE_HOME_MAX_W = 720;
+
+export function isPhoneHomeView(view: { w: number }) {
+  return view.w <= PHONE_HOME_MAX_W;
+}
 
 export function keepFieldScale(view: { w: number; h: number }) {
   const s = Math.min(view.w / DESIGN_W, view.h / DESIGN_H);
@@ -118,6 +124,38 @@ const PICK: number[][] = [
   [0, 1, 2, 3, 4, 5, 6, 7, 14, 15, 8, 9, 10, 11, 12],
   [0, 1, 2, 3, 4, 5, 6, 7, 14, 15, 8, 9, 10, 11, 12, 13],
 ];
+
+/**
+ * Phone-only seats. All in the upper band so chips sit above greeting +
+ * composer (dice-5: two-one-two). Never fy > 0.40 — those hid behind the dock.
+ */
+const PHONE_MASTER: Spot[] = [
+  { fx: 0.24, fy: 0.08, room: 0.9, band: "top", belt: true },
+  { fx: 0.76, fy: 0.08, room: 0.9, band: "top", belt: true },
+  { fx: 0.5, fy: 0.18, room: 0.85, band: "top", belt: true },
+  { fx: 0.28, fy: 0.3, room: 0.9, band: "top", belt: true },
+  { fx: 0.72, fy: 0.3, room: 0.9, band: "top", belt: true },
+  { fx: 0.12, fy: 0.16, room: 0.75, band: "top", belt: true },
+  { fx: 0.88, fy: 0.16, room: 0.75, band: "top", belt: true },
+  { fx: 0.5, fy: 0.4, room: 0.7, band: "top", belt: false },
+  { fx: 0.18, fy: 0.38, room: 0.7, band: "top", belt: false },
+  { fx: 0.82, fy: 0.38, room: 0.7, band: "top", belt: false },
+];
+
+const PHONE_PICK: number[][] = [
+  [],
+  [2],
+  [0, 1],
+  [0, 1, 2],
+  [0, 1, 3, 4],
+  [0, 1, 2, 3, 4],
+  [0, 1, 2, 3, 4, 5],
+  [0, 1, 2, 3, 4, 5, 6],
+  [0, 1, 2, 3, 4, 5, 6, 7],
+  [0, 1, 2, 3, 4, 5, 6, 7, 8],
+  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+];
+
 function hit(a: HomeWall, b: HomeWall, gap: number) {
   return (
     a.x < b.x + b.w + gap &&
@@ -203,7 +241,12 @@ function heatRank(heat?: ChipHeat) {
   return 0;
 }
 
-function spotsForCount(n: number): Spot[] {
+function spotsForCount(n: number, phone: boolean): Spot[] {
+  if (phone) {
+    const count = Math.max(0, Math.min(PHONE_MASTER.length, Math.round(n)));
+    const pick = PHONE_PICK[count] ?? PHONE_PICK[PHONE_PICK.length - 1];
+    return pick.map((i) => PHONE_MASTER[i]).filter(Boolean);
+  }
   const count = Math.max(0, Math.min(16, Math.round(n)));
   const pick = PICK[count] ?? PICK[16];
   return pick.map((i) => MASTER[i]).filter(Boolean);
@@ -249,15 +292,16 @@ export function seedKeepField(
   _scatter?: number
 ): KeepSeat[] {
   if (!chips.length) return [];
+  const phone = isPhoneHomeView(view);
   const pad = 10;
-  const inset = keepPlayableInset(chips.length, view);
-  const spots = spotsForCount(chips.length);
+  const inset = phone ? 0.04 : keepPlayableInset(chips.length, view);
+  const spots = spotsForCount(chips.length, phone);
   const centers = spots.map((spot, i) => {
     const fx = inset + spot.fx * (1 - 2 * inset);
     const fy = inset + spot.fy * (1 - 2 * inset);
-    // Tiny jitter only — seats must stay recognizable.
-    const jx = (unit(`jx${i}${spot.fx}`) - 0.5) * 0.01;
-    const jy = (unit(`jy${i}${spot.fy}`) - 0.5) * 0.008;
+    // Tiny jitter only — seats must stay recognizable. Phone dice stays put.
+    const jx = phone ? 0 : (unit(`jx${i}${spot.fx}`) - 0.5) * 0.01;
+    const jy = phone ? 0 : (unit(`jy${i}${spot.fy}`) - 0.5) * 0.008;
     return {
       ...spot,
       cx: (fx + jx) * view.w,
@@ -350,7 +394,7 @@ export function seedKeepField(
 
   for (const chip of unused) {
     const cx = pad + unit(`fx${chip.id}`) * (view.w - pad * 2);
-    const cy = view.h * 0.45;
+    const cy = phone ? view.h * 0.22 : view.h * 0.45;
     const cleared = clearOfWalls(cx, cy, chip.w, chip.h, walls, 12);
     out.push({
       id: chip.id,
@@ -377,7 +421,7 @@ export function packHomeChips(
   boxes: HomeBox[],
   walls: HomeWall[],
   view: { w: number; h: number },
-  opts?: { outerGap?: number; clusterSpread?: number }
+  opts?: { outerGap?: number; clusterSpread?: number; shoveLargeWalls?: boolean }
 ): HomeBox[] {
   if (!boxes.length) return boxes;
   const outerGap = opts?.outerGap ?? 10;
@@ -395,12 +439,25 @@ export function packHomeChips(
         shove(bodies[i], bodies[j], gap, inherit);
         shove(bodies[j], bodies[i], gap, inherit);
       }
-      // Greeting/topbar only — compose is a corridor the seats already avoid.
+      // Greeting/topbar only on desktop — compose is a corridor the seats
+      // already avoid. Phone dice sits above the hero; shove the composer wall.
       for (const wall of walls) {
-        if (wall.h > view.h * 0.2 && wall.w > view.w * 0.4) continue;
+        if (
+          !opts?.shoveLargeWalls &&
+          wall.h > view.h * 0.2 &&
+          wall.w > view.w * 0.4
+        ) {
+          continue;
+        }
         shove(bodies[i], wall, outerGap + 4, inherit);
       }
       clampBody(bodies[i], view, pad);
+      if (opts?.shoveLargeWalls) {
+        bodies[i].y = Math.min(
+          bodies[i].y,
+          Math.max(pad, view.h * 0.42 - bodies[i].h)
+        );
+      }
     }
   }
 

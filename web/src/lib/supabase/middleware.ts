@@ -3,12 +3,14 @@ import { NextResponse, type NextRequest } from "next/server";
 
 function previewSkinFromRequest(request: NextRequest): "paper" | "ours" | null {
   const path = request.nextUrl.pathname;
-  if (path !== "/preview" && !path.startsWith("/preview/")) return null;
-  const look = request.nextUrl.searchParams.get("look");
-  if (look === "paper" || look === "ours") return look;
-  const cookie = request.cookies.get("halo-preview-skin")?.value;
-  if (cookie === "paper" || cookie === "ours") return cookie;
-  return null;
+  if (path === "/preview" || path.startsWith("/preview/")) {
+    const look = request.nextUrl.searchParams.get("look");
+    if (look === "paper" || look === "ours") return look;
+    const cookie = request.cookies.get("halo-preview-skin")?.value;
+    if (cookie === "paper" || cookie === "ours") return cookie;
+    return null;
+  }
+  return "paper";
 }
 
 export async function updateSession(request: NextRequest) {
@@ -91,7 +93,9 @@ export async function updateSession(request: NextRequest) {
     path.startsWith("/invite/") ||
     path.startsWith("/api/invite/reserve") ||
     path.startsWith("/api/invite/join") ||
-    path.startsWith("/api/dev/capture");
+    path.startsWith("/api/dev/capture") ||
+    path.startsWith("/api/dev/ping") ||
+    path.startsWith("/api/auth/login");
 
   if (!user && !isPublic && path !== "/") {
     const url = request.nextUrl.clone();

@@ -18,35 +18,36 @@ export type GrokMessage = {
 
 export type ReasoningEffort = "none" | "low" | "medium" | "high";
 
-const RETIRED_FAST = new Set([
+const RETIRED = new Set([
   "grok-4-fast-non-reasoning",
   "grok-4-fast-reasoning",
   "grok-4-1-fast-non-reasoning",
   "grok-4-1-fast-reasoning",
+  "grok-build-0.1",
 ]);
 
 const requestedModel = process.env.GROK_CHAT_MODEL || "grok-4.3";
-const CHAT_MODEL = RETIRED_FAST.has(requestedModel)
-  ? "grok-4.3"
-  : requestedModel;
+export const CHAT_MODEL = RETIRED.has(requestedModel) ? "grok-4.3" : requestedModel;
 
-/** Lookups and Learn grading. Build is cheaper than 4.3; skip search to save the real money. */
-const requestedFast = process.env.GROK_FAST_MODEL || "grok-build-0.1";
-export const FAST_MODEL = RETIRED_FAST.has(requestedFast)
-  ? "grok-build-0.1"
-  : requestedFast;
-const FAST_EFFORT: ReasoningEffort =
-  (process.env.GROK_CHAT_REASONING as ReasoningEffort) || "none";
-const SMART_EFFORT: ReasoningEffort =
-  (process.env.GROK_CHAT_REASONING_SMART as ReasoningEffort) || "low";
+const DEFAULT_EFFORT: ReasoningEffort =
+  (process.env.GROK_CHAT_REASONING as ReasoningEffort) || "low";
+const DEEP_EFFORT: ReasoningEffort =
+  (process.env.GROK_CHAT_REASONING_DEEP as ReasoningEffort) ||
+  (process.env.GROK_CHAT_REASONING_SMART as ReasoningEffort) ||
+  "medium";
 
 const HARD =
   /\b(step by step|analy[sz]e|compare|trade-?offs?|debug|refactor|architect|prove|derive|deep dive|reason about|implement|walk me through|in detail|detailed)\b/i;
 
-/** Cheap by default (no reasoning). Step up effort only when the turn is heavy. */
+const DEPTH =
+  /\b(why|how come|what happened|what caused|tell me more|more detail|in depth|in detail|detailed|explain|should i|is it (a )?good|news about|behind (the |this )|analy[sz]e|compare|trade-?offs?)\b/i;
+
+/** Default low. Medium when the turn asks for depth or is clearly heavy. */
 export function pickReasoningEffort(userText: string): ReasoningEffort {
-  if (userText.length > 520 || HARD.test(userText)) return SMART_EFFORT;
-  return FAST_EFFORT;
+  if (DEPTH.test(userText) || userText.length > 520 || HARD.test(userText)) {
+    return DEEP_EFFORT;
+  }
+  return DEFAULT_EFFORT;
 }
 
 export function grokAuth() {
@@ -100,16 +101,20 @@ export function grokResponsesBody(
     effort?: ReasoningEffort;
     stream?: boolean;
     tools?: boolean;
+    maxToolCalls?: number;
     answerLength?: "short" | "medium" | "long";
     system?: string;
   }
 ) {
-  const effort = options?.effort || FAST_EFFORT;
+  const effort = options?.effort ?? DEFAULT_EFFORT;
   const useTools = options?.tools !== false;
   const length = options?.answerLength || "medium";
   const maxTokens =
     options?.maxTokens ??
     (length === "short" ? 500 : length === "long" ? 1800 : effort === "none" ? 1100 : 1600);
+  const toolBudget = useTools
+    ? Math.max(0, Math.min(2, options?.maxToolCalls ?? 1))
+    : 0;
   return {
     model: options?.model || CHAT_MODEL,
     input: grokInput(messages, {
@@ -119,8 +124,8 @@ export function grokResponsesBody(
     temperature: options?.temperature ?? 0.5,
     max_output_tokens: maxTokens,
     reasoning: { effort },
-    ...(useTools
-      ? { tools: [{ type: "web_search" }], max_tool_calls: 2 }
+    ...(toolBudget > 0
+      ? { tools: [{ type: "web_search" }], max_tool_calls: toolBudget }
       : {}),
     store: false,
     stream: options?.stream ?? false,
@@ -135,6 +140,7 @@ export async function callGrokChat(
     model?: string;
     effort?: ReasoningEffort;
     tools?: boolean;
+    maxToolCalls?: number;
     answerLength?: "short" | "medium" | "long";
     system?: string;
   }

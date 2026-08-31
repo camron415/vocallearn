@@ -3,7 +3,7 @@
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnswerBody } from "@/components/AnswerBody";
-import { AttachButton } from "@/components/AttachButton";
+import { AttachButton, AttachList } from "@/components/AttachButton";
 import { ComposeField } from "@/components/ComposeField";
 import { DictateButton } from "@/components/DictateButton";
 import { HaloHeader } from "@/components/HaloHeader";
@@ -11,7 +11,7 @@ import { HarvestFlights } from "@/components/HarvestFlights";
 import { type HistoryItem } from "@/components/HistoryMenu";
 import { MessageCopy } from "@/components/MessageCopy";
 import { WorkTrace, type WorkStep } from "@/components/WorkTrace";
-import { useEffectiveMotion } from "@/components/MotionProvider";
+import { useEffectiveMotion, useMotionSettings } from "@/components/MotionProvider";
 import {
   SpringStage,
   COMPOSE_TRAVEL_MS,
@@ -26,16 +26,26 @@ import {
   PREVIEW_HARVEST_CHIPS,
   PREVIEW_HARVEST_REPLY,
   PREVIEW_MORE_CHIP,
+  existingDueHarvest,
+  sameHarvestFact,
   type HarvestChip,
 } from "@/lib/harvest";
+import { readKeepChips } from "@/lib/keep-memory";
 import { readHaloStream, type HaloStreamEvent } from "@/lib/halo-stream";
 import { isLabPreviewPath, labPreviewChatHref, labPreviewHomeHref } from "@/lib/lab-preview";
 import { stripMarkdownForDisplay } from "@/lib/markdown-plain";
 import { readAttachments } from "@/lib/read-files";
+import {
+  clearAskAttachments,
+  peekAskAttachments,
+} from "@/lib/pending-attach";
 import type { AskMessage, HaloProfile } from "@/lib/types";
 
 const RESUME_MS = 3 * 60 * 1000;
 const generating = new Set<string>();
+/** Survives Strict Mode / RSC remount of the same chat so we don't double-stream. */
+const resumeDone = new Set<string>();
+const turnAborts = new Map<string, AbortController>();
 
 function shouldResume(messages: AskMessage[]) {
   const last = messages[messages.length - 1];
@@ -64,6 +74,7 @@ export function ChatThread({
 }) {
   const router = useRouter();
   const soft = useEffectiveMotion() === "reduced";
+  const { prefersReduced } = useMotionSettings();
   const [messages, setMessages] = useState(initialMessages);
   const [draft, setDraft] = useState("");
   const [files, setFiles] = useState<File[]>([]);
@@ -85,44 +96,59 @@ export function ChatThread({
   const dockRef = useRef<HTMLDivElement | null>(null);
   const leaving = useRef(false);
   const [exit, setExit] = useState(false);
-  const resumeLock = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
   const bufferRef = useRef("");
   const flushTimer = useRef<number | null>(null);
   const demoHarvested = useRef(false);
+  const runTurnRef = useRef<(
+    opts: {
+      text?: string;
+      resume?: boolean;
+      attachments?: { name: string; type: string; data: string }[];
+    }
+  ) => Promise<"ok" | "blocked" | "fail">>(async () => "fail");
 
   const landChip = useCallback((chip: HarvestChip) => {
+    if (existingDueHarvest(readKeepChips(), chip)) return;
     window.dispatchEvent(new CustomEvent("halo-keep-add", { detail: chip }));
   }, []);
 
   function beginHarvest(chips: HarvestChip[]) {
     if (!chips.length) return;
-    window.dispatchEvent(
-      new CustomEvent("halo-harvest-begin", {
-        detail: { count: chips.length },
-      })
+    const kept = readKeepChips();
+    const toFly = chips.filter(
+      (chip) =>
+        !kept.some(
+          (item) => item.id === chip.id || sameHarvestFact(item, chip)
+        )
     );
     setHarvest((prev) => {
       const seen = new Set(prev.map((item) => item.id));
       return [...prev, ...chips.filter((chip) => !seen.has(chip.id))];
     });
+    setMoreOpen(true);
+    if (!toFly.length) return;
+    window.dispatchEvent(
+      new CustomEvent("halo-harvest-begin", {
+        detail: { count: toFly.length },
+      })
+    );
     window.setTimeout(() => {
       setFlying((prev) => {
         const known = new Set(prev.map((item) => item.id));
-        return [...prev, ...chips.filter((chip) => !known.has(chip.id))];
+        return [...prev, ...toFly.filter((chip) => !known.has(chip.id))];
       });
     }, 360);
-    setMoreOpen(true);
   }
 
   useComposeMorph(dockRef, !soft);
 
   function goHome() {
     if (leaving.current) return;
+    turnAborts.get(conversationId)?.abort();
     const dest = demo || isLabPreviewPath() ? labPreviewHomeHref() : homeHref;
     if (soft) {
-      pinComposeGhost(dockRef.current);
-      captureComposeMorph(dockRef.current);
+      clearComposeHandoff();
       router.replace(dest);
       return;
     }
@@ -139,6 +165,11 @@ export function ChatThread({
   useEffect(() => {
     setMessages(initialMessages);
   }, [initialMessages]);
+
+  useEffect(() => {
+    const fromKeep = readKeepChips().filter((chip) => chip.askId === conversationId);
+    if (fromKeep.length) setHarvest(fromKeep);
+  }, [conversationId]);
 
   useEffect(() => {
     setChats(conversations);
@@ -171,9 +202,47 @@ export function ChatThread({
     function onReplay() {
       replayHarvest();
     }
+    function onClear() {
+      setHarvest([]);
+      setFlying([]);
+      setMoreOpen(false);
+      setMoreTaken(false);
+      demoHarvested.current = false;
+    }
+    function onLive(event: Event) {
+      const detail = (event as CustomEvent<{
+        chips?: HarvestChip[];
+        reply?: string;
+        skipped?: boolean;
+        appendReply?: boolean;
+      }>).detail;
+      if (!detail || detail.skipped) return;
+      if (detail.reply && detail.appendReply) {
+        const replyId = `lab-${Date.now()}`;
+        const replyText = detail.reply;
+        markFresh(replyId);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: replyId,
+            conversation_id: conversationId,
+            role: "assistant",
+            content: replyText,
+            created_at: new Date().toISOString(),
+          },
+        ]);
+      }
+      if (detail.chips?.length) beginHarvest(detail.chips);
+    }
     window.addEventListener("halo-harvest-replay", onReplay);
-    return () => window.removeEventListener("halo-harvest-replay", onReplay);
-  }, [demo]);
+    window.addEventListener("halo-harvest-clear", onClear);
+    window.addEventListener("halo-harvest-live", onLive);
+    return () => {
+      window.removeEventListener("halo-harvest-replay", onReplay);
+      window.removeEventListener("halo-harvest-clear", onClear);
+      window.removeEventListener("halo-harvest-live", onLive);
+    };
+  }, [demo, conversationId]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: "end", behavior: "auto" });
@@ -190,26 +259,12 @@ export function ChatThread({
 
   useEffect(() => {
     return () => {
-      abortRef.current?.abort();
+      // Do not abort here. Home→Chat remounts ChatThread for the same id
+      // (Strict Mode, RSC payload). Aborting the resume fetch is why the
+      // stream died and Camron had to send "?" to start a new turn.
+      generating.delete(conversationId);
       if (flushTimer.current != null) window.clearTimeout(flushTimer.current);
     };
-  }, []);
-
-  useEffect(() => {
-    if (demo || resumeLock.current || sending) return;
-    let live = false;
-    try {
-      const key = `halo-ask-live:${conversationId}`;
-      live = sessionStorage.getItem(key) === "1";
-      if (live) sessionStorage.removeItem(key);
-    } catch {
-      live = false;
-    }
-    if (!live && !shouldResume(initialMessages)) return;
-    resumeLock.current = true;
-    void runTurn({ resume: true });
-    // First paint only — follow-ups go through onSubmit.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId]);
 
   function markFresh(id: string) {
@@ -294,7 +349,10 @@ export function ChatThread({
     resume?: boolean;
     attachments?: { name: string; type: string; data: string }[];
   }): Promise<"ok" | "blocked" | "fail"> {
-    if (generating.has(conversationId)) return "fail";
+    if (generating.has(conversationId)) {
+      abortRef.current?.abort();
+      generating.delete(conversationId);
+    }
     generating.add(conversationId);
     setSending(true);
     setError(null);
@@ -322,8 +380,10 @@ export function ChatThread({
     }
 
     abortRef.current?.abort();
+    turnAborts.get(conversationId)?.abort();
     const abort = new AbortController();
     abortRef.current = abort;
+    turnAborts.set(conversationId, abort);
     let result: "ok" | "blocked" | "fail" = "fail";
 
     try {
@@ -344,11 +404,17 @@ export function ChatThread({
 
       const contentType = res.headers.get("content-type") || "";
       if (!res.ok) {
-        result = "blocked";
         const data = await res.json().catch(() => ({}));
-        throw new Error(
-          (data as { error?: string }).error || "Failed to send"
-        );
+        const message =
+          (data as { error?: string }).error || "Failed to send";
+        // Assistant already landed (first resume completed after a remount).
+        if (opts.resume && res.status === 409) {
+          result = "ok";
+          router.refresh();
+          return "ok";
+        }
+        result = "blocked";
+        throw new Error(message);
       }
 
       if (!contentType.includes("text/event-stream")) {
@@ -394,15 +460,78 @@ export function ChatThread({
       return result === "blocked" ? "blocked" : "fail";
     } finally {
       window.clearTimeout(workTimer);
-      flushBuffer(true);
-      setSending(false);
-      setStreamText("");
-      setWorkSteps([]);
-      setThinking("");
-      setShowWork(false);
-      generating.delete(conversationId);
+      const superseded = turnAborts.get(conversationId) !== abort;
+      if (!superseded) {
+        turnAborts.delete(conversationId);
+        generating.delete(conversationId);
+      }
+      if (abortRef.current === abort) {
+        flushBuffer(true);
+        setSending(false);
+        setStreamText("");
+        setWorkSteps([]);
+        setThinking("");
+        setShowWork(false);
+      }
     }
   }
+
+  runTurnRef.current = runTurn;
+
+  const lastInitial = initialMessages[initialMessages.length - 1];
+  const lastInitialId = lastInitial?.id ?? "";
+  const lastInitialRole = lastInitial?.role ?? "";
+
+  useEffect(() => {
+    if (demo) return;
+    if (resumeDone.has(conversationId)) return;
+    let live = false;
+    const key = `halo-ask-live:${conversationId}`;
+    try {
+      live = sessionStorage.getItem(key) === "1";
+    } catch {
+      live = false;
+    }
+    if (!live && !shouldResume(initialMessages)) return;
+
+    let cancelled = false;
+
+    async function attemptResume() {
+      for (let i = 0; i < 3; i += 1) {
+        if (cancelled) return;
+        const pendingFiles = peekAskAttachments(conversationId);
+        const result = await runTurnRef.current({
+          resume: true,
+          attachments: pendingFiles.length ? pendingFiles : undefined,
+        });
+        if (result === "ok") {
+          resumeDone.add(conversationId);
+          clearAskAttachments(conversationId);
+          try {
+            sessionStorage.removeItem(key);
+          } catch {
+            /* private browsing */
+          }
+          return;
+        }
+        if (cancelled || result === "blocked") return;
+        await new Promise((resolve) => window.setTimeout(resolve, 240));
+      }
+    }
+
+    // Delay past Strict Mode's immediate unmount so we start one fetch, not two.
+    const timer = window.setTimeout(() => {
+      if (cancelled) return;
+      void attemptResume();
+    }, 80);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+    // lastInitial* retriggers if the page hydrates the user row after first paint.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversationId, demo, lastInitialId, lastInitialRole]);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -437,6 +566,9 @@ export function ChatThread({
   }
 
   const lastUserId = [...messages].reverse().find((row) => row.role === "user")?.id;
+  const lastAssistantId = [...messages]
+    .reverse()
+    .find((row) => row.role === "assistant" && row.content.trim())?.id;
 
   return (
     <div className={`chat-stage is-entering${exit ? " is-leaving" : ""}`} data-harvest-capture="true">
@@ -482,6 +614,9 @@ export function ChatThread({
                 className={`msg-wrap msg-wrap--${m.role}${
                   freshIds.has(m.id) ? " msg-wrap--fresh" : ""
                 }`}
+                {...(m.role === "assistant" && !sending && m.id === lastAssistantId
+                  ? { "data-harvest-origin": "true" }
+                  : {})}
               >
                 <div
                   className={`msg msg--${m.role}${
@@ -498,6 +633,7 @@ export function ChatThread({
               </div>
             );
           })}
+          {/* Tutorial-only extra harvest. Live Ask never shows this. */}
           {demo && moreOpen && !moreTaken && !sending ? (
             <button
               type="button"
@@ -511,7 +647,7 @@ export function ChatThread({
             </button>
           ) : null}
           {sending ? (
-            <div className="msg-wrap msg-wrap--assistant">
+            <div className="msg-wrap msg-wrap--assistant" data-harvest-origin="true">
               <div className="msg msg--assistant msg--live">
                 {showWork || workSteps.length > 0 || thinking ? (
                   <WorkTrace
@@ -542,23 +678,12 @@ export function ChatThread({
       <ComposeStadium className="compose compose-dock" elementRef={dockRef} listening={listening}>
         <form onSubmit={onSubmit} className="compose-form">
           {error ? <p className="form-error">{error}</p> : null}
-          {files.length ? (
-            <ul className="attach-list">
-              {files.map((file) => (
-                <li key={`${file.name}-${file.size}`}>
-                  <span>{file.name}</span>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setFiles((prev) => prev.filter((f) => f !== file))
-                    }
-                  >
-                    Remove
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : null}
+          <AttachList
+            files={files}
+            onRemove={(file) =>
+              setFiles((prev) => prev.filter((f) => f !== file))
+            }
+          />
           <label className="sr-only" htmlFor="followup">
             Follow up
           </label>
@@ -575,6 +700,7 @@ export function ChatThread({
                 files={files}
                 onFiles={setFiles}
                 disabled={sending}
+                onError={setError}
               />
               <DictateButton
                 value={draft}
@@ -582,6 +708,7 @@ export function ChatThread({
                 listening={listening}
                 onListeningChange={setListening}
                 disabled={sending}
+                onBlocked={setError}
               />
               <WaterAction
                 className="action-btn"
@@ -593,7 +720,7 @@ export function ChatThread({
           </div>
         </form>
       </ComposeStadium>
-      <HarvestFlights chips={flying} reduced={demo ? false : soft} onLanded={landChip} />
+      <HarvestFlights chips={flying} reduced={prefersReduced} onLanded={landChip} />
     </div>
   );
 }

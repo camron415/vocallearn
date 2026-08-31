@@ -2,6 +2,8 @@
 
 Camron planning session (Composer 2.5). Pick up here.
 
+**Harvest telemetry, QA, mobile, promote checklist:** [`HARVEST-OPS.md`](./HARVEST-OPS.md) — canonical ops doc (SQL queries, tests, Lab QA buttons, iPhone debugging).
+
 ## Paste into chief chat
 
 ```

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { FAST_MODEL, callGrokChat } from "@/lib/grok";
+import { callGrokChat } from "@/lib/grok";
 import {
   DEMO_CARDS,
   gradeLocally,
@@ -201,7 +201,6 @@ export async function POST(request: Request) {
           },
         ],
         {
-          model: FAST_MODEL,
           tools: false,
           effort: "none",
           maxTokens: 120,

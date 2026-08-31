@@ -4,12 +4,15 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { HistoryMenu, type HistoryItem } from "@/components/HistoryMenu";
 import { KeepPocket } from "@/components/KeepPocket";
+import { GoldKeptBadge } from "@/components/GoldKeptBadge";
 import { LearnReview } from "@/components/LearnReview";
 import { SettingsMenu } from "@/components/SettingsMenu";
 import { ChromeBar } from "@/components/WaterSurface";
 import { APP_NAME } from "@/lib/constants";
-import type { HarvestChip } from "@/lib/harvest";
+import { existingDueHarvest, type HarvestChip } from "@/lib/harvest";
 import { addKeepChip, clearKeepChips, readKeepChips, subscribeKeep } from "@/lib/keep-memory";
+import { startKeepCloudSync } from "@/lib/keep-cloud";
+import { isLabPreviewPath } from "@/lib/lab-preview";
 import type { HaloProfile } from "@/lib/types";
 
 export function HaloHeader({
@@ -41,8 +44,9 @@ export function HaloHeader({
 
   useEffect(() => {
     setKeep(readKeepChips());
+    startKeepCloudSync({ skip: demo || isLabPreviewPath() });
     return subscribeKeep(() => setKeep(readKeepChips()));
-  }, []);
+  }, [demo]);
 
   useEffect(() => {
     function openLearn(event: Event) {
@@ -53,6 +57,7 @@ export function HaloHeader({
     function addKeep(event: Event) {
       const chip = (event as CustomEvent<HarvestChip>).detail;
       if (!chip?.id) return;
+      if (existingDueHarvest(readKeepChips(), chip)) return;
       addKeepChip(chip);
     }
     function resetKeep() {
@@ -85,12 +90,18 @@ export function HaloHeader({
             ←<span className="topbar-home-label"> Home</span>
           </Link>
           <div className="topbar-heading">
-            <p className="brand-mark brand-mark--sm">{APP_NAME}</p>
+            <div className="brand-row">
+              <p className="brand-mark brand-mark--sm">{APP_NAME}</p>
+              <GoldKeptBadge chips={keep} />
+            </div>
             {title ? <h1 className="chat-title">{title}</h1> : null}
           </div>
         </div>
       ) : (
-        <span className="brand-mark brand-mark--sm">{APP_NAME}</span>
+        <span className="brand-row">
+          <span className="brand-mark brand-mark--sm">{APP_NAME}</span>
+          <GoldKeptBadge chips={keep} />
+        </span>
       )}
       <div className="topbar-actions">
         <KeepPocket chips={keep} />

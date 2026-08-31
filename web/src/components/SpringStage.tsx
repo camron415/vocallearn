@@ -63,6 +63,7 @@ export function pinComposeGhost(el: HTMLElement | null) {
     "pointer-events:none",
   ].join(";");
   document.body.appendChild(ghost);
+  window.setTimeout(clearComposeGhost, MORPH_MS + 80);
 }
 
 export function clearComposeHandoff() {
@@ -162,7 +163,10 @@ export function useComposeMorph(
     const from = handoff;
     const el = ref.current;
     if (!el || !from || !allowed.current) {
-      if (!from) clearComposeGhost();
+      // iPhone auto-soft skips morph. Still drop the Chat→Home ghost or
+      // a stadium-sized gray sheet sits on Home forever.
+      clearComposeGhost();
+      if (!allowed.current) handoff = null;
       return;
     }
     if (Date.now() - from.at > 3000) {

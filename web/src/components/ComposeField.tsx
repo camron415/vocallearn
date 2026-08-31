@@ -28,6 +28,10 @@ export function ComposeField({
       ref={ref}
       className={`field ${props.className ?? ""}`}
       rows={1}
+      spellCheck={props.spellCheck ?? false}
+      autoCorrect={props.autoCorrect ?? "off"}
+      autoCapitalize={props.autoCapitalize ?? "off"}
+      autoComplete={props.autoComplete ?? "off"}
       value={value}
       onChange={(e) => onValueChange(e.target.value)}
       onKeyDown={(e) => {

@@ -161,12 +161,21 @@ export function MotionProvider({ children }: { children: ReactNode }) {
     const vv = window.visualViewport;
     const syncHeight = () => {
       if (!phone.matches || !vv) {
+        root.style.removeProperty("--kb-inset");
         root.style.removeProperty("--app-height");
         root.style.removeProperty("--app-top");
+        delete root.dataset.haloKb;
         return;
       }
-      root.style.setProperty("--app-height", `${Math.round(vv.height)}px`);
-      root.style.setProperty("--app-top", `${Math.round(vv.offsetTop)}px`);
+      // Keyboard inset only. Do not pin stages to visualViewport height/offset —
+      // iOS already shrinks the visual viewport; using both double-shifts.
+      const kb = Math.max(
+        0,
+        Math.round(window.innerHeight - vv.height - vv.offsetTop)
+      );
+      root.style.setProperty("--kb-inset", `${kb}px`);
+      if (kb > 120) root.dataset.haloKb = "1";
+      else delete root.dataset.haloKb;
     };
     syncHeight();
     vv?.addEventListener("resize", syncHeight);

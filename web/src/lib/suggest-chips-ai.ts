@@ -1,5 +1,5 @@
 import { clipAtWord } from "@/lib/constants";
-import { grokAuth } from "@/lib/grok";
+import { CHAT_MODEL, grokAuth } from "@/lib/grok";
 import { grokCostMicros } from "@/lib/limits";
 import { CHIP_LABEL_MAX, type SuggestChip } from "@/lib/suggest-chips";
 
@@ -10,8 +10,7 @@ export type ChatSignal = {
 
 const PROMPT_MAX = 420;
 
-const SUGGEST_MODEL =
-  process.env.GROK_SUGGEST_MODEL?.trim() || "grok-4-1-fast-non-reasoning";
+const SUGGEST_MODEL = process.env.GROK_SUGGEST_MODEL?.trim() || CHAT_MODEL;
 
 function buildPrompt(displayName: string, signals: ChatSignal[]) {
   const lines = signals

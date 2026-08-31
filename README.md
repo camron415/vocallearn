@@ -12,8 +12,8 @@ This is the project I want hiring teams to open first.
 
 | | |
 | --- | --- |
-| **Live product (V1)** | [halo-gules-three.vercel.app](https://halo-gules-three.vercel.app) — signed-in Ask for invited users |
-| **UI preview (no login)** | [halo-gules-three.vercel.app/preview](https://halo-gules-three.vercel.app/preview) — full V2 loop + motion lab |
+| **Live product (v1.1)** | [halo-gules-three.vercel.app](https://halo-gules-three.vercel.app) — Paper Ask + Cove/Keep for invited users |
+| **UI preview (no login)** | [halo-gules-three.vercel.app/preview](https://halo-gules-three.vercel.app/preview) — Lab mixer + dummy loop |
 | **Code** | [`web/`](./web/) (Halo) · [`app/`](./app/) (VocalLearn iOS) |
 | **Stack** | TypeScript, React, Next.js, React Native, PostgreSQL, Supabase, Vercel, xAI/Grok |
 | **Recruiter summary** | [`docs/FOR_RECRUITERS.md`](./docs/FOR_RECRUITERS.md) |
@@ -34,15 +34,15 @@ Most AI chat apps are write-only — you ask, you read, you forget. Halo starts 
 
 ## V1 vs V2 at a glance
 
-| | **V1 — Halo Ask** | **V2 — Cove / Keep loop** |
+| | **V1 — Halo Ask** | **V1.1 — Cove / Keep** |
 | --- | --- | --- |
-| **Status** | Live in production | Built in Lab preview (`/preview`) |
-| **Who uses it** | Early-access + family (invited) | Anyone can walk the demo — no login |
-| **Core job** | Ask questions, keep history, pick up threads | Turn answers into facts you review and master |
-| **Learning loop** | Not yet — Ask only | Full Ask → Harvest → Keep → Due → Clear → Mastered |
-| **Resume demo** | The live site | The `/preview` loop (Mix → **Loop**) |
+| **Status** | Superseded on `/ask` | **Live in production** |
+| **Who uses it** | — | Early-access + family (invited) |
+| **Core job** | Ask only | Ask + harvest + review loop |
+| **Learning loop** | — | Full Ask → Harvest → Keep → Due → Clear → Mastered |
+| **Lab demo** | — | `/preview` mixer (Camron) |
 
-V1 is the product people depend on today. V2 is where the differentiated learning mechanics live — already built and walkable, waiting to promote to early access after motion polish.
+V1.1 is what early-access and family users get on `/ask` after a hard refresh. `/preview` stays Lab-only.
 
 ---
 

@@ -1,60 +1,41 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
 import { AuthShell } from "@/components/AuthShell";
-import { GlassButton } from "@/components/Glass";
-import { WaterPane } from "@/components/WaterSurface";
-import {
-  authErrorMessage,
-  emailError,
-  normalizeEmail,
-} from "@/lib/account";
-import { createClient } from "@/lib/supabase/client";
+import { emailError } from "@/lib/account";
 
-export function LoginForm({ demo = false }: { demo?: boolean }) {
-  const router = useRouter();
+export function LoginForm({
+  demo = false,
+  initialError = null,
+}: {
+  demo?: boolean;
+  initialError?: string | null;
+}) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(initialError);
   const [loading, setLoading] = useState(false);
 
-  async function onSubmit(e: FormEvent) {
-    e.preventDefault();
+  function onSubmit(e: FormEvent<HTMLFormElement>) {
     const nextEmail = emailError(email);
     if (nextEmail) {
+      e.preventDefault();
       setError(nextEmail);
       return;
     }
     if (!password) {
+      e.preventDefault();
       setError("Enter your password.");
       return;
     }
-
     if (demo) {
+      e.preventDefault();
       setError("Preview only — no sign-in.");
       return;
     }
-
     setLoading(true);
     setError(null);
-    try {
-      const supabase = createClient();
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: normalizeEmail(email),
-        password,
-      });
-      if (signInError) {
-        setError(authErrorMessage(signInError.message));
-        return;
-      }
-      router.replace("/ask");
-      router.refresh();
-    } catch {
-      setError("Could not sign in. Try again.");
-    } finally {
-      setLoading(false);
-    }
+    // Native POST → /api/auth/login sets cookies on redirect (Safari LAN).
   }
 
   return (
@@ -62,13 +43,20 @@ export function LoginForm({ demo = false }: { demo?: boolean }) {
       title="Welcome back"
       sub="Invite-only. If you don’t have an account yet, ask Camron for a private invite link."
     >
-      <form className="login-form" noValidate onSubmit={(e) => void onSubmit(e)}>
+      <form
+        className="login-form"
+        method="POST"
+        action="/api/auth/login"
+        noValidate
+        onSubmit={onSubmit}
+      >
         <label className="field-label" htmlFor="login-email">
           Email
         </label>
-        <WaterPane variant="field" className="settings-name-pane" still>
+        <div className="settings-name-pane">
           <input
             id="login-email"
+            name="email"
             className="field"
             type="email"
             autoComplete="email"
@@ -76,13 +64,14 @@ export function LoginForm({ demo = false }: { demo?: boolean }) {
             onChange={(e) => setEmail(e.target.value)}
             required
           />
-        </WaterPane>
+        </div>
         <label className="field-label" htmlFor="login-password">
           Password
         </label>
-        <WaterPane variant="field" className="settings-name-pane" still>
+        <div className="settings-name-pane">
           <input
             id="login-password"
+            name="password"
             className="field"
             type="password"
             autoComplete="current-password"
@@ -90,11 +79,11 @@ export function LoginForm({ demo = false }: { demo?: boolean }) {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
-        </WaterPane>
+        </div>
         {error ? <p className="form-error">{error}</p> : null}
-        <GlassButton type="submit" disabled={loading} className="login-submit">
+        <button type="submit" disabled={loading} className="stone-btn login-submit">
           {loading ? "Signing in…" : "Sign in"}
-        </GlassButton>
+        </button>
       </form>
     </AuthShell>
   );

@@ -2,14 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createPortal } from "react-dom";
 import { ChoicePicks } from "@/components/ChoicePicks";
 import { GlassButton } from "@/components/Glass";
 import { LengthPicks } from "@/components/LengthPicks";
+import { MenuSheet } from "@/components/MenuSheet";
+import { SimpleSheet } from "@/components/SimpleSheet";
 import { useMotionSettings } from "@/components/MotionProvider";
-import { useOursWet, WaterPane } from "@/components/WaterSurface";
+import { useCoarsePointer } from "@/lib/coarse-pointer";
 import { APP_NAME } from "@/lib/constants";
 import { formatUsd, isHaloLane, laneLabel, type HaloLane } from "@/lib/limits";
+import { isLabBrowserHost } from "@/lib/lab-host";
+import {
+  clearKeepChips,
+  dropKeepDue,
+  resetRoundsToday,
+} from "@/lib/keep-memory";
 import { createClient } from "@/lib/supabase/client";
 import type { AnswerLength, HaloProfile } from "@/lib/types";
 
@@ -41,9 +48,8 @@ export function SettingsMenu({
   const router = useRouter();
   const { intensity, setIntensity, theme, setTheme, autoSoft } =
     useMotionSettings();
-  const wet = useOursWet();
   const [open, setOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const coarse = useCoarsePointer();
   const [name, setName] = useState(profile?.displayName ?? "");
   const [length, setLength] = useState<AnswerLength>(
     profile?.answerLength ?? "medium"
@@ -56,24 +62,9 @@ export function SettingsMenu({
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [usage, setUsage] = useState<Usage | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!open) return;
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false);
-    }
-    window.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
-    };
-  }, [open]);
+  const [qaNote, setQaNote] = useState<string | null>(null);
+  const admin = Boolean(profile?.isAdmin) && !demo;
+  const labQa = admin && isLabBrowserHost();
 
   useEffect(() => {
     if (!open || demo) return;
@@ -150,68 +141,89 @@ export function SettingsMenu({
     router.refresh();
   }
 
-  const page = open ? (
-    <div
-      className="history-overlay"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="settings-title"
-      onPointerDown={(e) => {
-        if (e.target === e.currentTarget) setOpen(false);
-      }}
-    >
-      <div className="history-page settings-page">
-        <div className="history-page-head">
-          <h1 id="settings-title" className="history-page-title">
-            Settings
-          </h1>
-          <GlassButton onClick={() => setOpen(false)}>Close</GlassButton>
-        </div>
+  function flashQa(message: string) {
+    setQaNote(message);
+    window.setTimeout(() => setQaNote(null), 2400);
+  }
 
+  async function clearAllChats() {
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data } = await supabase
+      .from("ask_conversations")
+      .select("id")
+      .eq("user_id", user.id);
+    const ids = (data ?? []).map((row) => row.id as string);
+    if (!ids.length) {
+      flashQa("No chats to clear.");
+      return;
+    }
+    const res = await fetch("/api/chats", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids }),
+    });
+    if (!res.ok) {
+      flashQa("Could not clear chats.");
+      return;
+    }
+    flashQa(`Cleared ${ids.length} chat${ids.length === 1 ? "" : "s"}.`);
+    router.refresh();
+  }
+
+  const Sheet = coarse ? SimpleSheet : MenuSheet;
+
+  return (
+    <div className="history-wrap">
+      <GlassButton title="Open settings" onClick={() => setOpen(true)}>
+        <span className="topbar-action-label">Settings</span>
+        <svg
+          className="topbar-action-icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden
+        >
+          <circle cx="12" cy="12" r="3" />
+          <path d="M12 3v2M12 19v2M5 12H3M21 12h-2M6.2 6.2l1.4 1.4M16.4 16.4l1.4 1.4M17.8 6.2l-1.4 1.4M7.6 16.4l-1.4 1.4" />
+        </svg>
+      </GlassButton>
+      <Sheet
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Settings"
+        titleId="settings-title"
+        cardClassName="settings-page"
+      >
         <section className="settings-block">
           <label className="field-label" htmlFor="halo-name">
             What should {APP_NAME} call you?
           </label>
           <div className="settings-name">
-            {!wet ? (
-              <div className="settings-name-pane">
-                <input
-                  id="halo-name"
-                  className="field"
-                  value={name}
-                  onChange={(e) => {
-                    setName(e.target.value);
-                    setNameState("idle");
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      void saveName();
-                    }
-                  }}
-                  maxLength={40}
-                />
-              </div>
-            ) : (
-              <WaterPane variant="field" className="settings-name-pane" still>
-                <input
-                  id="halo-name"
-                  className="field"
-                  value={name}
-                  onChange={(e) => {
-                    setName(e.target.value);
-                    setNameState("idle");
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      void saveName();
-                    }
-                  }}
-                  maxLength={40}
-                />
-              </WaterPane>
-            )}
+            <div className="settings-name-pane">
+              <input
+                id="halo-name"
+                className="field"
+                value={name}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  setNameState("idle");
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void saveName();
+                  }
+                }}
+                maxLength={40}
+              />
+            </div>
             {demo ? null : (
               <GlassButton onClick={() => void saveName()}>
                 {nameState === "saving"
@@ -278,13 +290,12 @@ export function SettingsMenu({
           </section>
         )}
 
-        {profile?.isAdmin && !demo ? (
+        {admin ? (
           <section className="settings-block">
             <p className="field-label">Invite someone</p>
             <p className="login-sub">
               One-time link. They need a new email — not an existing VocalLearn
-              login. Early access for her test account, Family for everyone
-              else.
+              login. Early access for a test account, Family for everyone else.
             </p>
             <div className="settings-row">
               <GlassButton onClick={() => void makeInvite("family")}>
@@ -317,21 +328,55 @@ export function SettingsMenu({
           </section>
         ) : null}
 
-        {demo ? null : (
+        {labQa ? (
           <section className="settings-block">
+            <p className="field-label">Lab QA</p>
+            <p className="login-sub">
+              Localhost / LAN only. See <code>web/HARVEST-OPS.md</code> for the
+              full promote checklist.
+            </p>
+            <div className="settings-row">
+              <GlassButton
+                onClick={() => {
+                  dropKeepDue();
+                  flashQa("All Keep chips are due on Home.");
+                }}
+              >
+                Force due now
+              </GlassButton>
+              <GlassButton
+                onClick={() => {
+                  resetRoundsToday();
+                  flashQa("Day round cap reset.");
+                }}
+              >
+                Reset rounds today
+              </GlassButton>
+            </div>
+            <div className="settings-row">
+              <GlassButton
+                onClick={() => {
+                  clearKeepChips();
+                  flashQa("Keep cleared.");
+                  router.refresh();
+                }}
+              >
+                Clear Keep
+              </GlassButton>
+              <GlassButton onClick={() => void clearAllChats()}>
+                Clear all chats
+              </GlassButton>
+            </div>
+            {qaNote ? <p className="login-sub">{qaNote}</p> : null}
+          </section>
+        ) : null}
+
+        {demo ? null : (
+          <section className="settings-block settings-block--end">
             <GlassButton onClick={() => void signOut()}>Sign out</GlassButton>
           </section>
         )}
-      </div>
-    </div>
-  ) : null;
-
-  return (
-    <div className="history-wrap">
-      <GlassButton title="Open settings" onClick={() => setOpen((v) => !v)}>
-        Settings
-      </GlassButton>
-      {mounted && page ? createPortal(page, document.body) : null}
+      </Sheet>
     </div>
   );
 }

@@ -47,12 +47,12 @@ Six 8px dots at the left edge of the content column, 7px gap, with a **24px gap 
 
 **r3 SAY prompts (never the same copy twice in one round):**
 
-- **SAY-a:** full `chip.prompt` (e.g. “About how long is the Nile usually said to be?”)
-- **SAY-b:** production cue — `Type the token:` + kind label, or `chip.hint` when set. Not a repeat of SAY-a.
+- **SAY-a:** full `chip.prompt`
+- **SAY-b:** `chip.promptB` — a second standalone question for the same fact. **Never** reuse `prompt`. **Never** show `hint` as the prompt. If `promptB` is missing, use a kind-based second ask (`Give the year…` / `Which place…`) that is still different from SAY-a.
 
-Dictate / speak on SAY-b is **post-V2** unless dictate already works on the play sheet without new UI. V2 differentiates by **prompt shape**, not duplicate questions.
+Dictate / speak on SAY-b is **post-V2** unless dictate already works on the play sheet without new UI.
 
-**Closed grading (SAY beats):** one shared normalizer (Lane B, or chief if B is busy). Accept if normalized `said` matches normalized `token` or `answer`. Rules: case-insensitive; strip punctuation; **commas in numbers optional** (`4130` = `4,130`); optional trailing unit words (`miles`, `km`) ignored when token is numeric; leading `the` ignored; letter cue prefix ignored on r1. Document edge cases in a short comment block, not a new page of rules.
+**Closed grading (SAY beats):** one shared normalizer. Case-insensitive; strip punctuation; **commas in numbers optional** (`4130` = `4,130`); unit aliases (`m`/`meters`/`miles`/`km`) ignored when the target is numeric; leading `the` ignored; letter cue prefix ignored on r1. **Who:** last name or full name (not first-only). **Where:** drop Mount/Lake/the. **When:** digits. **Meaning:** numeric core if present; otherwise near-exact, 1-edit only if both sides are long. Document edge cases in a short comment block.
 
 Cue renders in the placeholder as first letter plus em-dashes (`g—— —— ——`) at 32% opacity. No hint button, no difficulty label, no round number on screen. A miss never downgrades the cue mid-round. After a clean r3 the fact goes gold.
 
@@ -72,7 +72,7 @@ Chips stay visible and stay looking tappable but do not open. No modal, no count
 
 ## Gold
 
-Gold beads **leave the Keep dock** on end-card dismiss: the bead fades at its dock position over 260ms while the badge integer cross-fades up. No flight, no arc — nothing that reads as the harvest motion. The badge sits immediately right of the Cove word on the same baseline: a small filled ring in the gold tone plus an integer (`◎ 7`); at zero it renders at 30% opacity with no number. Press opens a **plain panel anchored under the icon** — not a page, not an overlay over the field — at composer width, left-aligned inside: header `Kept — 7`, then one static row per gold fact (cue left, answer right, hairline divider). **Rows are not tappable.** No bead, no date, no rank pip, no chevron, no replay this weekend. Dismiss on outside tap or Esc.
+Gold beads **leave Home on end-card dismiss** with the **same bank flight** as r1/r2 Keep (same 640ms chip, no harvest arc). Destination is the ◎ badge, not the Keep dock. On land the chip vanishes, the ◎ **pulses**, and the mastered count steps up. Keep dock fade stays for Mix tools. The badge sits immediately right of the Cove word on the same baseline: a small filled ring in the gold tone plus an integer (`◎ 7`); at zero it renders at 30% opacity with no number. Press opens a **plain panel anchored under the icon** — not a page, not an overlay over the field — at composer width, left-aligned inside: header `Kept`, summary line, then one static row per gold fact. **Rows are not tappable.** Dismiss on outside tap or Esc.
 
 Keep dock = **in progress only** (new / bronze / silver). Sort silver → bronze → new, older left, newer right within a band. Do not gray bands.
 

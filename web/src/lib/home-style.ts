@@ -48,7 +48,9 @@ function clampPct(raw: string | null, fallback: number) {
 
 export function clampKeepCount(raw: string | number | null | undefined, fallback = 12) {
   const n = typeof raw === "number" ? raw : Number(raw);
-  if (!Number.isFinite(n)) return fallback;
+  /* Missing mixer attr is null → Number(null) is 0. That used to clamp to 1
+     and show a single Home seat on live /ask. */
+  if (!Number.isFinite(n) || n < 1) return fallback;
   return Math.max(1, Math.min(16, Math.round(n)));
 }
 

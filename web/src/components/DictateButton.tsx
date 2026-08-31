@@ -35,12 +35,14 @@ export function DictateButton({
   listening,
   onListeningChange,
   disabled,
+  onBlocked,
 }: {
   value: string;
   onValueChange: (value: string) => void;
   listening: boolean;
   onListeningChange: (listening: boolean) => void;
   disabled?: boolean;
+  onBlocked?: (message: string) => void;
 }) {
   const [supported, setSupported] = useState(false);
   const recRef = useRef<InstanceType<RecognitionCtor> | null>(null);
@@ -78,8 +80,24 @@ export function DictateButton({
       return;
     }
 
+    const secure =
+      window.isSecureContext ||
+      location.hostname === "localhost" ||
+      location.hostname === "127.0.0.1";
+    if (!secure) {
+      onBlocked?.(
+        "Dictation needs HTTPS. On your phone use the lab deploy link, not the local Wi‑Fi address."
+      );
+      return;
+    }
+
     const Ctor = getRecognitionCtor();
-    if (!Ctor) return;
+    if (!Ctor) {
+      onBlocked?.(
+        "Voice dictation isn’t available in Safari on iPhone. Type instead, or try Chrome on a computer."
+      );
+      return;
+    }
 
     const rec = new Ctor();
     rec.continuous = true;
@@ -118,8 +136,8 @@ export function DictateButton({
       className={`action-btn action-btn--icon dictate-btn${
         listening ? " is-listening" : ""
       }`}
-      disabled={disabled || !supported}
-      onClick={supported ? toggle : undefined}
+      disabled={disabled}
+      onClick={toggle}
     >
       <MicIcon />
       <span className="sr-only">

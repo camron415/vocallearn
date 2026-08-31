@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prepareAskTurn, saveAssistantReply } from "@/lib/ask-turn";
 import { attachmentsToGrokParts } from "@/lib/files";
-import { resolveAskRoute, liveLookupContext } from "@/lib/ask-route";
+import { resolveAskRoute, liveLookupContext, harvestAnswerHint } from "@/lib/ask-route";
 import { ASK_SYSTEM_PROMPT } from "@/lib/constants";
 import { streamGrokChat } from "@/lib/grok-stream";
 import { grokCostMicros, estimateAskMicros } from "@/lib/limits";
@@ -93,8 +93,13 @@ export async function POST(request: Request) {
         last.content = [{ type: "input_text", text: userText }, ...parts];
       }
     } catch (err) {
+      const detail = err instanceof Error ? err.message : "";
       return NextResponse.json(
-        { error: "Could not attach that file." },
+        {
+          error: detail.includes("too large")
+            ? detail
+            : "Could not attach that file. Try a smaller JPG, PNG, or PDF.",
+        },
         { status: 400 }
       );
     }
@@ -165,6 +170,7 @@ export async function POST(request: Request) {
       try {
         let system: string | undefined;
         let lookupSources: { label: string; url: string }[] = [];
+        const harvestHint = harvestAnswerHint(userText);
         const useLive = route.kind === "lookup" || route.seedLive;
         if (useLive) {
           send({ type: "status", status: "checking" });
@@ -172,7 +178,9 @@ export async function POST(request: Request) {
             allowSearch: Boolean(route.tools),
           });
           lookupSources = live.sources;
-          system = `${ASK_SYSTEM_PROMPT}\n\n${live.systemExtra}`;
+          system = [ASK_SYSTEM_PROMPT, live.systemExtra, harvestHint]
+            .filter(Boolean)
+            .join("\n\n");
           for (const src of lookupSources.slice(0, 4)) {
             send({ type: "status", status: "reading", detail: src.label });
           }
@@ -181,9 +189,13 @@ export async function POST(request: Request) {
         for await (const live of streamGrokChat(history, {
           effort: route.effort,
           answerLength,
-          model: route.model,
           tools: route.tools,
-          system,
+          maxToolCalls: route.maxToolCalls,
+          system:
+            system ??
+            (harvestHint
+              ? `${ASK_SYSTEM_PROMPT}\n\n${harvestHint}`
+              : undefined),
         })) {
           if (live.type === "done") {
             const finalText = lookupSources.length
@@ -237,6 +249,12 @@ export async function POST(request: Request) {
                   live.text
                 )
             );
+            void trackHaloEvent(supabase, user.id, "harvest", {
+              conversationId,
+              skipped: harvested.length === 0,
+              cardCount: harvested.length,
+              kinds: [...new Set(harvested.map((chip) => chip.kind))].join(","),
+            });
             if (harvested.length) {
               send({ type: "harvest", chips: harvested });
             }

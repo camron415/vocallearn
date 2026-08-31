@@ -22,22 +22,147 @@
   z-index: 100;
   display: grid;
   justify-items: center;
-  padding: 0;
-  background: #fafafc;
+  align-items: center;
+  padding: 1.25rem 1rem;
+  background: var(--paper-field, #fafaf9);
   animation: none;
+  overflow: auto;
+}
+
+html[data-halo-theme="dark"] .history-overlay {
+  background: var(--paper-field, #0e0e10);
+}
+
+.history-overlay.learn-stage {
+  align-items: stretch;
+  padding: 0;
+  overflow: hidden;
 }
 
 .history-page {
-  width: min(44rem, 100%);
-  height: 100%;
-  overflow: auto;
-  padding: 4.75rem 1.35rem 2.4rem;
+  width: min(var(--halo-chat), 100%);
+  max-height: min(88dvh, 52rem);
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin: auto;
+  padding: 1.15rem 1.25rem 1.4rem;
+  background: var(--paper-card, #f3f2f0);
+  border: 0;
+  border-radius: 20px;
+  box-shadow: var(--paper-card-shadow, 0 8px 28px rgba(0, 0, 0, 0.07));
 }
 
 .history-page.settings-page {
   overflow: auto;
-  padding-top: 3.15rem;
-  padding-bottom: 1.6rem;
+  padding: 1.15rem 1.25rem 1.4rem;
+}
+
+/* --------------------------------------------------------------------------
+   Menu sheet — History and Settings grow out of the composer that is on
+   screen (Ask hero on Home, follow-up dock in Chat). One shell, one motion,
+   two anchors. `MenuSheet.tsx` writes `data-state` / `data-grow` and drives
+   height + transform inline; everything optical lives here.
+   Play sheet --travel (1080ms) is not used and not touched.
+   -------------------------------------------------------------------------- */
+
+:root {
+  --menu-grow: 520ms;
+  --menu-shrink: 380ms;
+}
+
+.history-overlay.menu-veil {
+  background: color-mix(in srgb, var(--paper-field, #fafaf9) 94%, transparent);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--menu-grow) var(--ease-travel);
+}
+
+html[data-halo-theme="dark"] .history-overlay.menu-veil {
+  background: color-mix(in srgb, var(--paper-field, #0e0e10) 94%, transparent);
+}
+
+.history-overlay.menu-veil[data-state="open"] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.history-overlay.menu-veil[data-state="closing"] {
+  opacity: 0;
+  pointer-events: auto;
+  transition-duration: var(--menu-shrink);
+}
+
+.menu-sheet {
+  transform-origin: 50% 50%;
+  will-change: height, transform;
+}
+
+/* Content rides in after the shell has most of its height, same read as the
+   play sheet body. */
+.menu-sheet[data-grow="seed"] > * {
+  opacity: 0;
+}
+
+.menu-sheet[data-grow="open"] > * {
+  opacity: 1;
+  transition: opacity 300ms var(--ease-travel) 170ms;
+}
+
+.menu-sheet[data-grow="closing"] > * {
+  opacity: 0;
+  transition: opacity 150ms var(--ease-travel);
+}
+
+/* Both sheets read as a sheet header, not a page H1. */
+.menu-sheet .history-page-title,
+.menu-sheet.settings-page .history-page-title {
+  font-size: clamp(1.5rem, 2.6vw, 1.8rem);
+}
+
+.menu-sheet .history-page-head {
+  margin-bottom: 0.9rem;
+}
+
+.menu-block {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.history-page:not(.settings-page) .menu-block {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.history-page:not(.settings-page) .menu-block .history-list {
+  flex: 1;
+  min-height: 0;
+}
+
+.menu-block-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 2rem;
+}
+
+.menu-block-head .field-label {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--halo-ink) 55%, transparent);
+}
+
+.menu-block .history-toolbar {
+  margin: 0;
 }
 
 .settings-page .water--pane,
@@ -60,12 +185,22 @@
   margin: 0;
 }
 
+.settings-block--end {
+  padding-top: 0.25rem;
+}
+
 .history-page-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
   margin: 0 0 1.15rem;
+  flex-shrink: 0;
+}
+
+.history-page-head .stone-btn {
+  flex: 0 0 auto;
+  margin-left: auto;
 }
 
 .history-page-title {
@@ -146,6 +281,19 @@
   gap: 0.45rem;
 }
 
+/* Menu sheet: one inset block + row hairlines — same read as compose-suggest. */
+.menu-block .history-list {
+  gap: 0;
+  border-radius: 1rem;
+  overflow: hidden;
+  overflow-y: auto;
+  background: var(--paper-inset, var(--halo-stone));
+}
+
+.menu-block .history-row + .history-row {
+  border-top: 1px solid var(--paper-inset-border, color-mix(in srgb, var(--halo-ink) 8%, transparent));
+}
+
 .history-row,
 .recipe-card-head {
   display: flex;
@@ -185,7 +333,7 @@
 .history-item {
   display: block;
   width: 100%;
-  border: 0;
+  border: 1px solid var(--paper-inset-border, rgba(0, 0, 0, 0.05));
   border-radius: 18px;
   padding: 0.95rem 1rem;
   text-align: left;
@@ -194,23 +342,35 @@
   font-weight: 500;
   line-height: 1.45;
   color: var(--halo-ink);
-  background: var(--halo-stone);
+  background: var(--paper-inset, var(--halo-stone));
   cursor: pointer;
   white-space: normal;
   overflow: visible;
   text-overflow: unset;
+  transition: background-color 120ms var(--ease-gel);
 }
 
+.menu-block .history-item {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0.72rem 0.85rem 0.72rem 1rem;
+  font-size: 0.94rem;
+  font-weight: 550;
+  line-height: 1.25;
+}
+
+/* Hover and current stay in the paper family — the stone tokens are cool and
+   read blue next to an inset row. */
 .history-item:hover,
 .history-item:focus-visible {
-  background: var(--halo-stone-hover);
+  background: color-mix(in srgb, var(--halo-ink) 6%, var(--paper-inset, var(--halo-stone)));
   outline: none;
 }
 
 .history-item.is-current,
 .history-item.is-picked {
-  background: var(--halo-stone-on);
-  box-shadow: 0 0 0 1px rgba(44, 51, 60, 0.16);
+  background: color-mix(in srgb, var(--halo-ink) 12%, var(--paper-inset, var(--halo-stone)));
 }
 
 .learn-stage-inner {
@@ -440,8 +600,8 @@ html[data-halo-theme="dark"] .learn-token {
   }
 
   .history-page {
-    padding-left: max(1rem, env(safe-area-inset-left));
-    padding-right: max(1rem, env(safe-area-inset-right));
+    padding-left: 1.05rem;
+    padding-right: 1.05rem;
   }
 
   .recipes-main {
@@ -454,11 +614,11 @@ html[data-halo-theme="dark"] .learn-token {
   position: fixed;
   inset: 0;
   z-index: 100;
-  background: #fafafc;
+  background: var(--paper-field, #fafaf9);
 }
 
 html[data-halo-theme="dark"] .mode-overlay {
-  background: #121820;
+  background: var(--paper-field, #0e0e10);
 }
 
 .mode-sheet {
@@ -470,12 +630,9 @@ html[data-halo-theme="dark"] .mode-overlay {
   gap: 0.35rem;
   padding: 0.55rem;
   border-radius: 22px;
-  background: #ffffff;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 0 0 1px rgba(0, 0, 0, 0.14),
-    0 1px 2px rgba(0, 0, 0, 0.04),
-    0 8px 18px -12px rgba(0, 0, 0, 0.1);
+  background: var(--paper-card, #f3f2f0);
+  border: 0;
+  box-shadow: var(--paper-card-shadow, 0 8px 28px rgba(0, 0, 0, 0.07));
 }
 
 .mode-soon {
@@ -488,6 +645,14 @@ html[data-halo-theme="dark"] .mode-overlay {
 
 .settings-page .history-page-head {
   margin-bottom: 0.35rem;
+}
+
+.settings-page .field-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--halo-ink) 55%, transparent);
 }
 
 .settings-block {
@@ -522,6 +687,19 @@ html[data-halo-theme="dark"] .mode-overlay {
   --water-in: 1;
   padding: calc(var(--water) + 0.08rem) calc(var(--water) + 0.2rem);
   animation: none;
+  background: var(--paper-inset, transparent);
+  border: 1px solid var(--paper-inset-border, transparent);
+  border-radius: 999px;
+}
+
+html[data-halo-theme="dark"] .settings-name-pane {
+  background: var(--paper-inset, transparent);
+  border-color: var(--paper-inset-border, rgba(255, 255, 255, 0.06));
+}
+
+html[data-halo-theme="dark"] .settings-name-pane .field,
+html[data-halo-theme="dark"] .settings-name-pane .field:focus {
+  background: transparent;
 }
 
 .settings-name-pane .water__ambient {
@@ -552,42 +730,118 @@ html[data-halo-theme="dark"] .mode-overlay {
   display: block;
   padding: 0.7rem 0.85rem;
   border-radius: 14px;
-  background: #ffffff;
+  background: var(--paper-inset, #f2f1ee);
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--halo-ink) 6%, transparent);
   color: var(--halo-ink);
   word-break: break-all;
   font-size: 0.88rem;
 }
 
+html[data-halo-theme="dark"] .invite-copy code {
+  background: var(--paper-inset, #3a3a3c);
+}
+
 .attach-list {
   list-style: none;
-  margin: 0 0 0.2rem;
-  padding: 0;
+  margin: 0 0 0.35rem;
+  padding: 0.1rem 0.15rem 0;
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
 }
 
-.attach-list li {
-  display: flex;
-  gap: 0.4rem;
+.attach-chip {
+  display: inline-flex;
   align-items: center;
-  padding: 0.25rem 0.55rem;
+  gap: 0.35rem;
+  max-width: 100%;
+  padding: 0.22rem 0.45rem 0.22rem 0.65rem;
   border-radius: 999px;
-  background: var(--halo-stone);
-  font-size: 0.82rem;
+  background: var(--paper-inset, var(--halo-stone));
+  font-size: 0.78rem;
+  line-height: 1.2;
 }
 
-.attach-list button {
+.attach-chip__name {
+  min-width: 0;
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attach-chip__x {
   border: 0;
   background: none;
   color: var(--halo-muted);
   cursor: pointer;
   font: inherit;
+  font-size: 1.05rem;
+  line-height: 1;
+  padding: 0.1rem 0.2rem;
+  flex: 0 0 auto;
+}
+
+/* Safari paints native file widgets even when clipped inside the composer.
+   Keep the input on body, off-screen, and trigger it from the paperclip only. */
+.attach-input-offscreen {
+  position: fixed;
+  left: -10000px;
+  top: 0;
+  width: 0;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  appearance: none;
+  -webkit-appearance: none;
+  font-size: 0;
+  color: transparent;
 }
 
 .recipes-main {
   width: min(var(--halo-chat), 100%);
   margin: 1.5rem auto 2rem;
+}
+
+.admin-list {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  display: grid;
+  background: var(--paper-inset, #f2f1ee);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--halo-ink) 5%, transparent);
+}
+
+html[data-halo-theme="dark"] .admin-list {
+  background: var(--paper-inset, #3a3a3c);
+}
+
+.admin-row {
+  padding: 0.95rem 1.05rem;
+}
+
+.admin-row + .admin-row {
+  box-shadow: inset 0 1px 0
+    color-mix(in srgb, var(--halo-ink) 8%, transparent);
+}
+
+.admin-row h2 {
+  margin: 0 0 0.25rem;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 1.15rem;
+  font-weight: 500;
+}
+
+.admin-row .login-sub {
+  margin: 0 0 0.35rem;
 }
 
 .recipe-list {

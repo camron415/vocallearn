@@ -27,6 +27,8 @@ import {
   type HarvestWake,
 } from "@/lib/harvest-style";
 import type { HarvestCheck } from "@/lib/harvest-score";
+import { PREVIEW_HARVEST_CHIPS } from "@/lib/harvest";
+import { HARVEST_LAB_PRESETS } from "@/lib/harvest-lab-presets";
 import {
   bankDue,
   clearKeepChips,
@@ -134,6 +136,8 @@ export function PreviewSwitcher() {
   const [homeFilm, setHomeFilm] = useState(true);
   const [homeRec, setHomeRec] = useState(false);
   const [chatRec, setChatRec] = useState(false);
+  const [labBusy, setLabBusy] = useState(false);
+  const [labStatus, setLabStatus] = useState<string | null>(null);
   const [home, setHome] = useState<HomeStyle>(HOME_STYLE_DEFAULT);
   const [loop, setLoop] = useState({
     due: 0,
@@ -276,6 +280,59 @@ export function PreviewSwitcher() {
     }
     setChatRec(true);
     window.dispatchEvent(new Event("halo-harvest-replay"));
+  }
+
+  async function runLivePreset(presetId: string) {
+    setLabBusy(true);
+    setLabStatus("Mining…");
+    try {
+      const res = await fetch("/api/dev/harvest-mine", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ preset: presetId }),
+      });
+      const data = (await res.json()) as {
+        ok?: boolean;
+        skipped?: boolean;
+        chips?: typeof PREVIEW_HARVEST_CHIPS;
+        reply?: string;
+        appendReply?: boolean;
+        error?: string;
+      };
+      if (!res.ok || !data.ok) {
+        setLabStatus(data.error || "Mine failed");
+        return;
+      }
+      if (data.skipped) {
+        setLabStatus("Skipped — ephemeral / lookup");
+        window.dispatchEvent(
+          new CustomEvent("halo-harvest-live", { detail: { skipped: true } })
+        );
+        return;
+      }
+      const n = data.chips?.length ?? 0;
+      setLabStatus(`${n} chip${n === 1 ? "" : "s"} mined`);
+      window.dispatchEvent(new CustomEvent("halo-harvest-live", { detail: data }));
+    } catch {
+      setLabStatus("Network error — is dev server running?");
+    } finally {
+      setLabBusy(false);
+    }
+  }
+
+  function resetHarvestLab() {
+    window.dispatchEvent(new Event("halo-keep-reset"));
+    window.dispatchEvent(new Event("halo-harvest-clear"));
+    setLabStatus("Keep + highlights reset");
+  }
+
+  function revisitHarvest() {
+    window.dispatchEvent(
+      new CustomEvent("halo-harvest-live", {
+        detail: { chips: PREVIEW_HARVEST_CHIPS, appendReply: false },
+      })
+    );
+    setLabStatus("Re-visit — highlights only if already in Keep");
   }
 
   function replayHome() {
@@ -528,6 +585,40 @@ export function PreviewSwitcher() {
         </>
       ) : (
         <>
+          <p className="preview-switcher__label">Harvest lab</p>
+          <p className="preview-switcher__hint">
+            Chat screen. Canned = instant replay. Live = real Grok miner (localhost). Run Replay once, then Re-visit to test no second flight.
+          </p>
+          <div className="preview-switcher__group preview-switcher__group--wrap">
+            <button
+              type="button"
+              className={chatRec ? "is-on" : ""}
+              onClick={replayHarvest}
+              title="Canned Nile chips — no API"
+            >
+              {chatRec ? "Stop" : "Canned"}
+            </button>
+            {Object.values(HARVEST_LAB_PRESETS).map((preset) => (
+              <button
+                key={preset.id}
+                type="button"
+                disabled={labBusy}
+                title={preset.userText}
+                onClick={() => void runLivePreset(preset.id)}
+              >
+                {preset.label}
+              </button>
+            ))}
+            <button type="button" onClick={revisitHarvest} title="Same chips; should not fly twice">
+              Re-visit
+            </button>
+            <button type="button" onClick={resetHarvestLab} title="Clear Keep + highlights">
+              Reset
+            </button>
+          </div>
+          {labStatus ? (
+            <p className="preview-switcher__hint is-ok">{labStatus}</p>
+          ) : null}
           <p className="preview-switcher__label">Shape</p>
           <p className="preview-switcher__hint">{MIXER_HELP.shape[style.shape]}</p>
           <div className="preview-switcher__group">
@@ -594,7 +685,7 @@ export function PreviewSwitcher() {
               className={chatRec ? "is-on" : ""}
               onClick={replayHarvest}
             >
-              {chatRec ? "Stop" : "Start"}
+              {chatRec ? "Stop film" : "Film take"}
             </button>
             <button
               type="button"
@@ -606,7 +697,7 @@ export function PreviewSwitcher() {
             </button>
           </div>
           <p className="preview-switcher__hint">
-            Start records until you hit Stop. Chat Start still fires the harvest take. Film on grabs stills of the flight.
+            Film take records until Stop. Canned / Live fire harvest for capture scoring below.
           </p>
           <p className={`preview-switcher__hint ${sinkUp ? "is-ok" : "is-wait"}`}>
             {sinkUp

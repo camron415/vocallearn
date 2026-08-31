@@ -85,9 +85,9 @@
   --halo-muted: #5a6e82;
   --halo-accent: #2b6d8e;
   --halo-accent-lit: #7fc4e4;
-  --halo-stone: #e8e8ed;
-  --halo-stone-hover: #f4f4f7;
-  --halo-stone-on: #d8d8de;
+  --halo-stone: #d6d2ca;
+  --halo-stone-hover: #cac6be;
+  --halo-stone-on: #beb9b0;
   --halo-chat: 52rem;
 
   /* material */
@@ -229,9 +229,9 @@ html[data-halo-theme="dark"] {
   --halo-muted: #8b9aab;
   --halo-accent: #7fc4e4;
   --halo-accent-lit: #b6e0f2;
-  --halo-stone: #2c333c;
-  --halo-stone-hover: #3a434e;
-  --halo-stone-on: #4a5562;
+  --halo-stone: #48484a;
+  --halo-stone-hover: #545456;
+  --halo-stone-on: #606062;
   --frost: 0.48;
   --glass-bright: 0.78;
   --glass-sat: 112%;
@@ -316,20 +316,15 @@ html[data-halo-theme="dark"] .field--plain:focus {
 
 html[data-halo-theme="dark"] .msg--assistant,
 html[data-halo-theme="dark"] .msg--live {
-  background: #1c242e;
+  background: var(--paper-card, #2c2c2e);
   color: var(--halo-ink);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 0 0 1px rgba(255, 255, 255, 0.1),
-    0 8px 18px -12px rgba(0, 0, 0, 0.45);
+  box-shadow: none;
 }
 
 html[data-halo-theme="dark"] .chat-scroll .msg.msg--user {
-  background: var(--halo-stone);
-  background-color: var(--halo-stone);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 0 0 1px rgba(255, 255, 255, 0.08);
+  background: var(--paper-inset, var(--halo-stone));
+  background-color: var(--paper-inset, var(--halo-stone));
+  box-shadow: none;
 }
 
 html[data-halo-theme="dark"] .msg--user .msg-copy {

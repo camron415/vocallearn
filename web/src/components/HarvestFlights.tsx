@@ -52,23 +52,14 @@ export function HarvestFlights({
           instant.push(chip);
           continue;
         }
-        const id =
-          typeof CSS !== "undefined" && "escape" in CSS
-            ? CSS.escape(chip.id)
-            : chip.id.replace(/"/g, "");
-        const mark = document.querySelector(`[data-harvest="${id}"]`);
-        const fromBox = mark?.getBoundingClientRect();
-        if (!fromBox || fromBox.width < 2) {
-          if (tries < 36) waiting.push(chip);
-          else instant.push(chip);
+        const from = harvestMarkOrigin(chip);
+        if (!from && tries < 36) {
+          waiting.push(chip);
           continue;
         }
         next.push({
           chip,
-          from: {
-            x: fromBox.left + fromBox.width / 2,
-            y: fromBox.top + fromBox.height / 2,
-          },
+          from: from ?? fallbackHarvestOrigin(next.length),
           index: next.length,
           delay: next.length * 200,
         });
@@ -80,7 +71,8 @@ export function HarvestFlights({
         return;
       }
 
-      for (const chip of [...next, ...instant]) seen.current.add(chip.id);
+      for (const flight of next) seen.current.add(flight.chip.id);
+      for (const chip of instant) seen.current.add(chip.id);
       for (const chip of instant) onLanded(chip);
       if (next.length) setFlights((prev) => [...prev, ...next]);
     };
@@ -210,6 +202,35 @@ function FlyingOrb({
   );
 }
 
+function harvestMarkOrigin(chip: HarvestChip) {
+  const id =
+    typeof CSS !== "undefined" && "escape" in CSS
+      ? CSS.escape(chip.id)
+      : chip.id.replace(/"/g, "");
+  const mark = document.querySelector(`[data-harvest="${id}"]`);
+  const box = mark?.getBoundingClientRect();
+  if (!box || box.width < 2) return null;
+  return { x: box.left + box.width / 2, y: box.top + box.height / 2 };
+}
+
+function fallbackHarvestOrigin(index: number) {
+  const bubble =
+    document.querySelector('[data-harvest-origin="true"] .answer') ??
+    document.querySelector(".msg-wrap--assistant:last-of-type .answer") ??
+    document.querySelector(".chat-scroll");
+  const box = bubble?.getBoundingClientRect();
+  if (box && box.height >= 2) {
+    return {
+      x: box.left + box.width * 0.5 + index * 24,
+      y: box.top + Math.min(box.height * 0.35, 48),
+    };
+  }
+  return {
+    x: window.innerWidth * 0.5 + index * 24,
+    y: window.innerHeight * 0.42,
+  };
+}
+
 function durationFor(flight: HarvestFlight) {
   if (flight === "burst") return 1680;
   if (flight === "float") return 1240;
@@ -230,6 +251,10 @@ function smooth(t: number) {
 
 function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t;
+}
+
+function clamp(n: number, lo: number, hi: number) {
+  return Math.min(hi, Math.max(lo, n));
 }
 
 function cubic(
@@ -284,12 +309,15 @@ function samplePath(
 
   const away = from.x < to.x ? -1 : 1;
   const side = index % 2 === 0 ? away : -away;
+  const vw = typeof window !== "undefined" ? window.innerWidth : 1200;
+  const pad = 20;
+  const room = Math.max(40, Math.min(236 + index * 28, vw * 0.22));
   const p1 = {
-    x: from.x + side * 78,
+    x: clamp(from.x + side * Math.min(78, room * 0.4), pad, vw - pad),
     y: from.y - 40,
   };
   const p2 = {
-    x: from.x + side * (236 + index * 28),
+    x: clamp(from.x + side * room, pad, vw - pad),
     y: from.y - (92 + index * 14),
   };
   const u =
