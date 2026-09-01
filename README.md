@@ -19,6 +19,7 @@ This is the project I want hiring teams to open first.
 | **Code** | [`web/`](./web/) (Halo) · [`app/`](./app/) (VocalLearn iOS) |
 | **Stack** | TypeScript, React, Next.js, React Native, PostgreSQL, Supabase, Vercel, xAI/Grok |
 | **Recruiter summary** | [`docs/FOR_RECRUITERS.md`](./docs/FOR_RECRUITERS.md) |
+| **Vision & roadmap** | [`docs/PRODUCT_ROADMAP.md`](./docs/PRODUCT_ROADMAP.md) |
 
 Halo is **invite-only** (no public signup). I provision accounts, watch what breaks, and push production updates.
 
@@ -200,7 +201,7 @@ inbox/            Internal planning notes (not user-facing)
 
 Parked until product fit: public signup, ads, full RPG gamification, realtime voice.
 
-Details: [`web/ROADMAP-VERSIONS.md`](./web/ROADMAP-VERSIONS.md) · [`docs/HALO_PRICING_AND_SCALING.md`](./docs/HALO_PRICING_AND_SCALING.md)
+**Source of truth:** [`docs/PRODUCT_ROADMAP.md`](./docs/PRODUCT_ROADMAP.md) — vision, version plan, open decisions.
 
 ---
 
