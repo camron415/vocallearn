@@ -1,10 +1,12 @@
 # VocalLearn — Vocal Spaced Repetition AI Learning App
 
-## Current Doc Status
+## Current doc status
 
-**Start here instead:** [`README.md`](./README.md) — live V1, Lab V2 preview, roadmap, and recruiter summary.
+**Product vision & roadmap (canonical):** [`docs/PRODUCT_ROADMAP.md`](./docs/PRODUCT_ROADMAP.md)
 
-This roadmap is mostly historical VocalLearn product planning.
+**Start here for overview:** [`README.md`](./README.md) — live product, screenshots, recruiter summary.
+
+This file is mostly historical VocalLearn native planning.
 
 ## Project Vision
 

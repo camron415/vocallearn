@@ -126,4 +126,4 @@ No public signup UI.
 | H4 Cove / Keep loop | **Done** — v1.1 on production `/ask` |
 | H5 Soft Learn | Planned — calendar scheduler, Luna tier |
 
-Full roadmap: [`../inbox/2026-08-10-halo-web-roadmap.md`](../inbox/2026-08-10-halo-web-roadmap.md)
+Full roadmap: [`../docs/PRODUCT_ROADMAP.md`](../docs/PRODUCT_ROADMAP.md)
