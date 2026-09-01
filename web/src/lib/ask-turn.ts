@@ -1,7 +1,7 @@
-import { titleFromFirstMessage } from "@/lib/constants";
+import { clipAtWord, titleFromFirstMessage } from "@/lib/constants";
 import { summarizeChatTitle } from "@/lib/grok";
 import { householdMonthlyMicros, weeklyBudgetMicros } from "@/lib/limits";
-import { sanitizeModelText } from "@/lib/markdown-plain";
+import { sanitizeModelText, splitMessageSources } from "@/lib/markdown-plain";
 import { attachmentNote } from "@/lib/files";
 import type { GrokMessage } from "@/lib/grok";
 import type { ChatAttachment } from "@/lib/types";
@@ -24,6 +24,28 @@ function daysAgo(days: number) {
   return since;
 }
 
+/** Trim history before sending to the model — full text stays in the DB for the UI. */
+function prepareHistoryForApi(messages: GrokMessage[]): GrokMessage[] {
+  const MAX_MESSAGES = 24;
+  const RECENT_FULL = 8;
+  const OLD_CLIP = 900;
+
+  return messages.slice(-MAX_MESSAGES).map((m, i, list) => {
+    const recent = i >= list.length - RECENT_FULL;
+    let content = typeof m.content === "string" ? m.content : "";
+
+    if (m.role === "assistant") {
+      content = splitMessageSources(content).body;
+    }
+
+    if (!recent && content.length > OLD_CLIP) {
+      content = clipAtWord(content, OLD_CLIP);
+    }
+
+    return { role: m.role, content };
+  });
+}
+
 async function loadHistory(
   supabase: SupabaseClient,
   conversationId: string
@@ -37,14 +59,14 @@ async function loadHistory(
 
   if (error) return { history: [], error: error.message };
 
-  return {
-    history: (history ?? [])
-      .filter((m) => m.role === "user" || m.role === "assistant")
-      .map((m) => ({
-        role: m.role as "user" | "assistant",
-        content: sanitizeModelText(m.content as string),
-      })),
-  };
+  const rows = (history ?? [])
+    .filter((m) => m.role === "user" || m.role === "assistant")
+    .map((m) => ({
+      role: m.role as "user" | "assistant",
+      content: sanitizeModelText(m.content as string),
+    }));
+
+  return { history: prepareHistoryForApi(rows) };
 }
 
 export async function prepareAskTurn(

@@ -41,6 +41,16 @@ export function sanitizeModelText(text: string): string {
     .trim();
 }
 
+/** Plain text for clipboard — body only, no Sources block or citation marks. */
+export function messageCopyText(text: string): string {
+  const { body } = splitMessageSources(text);
+  return stripMarkdownForDisplay(body)
+    .replace(/\s*\[\d+\]/g, "")
+    .replace(/ {2,}/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 /** Plain text for titles and user bubbles. */
 export function stripMarkdownForDisplay(text: string): string {
   return sanitizeModelText(text)

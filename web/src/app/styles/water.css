@@ -1,0 +1,294 @@
+/* Ownership: Cove Lab water surfaces (Wet material).
+   Edit: .water, lens/skin/stroke, still/soft water, water--pane/bar/action.
+   Do not: harvest flight JS, Home greeting/chips, Paper skin, morph --travel,
+   or overlay chrome. If a rule is Home vs water and you are unsure, leave it
+   here rather than guessing. Capsule structure lives with Home chips. */
+
+/* --------------------------------------------------------------------------
+   THE SAME MATERIAL, WET
+   What the recents do, on the big surfaces: composer/dock and Ask/Send.
+   Centre pinned, silhouette a rounded rectangle, water only in the outline.
+   The shape is redrawn each frame by lib/water-edge — the skin is clipped to
+   it and the strokes ride it — so nothing here may assume a CSS radius.
+   `--water` must match the preset's inset in lib/water-edge.ts.
+   -------------------------------------------------------------------------- */
+
+.water {
+  --water: 12px;
+  --r: 30px;
+  --tap: 0;
+  --spec-x: 50%;
+  --spec-y: 30%;
+  position: relative;
+  color: var(--halo-ink);
+}
+
+.water__ambient,
+.water__shade,
+.water__skin,
+.water__edge {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.water__shade,
+.water__edge {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* far shadow: too soft for the silhouette to matter, so it can stay a box */
+.water__ambient {
+  inset: var(--water);
+  border-radius: var(--r);
+  opacity: var(--water-in);
+}
+
+/* near shadow: a blurred copy of the live outline, so nothing darkens the
+   glass itself — only the few pixels around the rim */
+.water__shade {
+  filter: blur(6px);
+  transform: translateY(2px);
+  opacity: calc((0.42 + 0.18 * var(--glow)) * var(--water-in));
+}
+
+html[data-halo-motion="full"] .water--pane .water__shade {
+  animation: halo-pane-shade 14s ease-in-out infinite;
+}
+
+html[data-halo-motion="full"] .water--pane .water__ambient {
+  animation: halo-pane-ambient 18s ease-in-out infinite;
+}
+
+@keyframes halo-pane-shade {
+  0% {
+    transform: translate(0px, 2px);
+  }
+  33% {
+    transform: translate(1.2px, 1.4px);
+  }
+  66% {
+    transform: translate(-1.1px, 2.4px);
+  }
+  100% {
+    transform: translate(0px, 2px);
+  }
+}
+
+@keyframes halo-pane-ambient {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(1.5px, 1px, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.water__content {
+  position: relative;
+  z-index: 2;
+}
+
+/* WebKit drops clicks on a button if they land on pointer-events:none
+   skins. A fill layer on the control itself is the hit target. */
+.water--action::after,
+.capsule::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+}
+
+.water--action .water__content {
+  pointer-events: none;
+}
+
+/* pane: the hero composer, which is also the chat dock --------------------- */
+
+.water--pane {
+  animation: water-materialize 760ms var(--ease-glass) both;
+  animation-delay: calc(var(--enter-delay, 0ms) + 280ms);
+}
+
+/* materialize by modulating the lensing, not by fading a rectangle in */
+@keyframes water-materialize {
+  from {
+    --water-in: 0;
+  }
+  to {
+    --water-in: 1;
+  }
+}
+
+.water--pane .water__ambient {
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.12),
+    0 10px 28px -18px rgba(0, 0, 0, 0.12);
+}
+
+/* Header: keep the live water rim. Drop the CSS rect + blurred shade that
+   read as a second outline a couple of pixels out. */
+.water--bar .water__ambient {
+  box-shadow: 0 12px 28px -20px rgba(0, 0, 0, 0.14);
+}
+
+.water--bar .water__shade {
+  display: none;
+}
+
+.water--pane .water__skin {
+  backdrop-filter: blur(calc(var(--glass-blur) * var(--water-in)))
+    saturate(var(--glass-sat)) brightness(calc(var(--glass-bright) + 0.05 * var(--glow)));
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur) * var(--water-in)))
+    saturate(var(--glass-sat)) brightness(calc(var(--glass-bright) + 0.05 * var(--glow)));
+  background:
+    radial-gradient(
+      132% 148% at 50% -34%,
+      rgba(255, 255, 255, calc(0.3 * var(--frost) * var(--water-in))) 0%,
+      rgba(255, 255, 255, 0) 64%
+    ),
+    radial-gradient(
+      46% 128% at var(--spec-x) var(--spec-y),
+      rgba(255, 255, 255, calc(0.3 * var(--glow) * var(--frost) * var(--water-in))) 0%,
+      rgba(255, 255, 255, 0) 72%
+    ),
+    /* tap: inner illumination spreading out from the contact point */
+      radial-gradient(
+        circle at var(--spec-x) var(--spec-y),
+        rgba(212, 240, 255, calc(0.4 * var(--tap))) 0%,
+        rgba(212, 240, 255, 0) calc(18% + 82% * var(--tap))
+      ),
+    linear-gradient(
+      168deg,
+      rgba(255, 255, 255, calc(0.78 * var(--frost) * var(--water-in))) 0%,
+      rgba(255, 255, 255, calc(0.62 * var(--frost) * var(--water-in))) 46%,
+      rgba(255, 255, 255, calc(0.72 * var(--frost) * var(--water-in))) 100%
+    );
+}
+
+html[data-halo-engine="chromium"] .water--pane .water__skin {
+  backdrop-filter: blur(calc(var(--glass-blur) * var(--water-in)))
+    saturate(var(--glass-sat)) brightness(calc(var(--glass-bright) + 0.05 * var(--glow)))
+    url(#halo-lens);
+}
+
+html[data-halo-theme="dark"] .water--pane .water__skin {
+  background:
+    linear-gradient(
+      168deg,
+      rgba(28, 36, 46, calc(0.92 * var(--water-in))) 0%,
+      rgba(22, 28, 36, calc(0.9 * var(--water-in))) 46%,
+      rgba(26, 34, 44, calc(0.94 * var(--water-in))) 100%
+    );
+}
+
+@supports (-apple-visual-effect: -apple-system-glass-material) {
+  .water--pane .water__skin {
+    -apple-visual-effect: -apple-system-glass-material;
+    --frost: 0.6;
+  }
+}
+
+/* action: Ask / Send. Same water, quieter, over ink instead of glass ------- */
+
+.water--action {
+  --water: 6px;
+  --r: 999px;
+  --spec-y: 28%;
+  position: relative;
+  display: inline-flex;
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  border-radius: 999px;
+}
+
+.water--action .water__shade,
+.water--action .water__ambient,
+.water--action .water__edge {
+  display: none;
+}
+
+.water--action .water__skin,
+.water--pane .water--action .water__skin,
+html[data-halo-theme="dark"] .water--pane .water--action .water__skin {
+  background: var(--halo-stone);
+  box-shadow: none;
+  transition: background 180ms var(--ease-gel);
+}
+
+.water--action:hover:not(:disabled) .water__skin,
+.water--action:focus-visible .water__skin,
+.water--pane .water--action:hover:not(:disabled) .water__skin,
+.water--pane .water--action:focus-visible .water__skin,
+html[data-halo-theme="dark"] .water--pane .water--action:hover:not(:disabled) .water__skin,
+html[data-halo-theme="dark"] .water--pane .water--action:focus-visible .water__skin {
+  background: var(--halo-stone-hover);
+  box-shadow: none;
+}
+
+.water--action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.water--action:focus-visible {
+  outline: none;
+}
+
+/* still: no engine, so the skin is a plain rounded shape again ------------- */
+
+.water--still .water__ambient {
+  display: none;
+}
+
+.water--still .water__skin {
+  inset: var(--water);
+  border-radius: var(--r);
+  transition: box-shadow 240ms var(--ease-gel);
+}
+
+.water--still {
+  --glow: 0;
+  transition: --glow 260ms var(--ease-gel);
+}
+
+.water--still:hover,
+.water--still:focus-within {
+  --glow: 1;
+}
+
+.water--pane.water--still .water__skin {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.22),
+    0 0 0 1px rgba(0, 0, 0, 0.16),
+    0 0.5px 0 rgba(255, 255, 255, 0.7),
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 8px 22px rgba(0, 0, 0, 0.06),
+    0 18px 36px -20px rgba(0, 0, 0, 0.1);
+}
+
+.water--bar.water--still .water__skin {
+  inset: 0;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.18),
+    0 0 0 1px rgba(0, 0, 0, 0.12),
+    0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+html[data-halo-theme="dark"] .water--bar.water--still .water__skin {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 0 1px rgba(255, 255, 255, 0.12);
+}

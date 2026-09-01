@@ -28,6 +28,7 @@ function forSlide({ current }: {
 
 const TAB_ICONS: Record<string, { active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap; size: number }> = {
   index: { active: "home", inactive: "home-outline", size: 22 },
+  ask: { active: "chatbubbles", inactive: "chatbubbles-outline", size: 22 },
   subjects: { active: "library", inactive: "library-outline", size: 22 },
   learn: { active: "play-circle", inactive: "play-circle-outline", size: 24 },
   profile: { active: "person", inactive: "person-outline", size: 22 },
@@ -76,8 +77,8 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
             style={{ flex: 1, alignItems: "center", paddingVertical: 4 }}
           >
             <Ionicons
-              name={isFocused ? iconConfig.active : iconConfig.inactive}
-              size={iconConfig.size}
+              name={isFocused ? iconConfig?.active ?? "ellipse" : iconConfig?.inactive ?? "ellipse-outline"}
+              size={iconConfig?.size ?? 22}
               color={isFocused ? COLORS.primary : COLORS.textTertiary}
             />
             <Text
@@ -114,6 +115,7 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen name="index" options={{ title: "Home" }} />
+      <Tabs.Screen name="ask" options={{ title: "Ask" }} />
       <Tabs.Screen name="subjects" options={{ title: "Library" }} />
       <Tabs.Screen name="learn" options={{ title: "Learn" }} />
       <Tabs.Screen name="profile" options={{ title: "Profile" }} />

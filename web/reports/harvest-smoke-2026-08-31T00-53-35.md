@@ -1,0 +1,19 @@
+# Harvest live smoke
+
+Generated: 2026-08-31T00:53:35.846Z
+Mode: dry (gate only)
+Result: **9/9 passed**
+
+| Case | Mode | Skip | Chips | ms | Status |
+| --- | --- | --- | --- | --- | --- |
+| Weather lookup ask | gate | yes | 0 | 0 | PASS |
+| News headline ask | gate | yes | 0 | 0 | PASS |
+| Market close ask | gate | yes | 0 | 0 | PASS |
+| Sports score ask | gate | yes | 0 | 0 | PASS |
+| Cheap flights ask | gate | yes | 0 | 0 | PASS |
+| Crypto price ask | gate | yes | 0 | 0 | PASS |
+| History ask + market reply | gate | yes | 0 | 1 | PASS |
+| Too-short turn | gate | yes | 0 | 0 | PASS |
+| Short closed capital reply | gate | no | 0 | 0 | PASS |
+
+## Chip detail

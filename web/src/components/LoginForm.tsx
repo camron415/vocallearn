@@ -1,53 +1,62 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
-import { Glass } from "@/components/Glass";
-import { APP_NAME } from "@/lib/constants";
+import { AuthShell } from "@/components/AuthShell";
+import { emailError } from "@/lib/account";
 
-export function LoginForm() {
-  const router = useRouter();
+export function LoginForm({
+  demo = false,
+  initialError = null,
+}: {
+  demo?: boolean;
+  initialError?: string | null;
+}) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(initialError);
   const [loading, setLoading] = useState(false);
 
-  async function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    const supabase = createClient();
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
-
-    setLoading(false);
-
-    if (signInError) {
-      setError(signInError.message);
+  function onSubmit(e: FormEvent<HTMLFormElement>) {
+    const nextEmail = emailError(email);
+    if (nextEmail) {
+      e.preventDefault();
+      setError(nextEmail);
       return;
     }
-
-    router.replace("/ask");
-    router.refresh();
+    if (!password) {
+      e.preventDefault();
+      setError("Enter your password.");
+      return;
+    }
+    if (demo) {
+      e.preventDefault();
+      setError("Preview only — no sign-in.");
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    // Native POST → /api/auth/login sets cookies on redirect (Safari LAN).
   }
 
   return (
-    <Glass className="login-card">
-      <p className="brand-mark">{APP_NAME}</p>
-      <h1 className="login-title">Welcome back</h1>
-      <p className="login-sub">
-        Invite-only. If you don’t have an account yet, ask Camron for a
-        private invite link.
-      </p>
-
-      <form className="login-form" onSubmit={onSubmit}>
-        <label className="field-label">
+    <AuthShell
+      title="Welcome back"
+      sub="Invite-only. If you don’t have an account yet, ask Camron for a private invite link."
+    >
+      <form
+        className="login-form"
+        method="POST"
+        action="/api/auth/login"
+        noValidate
+        onSubmit={onSubmit}
+      >
+        <label className="field-label" htmlFor="login-email">
           Email
+        </label>
+        <div className="settings-name-pane">
           <input
+            id="login-email"
+            name="email"
             className="field"
             type="email"
             autoComplete="email"
@@ -55,10 +64,14 @@ export function LoginForm() {
             onChange={(e) => setEmail(e.target.value)}
             required
           />
-        </label>
-        <label className="field-label">
+        </div>
+        <label className="field-label" htmlFor="login-password">
           Password
+        </label>
+        <div className="settings-name-pane">
           <input
+            id="login-password"
+            name="password"
             className="field"
             type="password"
             autoComplete="current-password"
@@ -66,12 +79,12 @@ export function LoginForm() {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
-        </label>
+        </div>
         {error ? <p className="form-error">{error}</p> : null}
-        <button type="submit" className="primary-btn" disabled={loading}>
+        <button type="submit" disabled={loading} className="stone-btn login-submit">
           {loading ? "Signing in…" : "Sign in"}
         </button>
       </form>
-    </Glass>
+    </AuthShell>
   );
 }

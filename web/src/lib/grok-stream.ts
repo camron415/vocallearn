@@ -152,10 +152,12 @@ export async function* streamGrokChat(
     model?: string;
     effort?: ReasoningEffort;
     tools?: boolean;
+    maxToolCalls?: number;
     answerLength?: "short" | "medium" | "long";
+    system?: string;
   }
 ): AsyncGenerator<GrokLiveEvent> {
-  const effort = options?.effort || "none";
+  const effort = options?.effort ?? "low";
   const { apiUrl, headers } = grokAuth();
   const body = grokResponsesBody(messages, { ...options, stream: true });
 

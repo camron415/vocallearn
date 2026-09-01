@@ -1,0 +1,916 @@
+/* Ownership: Cove Lab overlays — History, Settings, Mode, Learn, harvest
+   capture status. Recipes page chrome sits here because it followed Settings
+   in the old stylesheet; do not restyle it as Home.
+   Do not: bolt new UI onto HaloHeader; use #cove-overlay. Do not invent a
+   what's-new tour. Do not retune harvest flight or morph travel.
+
+   z-index scale (current values — do not retune in this pass)
+   chrome as now (compose-dock ~20, topbar ~30)
+     < preview mixer ~80
+     < learn stage / harvest status ~90
+     < menus (history, mode, settings) ~100
+     < future what's-new (sits under the flies; do not add that UI here)
+     < .harvest-fly 120 in home.css (do not retune) */
+
+.history-wrap {
+  position: relative;
+}
+
+.history-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  justify-items: center;
+  align-items: center;
+  padding: 1.25rem 1rem;
+  background: var(--paper-field, #fafaf9);
+  animation: none;
+  overflow: auto;
+}
+
+html[data-halo-theme="dark"] .history-overlay {
+  background: var(--paper-field, #0e0e10);
+}
+
+.history-overlay.learn-stage {
+  align-items: stretch;
+  padding: 0;
+  overflow: hidden;
+}
+
+.history-page {
+  width: min(var(--halo-chat), 100%);
+  max-height: min(88dvh, 52rem);
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin: auto;
+  padding: 1.15rem 1.25rem 1.4rem;
+  background: var(--paper-card, #f3f2f0);
+  border: 0;
+  border-radius: 20px;
+  box-shadow: var(--paper-card-shadow, 0 8px 28px rgba(0, 0, 0, 0.07));
+}
+
+.history-page.settings-page {
+  overflow: auto;
+  padding: 1.15rem 1.25rem 1.4rem;
+}
+
+/* --------------------------------------------------------------------------
+   Menu sheet — History and Settings grow out of the composer that is on
+   screen (Ask hero on Home, follow-up dock in Chat). One shell, one motion,
+   two anchors. `MenuSheet.tsx` writes `data-state` / `data-grow` and drives
+   height + transform inline; everything optical lives here.
+   Play sheet --travel (1080ms) is not used and not touched.
+   -------------------------------------------------------------------------- */
+
+:root {
+  --menu-grow: 520ms;
+  --menu-shrink: 380ms;
+}
+
+.history-overlay.menu-veil {
+  background: color-mix(in srgb, var(--paper-field, #fafaf9) 94%, transparent);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--menu-grow) var(--ease-travel);
+}
+
+html[data-halo-theme="dark"] .history-overlay.menu-veil {
+  background: color-mix(in srgb, var(--paper-field, #0e0e10) 94%, transparent);
+}
+
+.history-overlay.menu-veil[data-state="open"] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.history-overlay.menu-veil[data-state="closing"] {
+  opacity: 0;
+  pointer-events: auto;
+  transition-duration: var(--menu-shrink);
+}
+
+.menu-sheet {
+  transform-origin: 50% 50%;
+  will-change: height, transform;
+}
+
+/* Content rides in after the shell has most of its height, same read as the
+   play sheet body. */
+.menu-sheet[data-grow="seed"] > * {
+  opacity: 0;
+}
+
+.menu-sheet[data-grow="open"] > * {
+  opacity: 1;
+  transition: opacity 300ms var(--ease-travel) 170ms;
+}
+
+.menu-sheet[data-grow="closing"] > * {
+  opacity: 0;
+  transition: opacity 150ms var(--ease-travel);
+}
+
+/* Both sheets read as a sheet header, not a page H1. */
+.menu-sheet .history-page-title,
+.menu-sheet.settings-page .history-page-title {
+  font-size: clamp(1.5rem, 2.6vw, 1.8rem);
+}
+
+.menu-sheet .history-page-head {
+  margin-bottom: 0.9rem;
+}
+
+.menu-block {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.history-page:not(.settings-page) .menu-block {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.history-page:not(.settings-page) .menu-block .history-list {
+  flex: 1;
+  min-height: 0;
+}
+
+.menu-block-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 2rem;
+}
+
+.menu-block-head .field-label {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--halo-ink) 55%, transparent);
+}
+
+.menu-block .history-toolbar {
+  margin: 0;
+}
+
+.settings-page .water--pane,
+.settings-page .capsule {
+  animation: none;
+  --water-in: 1;
+}
+
+.settings-page {
+  display: grid;
+  gap: 1.05rem;
+  align-content: start;
+}
+
+.settings-page .history-page-title {
+  font-size: clamp(1.55rem, 3vw, 2.05rem);
+}
+
+.settings-page .login-sub {
+  margin: 0;
+}
+
+.settings-block--end {
+  padding-top: 0.25rem;
+}
+
+.history-page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0 0 1.15rem;
+  flex-shrink: 0;
+}
+
+.history-page-head .stone-btn {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.history-page-title {
+  margin: 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: clamp(2rem, 4vw, 2.7rem);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  color: var(--halo-ink);
+}
+
+.history-sheet {
+  --frost: 1.18;
+  --halo-fill: 1;
+  width: min(38rem, 100%);
+  max-height: min(72vh, 42rem);
+  overflow: auto;
+  padding: 0.85rem 0.75rem 1rem;
+  animation: halo-msg-in 480ms var(--ease-glass) both;
+}
+
+.history-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0 0.2rem 0.55rem;
+}
+
+.history-label {
+  margin: 0.15rem 0.35rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--halo-muted);
+  font-weight: 700;
+}
+
+.history-empty {
+  margin: 0.35rem 0.55rem 0.5rem;
+  color: var(--halo-muted);
+  font-size: 0.98rem;
+  line-height: 1.45;
+}
+
+.history-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin: -0.35rem 0 0.95rem;
+}
+
+.history-pick {
+  flex: 0 0 auto;
+  width: 1.55rem;
+  height: 1.55rem;
+  border: 0;
+  border-radius: 999px;
+  padding: 0;
+  background: var(--halo-stone);
+  box-shadow: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.history-pick.is-on {
+  background: var(--halo-stone-on);
+  box-shadow: 0 0 0 1px rgba(44, 51, 60, 0.16);
+}
+
+.history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+/* Menu sheet: one inset block + row hairlines — same read as compose-suggest. */
+.menu-block .history-list {
+  gap: 0;
+  border-radius: 1rem;
+  overflow: hidden;
+  overflow-y: auto;
+  background: var(--paper-inset, var(--halo-stone));
+}
+
+.menu-block .history-row + .history-row {
+  border-top: 1px solid var(--paper-inset-border, color-mix(in srgb, var(--halo-ink) 8%, transparent));
+}
+
+.history-row,
+.recipe-card-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.history-row .history-item {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.history-row .stone-btn,
+.recipe-card-head .stone-btn {
+  flex: 0 0 auto;
+  align-self: center;
+}
+
+.recipe-card-head {
+  margin: 0 0 0.7rem;
+}
+
+.recipe-card-head h2 {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.history-item {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--paper-inset-border, rgba(0, 0, 0, 0.05));
+  border-radius: 18px;
+  padding: 0.95rem 1rem;
+  text-align: left;
+  font: inherit;
+  font-size: 1.08rem;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--halo-ink);
+  background: var(--paper-inset, var(--halo-stone));
+  cursor: pointer;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  transition: background-color 120ms var(--ease-gel);
+}
+
+.menu-block .history-item {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0.72rem 0.85rem 0.72rem 1rem;
+  font-size: 0.94rem;
+  font-weight: 550;
+  line-height: 1.25;
+}
+
+/* Hover and current stay in the paper family — the stone tokens are cool and
+   read blue next to an inset row. */
+.history-item:hover,
+.history-item:focus-visible {
+  background: color-mix(in srgb, var(--halo-ink) 6%, var(--paper-inset, var(--halo-stone)));
+  outline: none;
+}
+
+.history-item.is-current,
+.history-item.is-picked {
+  background: color-mix(in srgb, var(--halo-ink) 12%, var(--paper-inset, var(--halo-stone)));
+}
+
+.learn-stage-inner {
+  width: min(36rem, 100%);
+  height: 100%;
+  display: grid;
+  align-content: center;
+  justify-items: stretch;
+  gap: 1.1rem;
+  padding: 4.5rem 1.2rem 2rem;
+  animation: halo-learn-rise 480ms var(--ease-glass) both;
+}
+
+.learn-stage {
+  z-index: 90;
+  animation: halo-learn-veil 380ms var(--ease-glass) both;
+}
+
+@keyframes halo-learn-veil {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes halo-learn-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.learn-stage-head {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.learn-stage-head .stone-btn {
+  justify-self: end;
+}
+
+.learn-stage-title {
+  margin: 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 1.05rem;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--halo-ink);
+  text-align: center;
+}
+
+.learn-beads {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.learn-bead {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--halo-muted);
+  opacity: 0.35;
+}
+
+.learn-bead.is-now {
+  opacity: 1;
+  background: var(--halo-ink);
+  transform: scale(1.28);
+}
+
+.learn-bead.is-ok {
+  opacity: 1;
+  background: var(--halo-accent);
+}
+
+.learn-bead.is-miss {
+  opacity: 0.55;
+  background: var(--halo-muted);
+}
+
+.learn-card-pane {
+  --r: 32px;
+  padding: 1.65rem 1.5rem 1.35rem;
+  animation: halo-learn-rise 520ms var(--ease-glass) both;
+}
+
+.learn-card-pane.is-ok {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    0 0 0 1px rgba(48, 196, 132, 0.28),
+    0 18px 36px -22px rgba(48, 196, 132, 0.45);
+}
+
+.learn-token {
+  display: inline-flex;
+  margin: 0 0 0.7rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.92rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: #1b2420;
+}
+
+.learn-token--when {
+  background: linear-gradient(170deg, rgba(255, 214, 118, 0.92), rgba(255, 176, 64, 0.86));
+}
+.learn-token--where {
+  background: linear-gradient(170deg, rgba(150, 236, 246, 0.92), rgba(48, 190, 208, 0.86));
+}
+.learn-token--who {
+  background: linear-gradient(170deg, rgba(226, 186, 248, 0.94), rgba(196, 112, 232, 0.86));
+}
+.learn-token--meaning {
+  background: linear-gradient(170deg, rgba(164, 236, 196, 0.94), rgba(48, 196, 132, 0.86));
+}
+
+html[data-halo-theme="dark"] .learn-token {
+  color: #f4f7f5;
+}
+
+.learn-kicker {
+  margin: 0 0 0.45rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--halo-muted);
+  font-weight: 700;
+}
+
+.learn-prompt {
+  margin: 0 0 0.95rem;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: clamp(1.55rem, 4vw, 2.05rem);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+
+.learn-hint {
+  margin: 0 0 0.85rem;
+  color: var(--halo-ink-soft);
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+.learn-answer {
+  width: 100%;
+  margin: 0 0 0.7rem;
+}
+
+.learn-actions {
+  justify-content: space-between;
+}
+
+.learn-soft-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem 1.1rem;
+  margin: 0.85rem 0 0;
+}
+
+.learn-soft {
+  border: 0;
+  padding: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.92rem;
+  color: var(--halo-muted);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.learn-feedback {
+  margin: 0.7rem 0 0;
+  color: var(--halo-ink-soft);
+}
+
+.learn-feedback.is-ok {
+  color: var(--halo-accent);
+}
+
+.harvest-overlay {
+  position: fixed;
+  right: 0.85rem;
+  bottom: 0.85rem;
+  z-index: 90;
+  margin: 0;
+  padding: 0.4rem 0.7rem;
+  border-radius: 999px;
+  background: #1d1d1f;
+  color: #f5f5f7;
+  font-size: 0.72rem;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+@media (max-width: 640px) {
+  .ask-stage,
+  .chat-stage {
+    padding: 0.5rem max(0.7rem, env(safe-area-inset-right))
+      max(0.35rem, env(safe-area-inset-bottom))
+      max(0.7rem, env(safe-area-inset-left));
+  }
+
+  .topbar {
+    padding: calc(var(--water) + 0.28rem) calc(var(--water) + 0.32rem)
+      calc(var(--water) + 0.28rem) calc(var(--water) + 0.55rem);
+  }
+
+  .chat-title {
+    max-width: 12ch;
+  }
+
+  .recents {
+    max-width: 100%;
+  }
+
+  .history-page {
+    padding-left: 1.05rem;
+    padding-right: 1.05rem;
+  }
+
+  .recipes-main {
+    margin-top: 1rem;
+    padding: 0 0.1rem 1.5rem;
+  }
+}
+
+.mode-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--paper-field, #fafaf9);
+}
+
+html[data-halo-theme="dark"] .mode-overlay {
+  background: var(--paper-field, #0e0e10);
+}
+
+.mode-sheet {
+  position: absolute;
+  top: 4.6rem;
+  right: max(1rem, calc(50vw - 36rem));
+  width: min(16rem, calc(100vw - 2rem));
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.55rem;
+  border-radius: 22px;
+  background: var(--paper-card, #f3f2f0);
+  border: 0;
+  box-shadow: var(--paper-card-shadow, 0 8px 28px rgba(0, 0, 0, 0.07));
+}
+
+.mode-soon {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.78rem;
+  color: var(--halo-muted);
+  font-weight: 500;
+}
+
+.settings-page .history-page-head {
+  margin-bottom: 0.35rem;
+}
+
+.settings-page .field-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--halo-ink) 55%, transparent);
+}
+
+.settings-block {
+  display: grid;
+  gap: 0.38rem;
+  justify-items: start;
+}
+
+.settings-block .field--plain,
+.settings-name-pane {
+  width: 100%;
+  max-width: 22rem;
+}
+
+.settings-name {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+  max-width: 28rem;
+}
+
+.settings-name .settings-name-pane {
+  flex: 1;
+  min-width: 0;
+  max-width: none;
+}
+
+.settings-name-pane {
+  --water: 8px;
+  --r: 999px;
+  --water-in: 1;
+  padding: calc(var(--water) + 0.08rem) calc(var(--water) + 0.2rem);
+  animation: none;
+  background: var(--paper-inset, transparent);
+  border: 1px solid var(--paper-inset-border, transparent);
+  border-radius: 999px;
+}
+
+html[data-halo-theme="dark"] .settings-name-pane {
+  background: var(--paper-inset, transparent);
+  border-color: var(--paper-inset-border, rgba(255, 255, 255, 0.06));
+}
+
+html[data-halo-theme="dark"] .settings-name-pane .field,
+html[data-halo-theme="dark"] .settings-name-pane .field:focus {
+  background: transparent;
+}
+
+.settings-name-pane .water__ambient {
+  box-shadow: none;
+}
+
+.settings-name-pane .field,
+.settings-name-pane .field:focus {
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+  border-radius: 999px;
+  padding: 0.52rem 0.75rem;
+}
+
+.settings-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.invite-copy {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.invite-copy code {
+  display: block;
+  padding: 0.7rem 0.85rem;
+  border-radius: 14px;
+  background: var(--paper-inset, #f2f1ee);
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--halo-ink) 6%, transparent);
+  color: var(--halo-ink);
+  word-break: break-all;
+  font-size: 0.88rem;
+}
+
+html[data-halo-theme="dark"] .invite-copy code {
+  background: var(--paper-inset, #3a3a3c);
+}
+
+.attach-list {
+  list-style: none;
+  margin: 0 0 0.35rem;
+  padding: 0.1rem 0.15rem 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.attach-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 100%;
+  padding: 0.22rem 0.45rem 0.22rem 0.65rem;
+  border-radius: 999px;
+  background: var(--paper-inset, var(--halo-stone));
+  font-size: 0.78rem;
+  line-height: 1.2;
+}
+
+.attach-chip__name {
+  min-width: 0;
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attach-chip__x {
+  border: 0;
+  background: none;
+  color: var(--halo-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 1.05rem;
+  line-height: 1;
+  padding: 0.1rem 0.2rem;
+  flex: 0 0 auto;
+}
+
+/* Safari paints native file widgets even when clipped inside the composer.
+   Keep the input on body, off-screen, and trigger it from the paperclip only. */
+.attach-input-offscreen {
+  position: fixed;
+  left: -10000px;
+  top: 0;
+  width: 0;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  appearance: none;
+  -webkit-appearance: none;
+  font-size: 0;
+  color: transparent;
+}
+
+.recipes-main {
+  width: min(var(--halo-chat), 100%);
+  margin: 1.5rem auto 2rem;
+}
+
+.admin-list {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  display: grid;
+  background: var(--paper-inset, #f2f1ee);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--halo-ink) 5%, transparent);
+}
+
+html[data-halo-theme="dark"] .admin-list {
+  background: var(--paper-inset, #3a3a3c);
+}
+
+.admin-row {
+  padding: 0.95rem 1.05rem;
+}
+
+.admin-row + .admin-row {
+  box-shadow: inset 0 1px 0
+    color-mix(in srgb, var(--halo-ink) 8%, transparent);
+}
+
+.admin-row h2 {
+  margin: 0 0 0.25rem;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 1.15rem;
+  font-weight: 500;
+}
+
+.admin-row .login-sub {
+  margin: 0 0 0.35rem;
+}
+
+.recipe-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1rem;
+}
+
+.recipe-card {
+  padding: 1.15rem 1.25rem;
+  border-radius: 22px;
+  background: #ffffff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
+.recipe-card h2 {
+  margin: 0 0 0.7rem;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 1.45rem;
+  font-weight: 500;
+}
+
+.recipe-card-head h2 {
+  margin: 0;
+}
+
+.recipe-card h3 {
+  margin: 0.85rem 0 0.3rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--halo-muted);
+}
+
+.recipe-card pre {
+  margin: 0;
+  font: inherit;
+  white-space: pre-wrap;
+}
+
+.recipe-photo {
+  display: block;
+  width: 100%;
+  height: 12rem;
+  object-fit: cover;
+  border-radius: 16px;
+  margin: 0 0 0.85rem;
+  background: var(--halo-stone);
+}
+
+.recipe-photo--empty {
+  position: relative;
+  display: grid;
+  place-items: center;
+  color: var(--halo-muted);
+  font-size: 0.92rem;
+  cursor: pointer;
+}
+
+.recipe-photo--empty.is-busy {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.recipe-photo-swap {
+  position: relative;
+  margin: 0 0 0.7rem;
+  width: fit-content;
+  cursor: pointer;
+}

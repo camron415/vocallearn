@@ -10,7 +10,7 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import { useEffectiveMotion, useMotionSettings } from "@/components/MotionProvider";
+import { useEffectiveMotion } from "@/components/MotionProvider";
 
 export type GlassVariant = "panel" | "bar" | "pill";
 
@@ -157,24 +157,13 @@ export function GlassButton({
     <button
       type={type}
       title={title}
+      aria-label={title}
       disabled={disabled}
       onClick={onClick}
       className={`stone-btn ${className}`}
     >
       {children}
     </button>
-  );
-}
-
-export function WallpaperToggle() {
-  const { wallpaper, setWallpaper } = useMotionSettings();
-  return (
-    <GlassButton
-      title="Mist is the default scene. Sky is the older day-sky wallpaper."
-      onClick={() => setWallpaper(wallpaper === "mist" ? "sky" : "mist")}
-    >
-      Scene: {wallpaper === "mist" ? "Mist" : "Sky"}
-    </GlassButton>
   );
 }
 

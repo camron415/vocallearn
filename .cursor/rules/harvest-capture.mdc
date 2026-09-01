@@ -1,0 +1,17 @@
+---
+description: Harvest motion QA — read filmstrips from the Mac capture sink
+globs: web/src/**/*harvest*
+alwaysApply: false
+---
+
+# Harvest capture
+
+Visual QA for Keep harvest lives in `web/captures/harvest/latest/`.
+
+After Start / Stop on `/preview?view=chat` with `npm run capture:sink` running in `web/`:
+
+1. Read `web/captures/harvest/latest/meta.json` (mixer settings, fps, scorecard).
+2. Read `frame-00.jpg` … in order. These are the motion, not screenshots of a paused state.
+3. Judge smoothness, theme, outline leak, nested liquid, burst corners, pebble reach. Do not argue from description if frames exist.
+
+The mixer is the left rail on `/preview`. Replay also records. Lab URL can save to the Mac only when the sink is listening on `127.0.0.1:8791`.

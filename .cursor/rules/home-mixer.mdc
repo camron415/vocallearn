@@ -1,0 +1,25 @@
+---
+description: Home mixer + capture on /preview. Use when changing Home bubbles, scatter, palettes, or Replay film.
+globs: web/src/{components/HomeBubbles.tsx,components/HomeCapture.tsx,components/PreviewSwitcher.tsx,lib/home-style.ts,app/styles/home.css}
+alwaysApply: false
+---
+
+# Home mixer
+
+Harvest chat flight is locked. Do not retune Shape/Flight/Wake/Dock unless Camron asks.
+
+Home mixer (left rail on `/preview`, Home tab):
+
+- **Look:** Ours (wet candy, default) vs Paper (flat pastels, no liquid, no rims, ghost nav)
+- **Tone:** Glass (pale liquid), Match (harvest candy / header beads, default), Wash (paler)
+- **Ink:** Halo (old beads), Citrus (default, punchier), Gummy (high chroma), Dusk (jewels)
+- **Lift:** 0–100 candy brightness
+- **Inner light:** Off by default (same as dark). On = moving specular blob
+- **Clump:** tightness inside a cluster
+- **Scatter:** 0 = left/right gutters, 100 = orbit greeting (fills blank above/below)
+- **Replay + Film:** Start / Stop. Records until you stop (3 min cap). Film stills along the way (`web/captures/home/latest/`, `npm run capture:sink`). Chat harvest Replay is a separate take — landing in chat does not restart Home film.
+
+After Replay, read `meta.json` then `frame-01.jpg`… in order. Judge from film, not screenshots of a paused page.
+
+Locked product: kind colors (who purple, where teal, meaning green, when amber); related facts clump, no constellation lines; one header bead per kind; white click = ask, hold = Keep; color click or hold = source chat (composer morph); Home = due chips only; Keep pocket = not due; harvest lands in Keep. Do not add chip-wander motion. Paper Home is dry (no water engine). Ours stays wet. Harvest Shape/Flight/Wake/Dock stay locked. See web/HALO-LOOP.md.
+---

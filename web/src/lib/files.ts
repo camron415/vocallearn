@@ -4,12 +4,17 @@ import type { ChatAttachment } from "@/lib/types";
 export const MAX_ATTACH_BYTES = 4 * 1024 * 1024;
 export const MAX_ATTACH_FILES = 3;
 
-const IMAGE = new Set([
+/** xAI image understanding accepts jpeg/png only. Client transcodes the rest. */
+const IMAGE = new Set(["image/jpeg", "image/jpg", "image/png"]);
+
+const IMAGE_IN = new Set([
   "image/jpeg",
   "image/jpg",
   "image/png",
   "image/webp",
   "image/gif",
+  "image/heic",
+  "image/heif",
 ]);
 
 const TEXT = new Set([
@@ -22,12 +27,17 @@ const TEXT = new Set([
 const DOCS = new Set(["application/pdf", ...TEXT]);
 
 export function acceptAttr() {
-  return "image/jpeg,image/png,image/webp,image/gif,.pdf,.txt,.md,.csv,.json";
+  return "image/*,.heic,.heif,.pdf,.txt,.md,.csv,.json";
 }
 
 export function isAllowedFile(file: { name: string; type: string }) {
-  const type = file.type || guessType(file.name);
-  return IMAGE.has(type) || DOCS.has(type);
+  const type = (file.type || guessType(file.name)).toLowerCase();
+  return IMAGE_IN.has(type) || IMAGE.has(type) || DOCS.has(type);
+}
+
+export function isImageFile(file: { name: string; type: string }) {
+  const type = (file.type || guessType(file.name)).toLowerCase();
+  return type.startsWith("image/") || IMAGE_IN.has(type);
 }
 
 function guessType(name: string) {
@@ -41,6 +51,8 @@ function guessType(name: string) {
   if (ext === "png") return "image/png";
   if (ext === "webp") return "image/webp";
   if (ext === "gif") return "image/gif";
+  if (ext === "heic") return "image/heic";
+  if (ext === "heif") return "image/heif";
   return "";
 }
 
@@ -52,7 +64,6 @@ async function uploadXaiFile(name: string, type: string, bytes: Buffer) {
   const { apiUrl, apiKey } = grokAuth();
   const form = new FormData();
   form.append("purpose", "assistants");
-  form.append("expires_after", "86400");
   form.append(
     "file",
     new Blob([new Uint8Array(bytes)], { type: type || "application/octet-stream" }),
@@ -79,17 +90,18 @@ export async function attachmentsToGrokParts(
   const parts: GrokContentPart[] = [];
 
   for (const file of attachments.slice(0, MAX_ATTACH_FILES)) {
-    const type = file.type || guessType(file.name);
+    const type = (file.type || guessType(file.name)).toLowerCase();
     const bytes = decode(file.data);
     if (bytes.length > MAX_ATTACH_BYTES) {
       throw new Error(`${file.name} is too large (max 4 MB)`);
     }
 
     if (IMAGE.has(type)) {
+      const mime = type === "image/jpg" ? "image/jpeg" : type;
       parts.push({
         type: "input_image",
-        image_url: `data:${type};base64,${file.data}`,
-        detail: "low",
+        image_url: `data:${mime};base64,${file.data}`,
+        detail: "high",
       });
       continue;
     }

@@ -1,0 +1,583 @@
+/* Ownership: Cove Lab Chat — thread, bubbles, dock-adjacent chat chrome.
+   Edit: .chat-scroll, .msg, .answer, stage-hero entrance keyframes (they
+   followed Chat in the old cascade; Home owns the hero markup).
+   Do not: retune morph --travel, harvest flight, Paper skin, overlay menus. */
+
+/* --------------------------------------------------------------------------
+   Chat
+   -------------------------------------------------------------------------- */
+
+.chat-stage > .stage--page {
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-scroll {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: auto;
+  overflow-x: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: 1.05rem;
+  width: 100%;
+  max-width: var(--halo-chat);
+  margin: 0 auto;
+  padding: 0.35rem 0.85rem 0.65rem;
+  scrollbar-gutter: stable;
+  box-sizing: border-box;
+}
+
+@keyframes halo-chat-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.chat-empty {
+  margin: 2.5rem 0 0;
+  text-align: center;
+  color: var(--halo-muted);
+  font-size: 0.95rem;
+}
+
+.msg {
+  position: relative;
+  width: fit-content;
+  max-width: 100%;
+  min-width: 0;
+  padding: 0.95rem 1.2rem 0.95rem;
+  border-radius: 22px;
+  font-size: 1.22rem;
+  line-height: 1.55;
+  letter-spacing: -0.012em;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.msg-wrap {
+  display: flex;
+  flex-direction: column;
+  max-width: 100%;
+  min-width: 0;
+  align-items: flex-start;
+}
+
+.msg-wrap--user {
+  align-items: flex-end;
+}
+
+.msg-wrap--fresh {
+  animation: halo-msg-in 520ms var(--ease-glass) both;
+}
+
+.msg-copy {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.42rem;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 0;
+  border-radius: 999px;
+  padding: 0;
+  color: var(--halo-muted);
+  background: var(--halo-stone);
+  box-shadow: none;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    opacity 160ms var(--ease-gel),
+    background 160ms var(--ease-gel),
+    color 160ms var(--ease-gel);
+}
+
+.msg:hover .msg-copy,
+.msg:focus-within .msg-copy,
+.msg-copy:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.msg-copy:hover,
+.msg-copy:focus-visible {
+  background: var(--halo-stone-hover);
+  color: var(--halo-ink);
+  outline: none;
+}
+
+.msg-copy.is-copied {
+  opacity: 1;
+  pointer-events: auto;
+  color: var(--halo-ink);
+}
+
+.msg--user .msg-copy {
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: none;
+}
+
+.msg--user .msg-copy:hover,
+.msg--user .msg-copy:focus-visible {
+  background: #ffffff;
+}
+
+@media (hover: none) {
+  .msg:focus-within .msg-copy {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+.msg--user {
+  white-space: pre-wrap;
+  scroll-margin-top: 5.6rem;
+}
+
+.msg p {
+  margin: 0;
+}
+
+.msg--live {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.answer {
+  color: var(--halo-ink);
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.answer > *:first-child {
+  margin-top: 0;
+}
+
+.answer > *:last-child {
+  margin-bottom: 0;
+}
+
+.answer h1,
+.answer h2,
+.answer h3 {
+  font-family: var(--font-display);
+  font-weight: 560;
+  letter-spacing: -0.03em;
+  line-height: 1.25;
+  color: var(--halo-ink);
+}
+
+.answer h1 {
+  font-size: 1.42rem;
+  margin: 0 0 0.55rem;
+}
+
+.answer h2 {
+  font-size: 1.18rem;
+  margin: 1.05rem 0 0.4rem;
+}
+
+.answer h3 {
+  font-size: 1.04rem;
+  margin: 0.9rem 0 0.32rem;
+}
+
+.answer p {
+  margin: 0 0 0.72rem;
+}
+
+.answer p:last-child {
+  margin-bottom: 0;
+}
+
+.answer ul,
+.answer ol {
+  margin: 0.15rem 0 0.8rem;
+  padding-left: 1.35rem;
+}
+
+.answer ul {
+  list-style: disc;
+}
+
+.answer ol {
+  list-style: decimal;
+}
+
+.answer ul ul {
+  list-style: circle;
+}
+
+.answer li::marker {
+  color: var(--halo-accent);
+}
+
+.answer li {
+  margin: 0.22rem 0;
+  padding-left: 0.15rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.answer li > ul,
+.answer li > ol {
+  margin: 0.2rem 0 0.35rem;
+}
+
+.answer strong {
+  font-weight: 720;
+  letter-spacing: -0.018em;
+}
+
+.answer em {
+  font-style: italic;
+}
+
+.answer code {
+  font-size: 0.86em;
+  padding: 0.08em 0.32em;
+  border-radius: 6px;
+  background: rgba(20, 32, 43, 0.06);
+}
+
+.answer pre {
+  margin: 0.4rem 0 0.85rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 14px;
+  overflow: auto;
+  max-width: 100%;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: rgba(20, 32, 43, 0.04);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.answer pre code {
+  padding: 0;
+  background: none;
+}
+
+.answer blockquote {
+  margin: 0.4rem 0 0.85rem;
+  padding: 0.1rem 0 0.1rem 0.85rem;
+  border-left: 2px solid rgba(43, 109, 142, 0.35);
+  color: var(--halo-ink-soft);
+}
+
+.answer-link {
+  color: var(--halo-accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.answer-link:hover,
+.answer-link:focus-visible {
+  text-decoration: underline;
+}
+
+.cite-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.15em;
+  height: 1.15em;
+  margin: 0 0.08em 0 0.14em;
+  padding: 0 0.28em;
+  border-radius: 999px;
+  background: rgba(43, 109, 142, 0.12);
+  color: var(--halo-accent);
+  font-size: 0.68em;
+  font-weight: 750;
+  line-height: 1;
+  text-decoration: none;
+  vertical-align: super;
+  position: relative;
+  top: -0.12em;
+}
+
+.cite-mark:hover,
+.cite-mark:focus-visible {
+  background: rgba(43, 109, 142, 0.2);
+}
+
+.answer--streaming .message-sources {
+  display: none;
+}
+
+.stream-caret {
+  display: inline-block;
+  width: 0.42rem;
+  height: 1.05em;
+  margin-left: 0.12rem;
+  border-radius: 1px;
+  background: var(--halo-accent);
+  vertical-align: text-bottom;
+  animation: halo-caret 1s steps(1) infinite;
+}
+
+@keyframes halo-caret {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+html[data-halo-motion="soft"] .stream-caret,
+html[data-halo-perf="soft"] .stream-caret {
+  animation: none;
+  opacity: 0.55;
+}
+
+.work-trace {
+  display: grid;
+  gap: 0.45rem;
+  margin-bottom: 0.7rem;
+}
+
+.work-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.18rem;
+  color: var(--halo-muted);
+  font-size: 0.92rem;
+}
+
+.work-waiting,
+.work-summary {
+  margin: 0 0 0.55rem;
+  color: var(--halo-muted);
+  font-size: 0.9rem;
+}
+
+.work-thinking {
+  position: relative;
+  padding: 0.15rem 0 0.2rem;
+}
+
+.work-thinking-label {
+  margin: 0 0 0.2rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--halo-accent);
+  font-weight: 700;
+}
+
+.work-thinking-text {
+  margin: 0;
+  color: var(--halo-muted);
+  font-size: 0.92rem;
+  line-height: 1.45;
+  font-style: italic;
+  white-space: pre-wrap;
+}
+
+.source-index {
+  font-weight: 700;
+  color: var(--halo-accent);
+}
+
+/* You: recessed sunk fill, no outline — a bubble gets no hairline, so the fill
+   has to carry the separation from the field in both modes. Ask: paper card
+   fill, no outline. */
+.chat-scroll .msg.msg--user {
+  margin-left: auto;
+  border-bottom-right-radius: 9px;
+  color: var(--halo-ink);
+  background: var(--paper-sunk, var(--paper-inset, var(--halo-stone)));
+  background-color: var(--paper-sunk, var(--paper-inset, var(--halo-stone)));
+  box-shadow: none;
+}
+
+.msg--assistant {
+  border-bottom-left-radius: 9px;
+  background: var(--paper-card, #f3f2f0);
+  color: var(--halo-ink);
+  border: 0;
+  box-shadow: none;
+}
+
+html[data-halo-theme="dark"] .msg--assistant,
+html[data-halo-theme="dark"] .msg--live {
+  background: var(--paper-card, #2c2c2e);
+  color: var(--halo-ink);
+  border: 0;
+  box-shadow: none;
+}
+
+.msg--pending {
+  padding: 0.7rem 1.05rem;
+}
+
+.msg--fresh {
+  animation: none;
+}
+
+@keyframes halo-msg-in {
+  from {
+    opacity: 0;
+    transform: translateY(9px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.thinking-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 1.2rem;
+}
+
+.thinking-dots {
+  display: inline-flex;
+  gap: 0.32rem;
+  align-items: center;
+}
+
+.thinking-dots span {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: var(--halo-accent);
+  display: inline-block;
+  animation: halo-dot 1s ease-in-out infinite;
+}
+
+.thinking-dots span:nth-child(2) {
+  animation-delay: 0.16s;
+}
+
+.thinking-dots span:nth-child(3) {
+  animation-delay: 0.32s;
+}
+
+@keyframes halo-dot {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: none;
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+.thinking-label {
+  color: var(--halo-muted);
+  font-size: 0.86rem;
+}
+
+.message-sources {
+  margin-top: 0.9rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(43, 109, 142, 0.16);
+}
+
+.message-sources-label {
+  margin: 0 0 0.28rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--halo-accent);
+  font-weight: 700;
+}
+
+.message-sources-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.28rem;
+}
+
+.message-sources-list a {
+  color: var(--halo-accent);
+  font-size: 1.02rem;
+  line-height: 1.45;
+  text-decoration: none;
+}
+
+.message-sources-list a:hover,
+.message-sources-list a:focus-visible {
+  text-decoration: underline;
+}
+
+.message-sources-body {
+  margin: 0;
+  color: var(--halo-muted);
+  font-size: 1.02rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+/* --------------------------------------------------------------------------
+   Stage entrance — surfaces materialize, text rises. No ancestor opacity.
+   -------------------------------------------------------------------------- */
+
+.stage {
+  width: 100%;
+}
+
+.stage--hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  gap: 1.15rem;
+  width: 100%;
+}
+
+.stage--hero > :not(.glass):not(.compose-stack) {
+  animation: halo-text-rise 700ms var(--ease-glass) both;
+  animation-delay: var(--enter-delay, 0ms);
+}
+
+/* Stack is excluded from the rise so suggestion-open can still move.
+   The pane itself still rises on first paint. */
+.stage--hero .compose-stack .compose {
+  animation:
+    water-materialize 760ms var(--ease-glass) both,
+    halo-text-rise 700ms var(--ease-glass) both;
+  animation-delay:
+    calc(var(--enter-delay, 0ms) + 280ms),
+    var(--enter-delay, 0ms);
+}
+
+@keyframes halo-text-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

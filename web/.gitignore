@@ -37,6 +37,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# harvest filmstrips written by the local capture sink
+/captures/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

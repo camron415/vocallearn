@@ -1,0 +1,27 @@
+---
+description: Cove three-ring rollout — Lab first, then Early access, then Family
+alwaysApply: true
+---
+
+# Cove rollout
+
+Three rings. Same product names already in Settings and Admin.
+
+| Ring | Name | Who | Invite button |
+| 1 | Lab | Camron | (admin account) |
+| 2 | Early access | Wife, parents | Early access invite |
+| 3 | Family | Siblings and everyone else | Family invite |
+
+Rings 2 and 3 share the live site today: https://halo-gules-three.vercel.app
+The invite type is what differs. Do not invent a third URL unless Camron asks.
+
+## Deploys
+
+- Default: Lab only. `cd web && npm run deploy:lab` (preview URL, not production).
+- Never `vercel --prod` / `deploy:early` unless Camron says **promote**, **early access**, **production**, or **emergency**.
+- Family does not get a separate push yet. Promoting to Early access is the live site everyone else will use.
+
+## QA before promote
+
+Safari on iPhone, Chrome on desktop, Safari on desktop, plus `/preview` (Home, Chat, Invite, Login).
+---

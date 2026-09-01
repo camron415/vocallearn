@@ -1,14 +1,16 @@
 import { InviteSetup } from "@/components/InviteSetup";
-import { Glass } from "@/components/Glass";
-import { APP_NAME } from "@/lib/constants";
+import { AuthShell } from "@/components/AuthShell";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function InvitePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ token: string }>;
+  searchParams: Promise<{ error?: string }>;
 }) {
   const { token } = await params;
+  const { error } = await searchParams;
   const supabase = await createClient();
   const { data } = await supabase.rpc("halo_peek_invite", { tok: token });
   const peek = (data ?? {}) as { ok?: boolean; reason?: string };
@@ -21,15 +23,12 @@ export default async function InvitePage({
           ? "This invite has expired."
           : "This invite link is not valid.";
     return (
-      <div className="login-stage">
-        <Glass className="login-card">
-          <p className="brand-mark">{APP_NAME}</p>
-          <h1 className="login-title">Invite needed</h1>
-          <p className="login-sub">{reason} Ask Camron for a new link.</p>
-        </Glass>
-      </div>
+      <AuthShell
+        title="Invite needed"
+        sub={`${reason} Ask Camron for a new link.`}
+      />
     );
   }
 
-  return <InviteSetup token={token} />;
+  return <InviteSetup token={token} initialError={error ?? null} />;
 }

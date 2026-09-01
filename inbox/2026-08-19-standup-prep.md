@@ -1,0 +1,158 @@
+# Standup prep
+**Date:** 2026-08-19T12:01:16.748Z · **Project:** vocallearn
+**Analyst job:** aj-1787140857387-p5m4x4
+
+# Standup prep — VocalLearn
+**Date:** 2026-08-19T12:01:16.748Z · **Manager:** Sloane
+
+standup: active
+
+## Since yesterday
+- Shipped the Cove web site so early-access invites can go out.
+- Published a recruiter-friendly README and archived engineering notes.
+- Removed hardcoded Supabase test credentials from the dev script.
+
+## Roadmap position
+- Dual-track: Halo family Ask website is live on Vercel with H3 motion polish in progress; native iOS Ask→Practice loop (Phase 0–3) is implemented but still needs device smoke-test.
+- Next real outcome: commit the 35-file working tree so the live Halo site is protected in git.
+
+## Proposed today (P / S)
+1. Approve commit of the 35-file working tree so the live Halo site is protected in git — P1
+2. Decide whether the next native build should target the Ask→Practice loop smoke-test or continue Halo H3 motion polish — P2
+
+## Decisions for Camron
+Should we commit the 35-file working tree today to protect the live Halo site, yes or no?
+
+## Auto queue (S0/S1)
+None today
+
+## Mac only (do not read on phone)
+Technical detail for Cursor / later review. Phone brief strips this section.
+
+### Git snapshot
+HEAD: b7b497b
+
+## Recent commits
+b7b497b Ship Cove web so early-access invites can go out.
+c0cc60e Publish a recruiter-friendly README; archive engineering notes.
+2d7acf9 Remove hardcoded Supabase test credentials from dev script.
+337479d Ship current VocalLearn app: Expo Router, voice sessions, Supabase, and docs.
+796beb4 Initial commit
+
+## Files changed recently
+app/(tabs)/_layout.tsx                 |   6 +-
+ app/(tabs)/subjects.tsx                |   3 +
+ app/_layout.tsx                        |   2 +
+ app/lesson/[id].tsx                    |  17 ++-
+ src/engine/session-prompts.ts          |  25 ++++
+ src/stores/lesson-store.ts             |   3 +
+ src/types/database.ts                  |  82 +++++++++++
+ web/.env.example                       |   1 +
+ web/README.md                          |   9 +-
+ web/package.json                       |   4 +-
+ web/src/app/ask/page.tsx               |  11 +-
+ web/src/app/globals.css                | 206 ++++++++++++++++++--------
+ web/src/app/invite/[token]/page.tsx    |  19 ++-
+ web/src/app/layout.tsx                 |   1 +
+ web/src/app/login/page.tsx             |   6 +-
+ web/src/app/preview/page.tsx           |  14 +-
+ web/src/components/AskLanding.tsx      |  56 ++++---
+ web/src/components/BubbleField.tsx     |   3 +-
+ web/src/components/ChatThread.tsx      |  63 ++++----
+ web/src/components/HaloHeader.tsx      |  16 +-
+ web/src/components/HomeTour.tsx        |  83 -----------
+ web/src/components/InviteSetup.tsx     | 214 +++++++++++++++------------
+ web/src/components/LoginForm.tsx       |  90 +++++++-----
+ web/src/components/MotionProvider.tsx  |  59 +++++---
+ web/src/components/PreviewSwitcher.tsx |   8 +-
+ web/src/components/SettingsMenu.tsx    |   2 +-
+ web/src/components/WaterSurface.tsx    |   5 +-
+ web/src/components/WelcomeGate.tsx     |  76 ----------
+ web/src/lib/ask-turn.ts                |  42 ++++--
+ web/src/lib/compose-keys.ts            |  17 ++-
+ web/src/lib/markdown-plain.ts          |  10 ++
+ web/src/lib/suggest-chips.ts           | 261 ++++++++++++++++++++-------------
+ web/src/lib/supabase/middleware.ts     |   4 +-
+ web/src/lib/track.ts                   |   2 +-
+ web/src/lib/water-edge.ts              |  30 +++-
+ 35 files changed, 857 insertions(+), 593 deletions(-)
+
+## Working tree
+## halo-ui-streamline...origin/halo-ui-streamline
+ M app/(tabs)/_layout.tsx
+ M app/(tabs)/subjects.tsx
+ M app/_layout.tsx
+ M app/lesson/[id].tsx
+ M src/engine/session-prompts.ts
+ M src/stores/lesson-store.ts
+ M src/types/database.ts
+ M web/.env.example
+ M web/README.md
+ M web/package.json
+ M web/src/app/ask/page.tsx
+ M web/src/app/globals.css
+ M web/src/app/invite/[token]/page.tsx
+ M web/src/app/layout.tsx
+ M web/src/app/login/page.tsx
+ M web/src/app/preview/page.tsx
+ M web/src/components/AskLanding.tsx
+ M web/src/components/BubbleField.tsx
+ M web/src/components/ChatThread.tsx
+ M web/src/components/HaloHeader.tsx
+ D web/src/components/HomeTour.tsx
+ M web/src/components/InviteSetup.tsx
+ M web/src/components/LoginForm.tsx
+ M web/src/components/MotionProvider.tsx
+ M web/src/components/PreviewSwitcher.tsx
+ M web/src/components/SettingsMenu.tsx
+ M web/src/components/WaterSurface.tsx
+ D web/src/components/WelcomeGate.tsx
+ M web/src/lib/ask-turn.ts
+ M web/src/lib/compose-keys.ts
+ M web/src/lib/markdown-plain.ts
+ M web/src/lib/suggest-chips.ts
+ M web/src/lib/supabase/middleware.ts
+ M web/src/lib/track.ts
+ M web/src/lib/water-edge.ts
+?? .cursor/
+?? app/(tabs)/ask.tsx
+?? app/ask/
+?? inbox/
+?? src/constants/ask.ts
+?? src/engine/fact-miner.ts
+?? src/stores/ask-store.ts
+?? src/types/ask.ts
+?? src/utils/markdown-plain.ts
+?? supabase/migrations/011_halo_suggest_chips.sql
+?? web/src/app/api/invite/join/
+?? web/src/components/AuthShell.tsx
+?? web/src/components/MessageCopy.tsx
+?? web/src/lib/
+
+### Test status
+_Tests not run (set ATLAS_MANAGER_RUN_TESTS=1 to enable)._
+
+### Analyst findings
+## Headline
+VocalLearn is shipping a dual-track product: Halo (family Ask website) is live on Vercel with H3 motion polish in progress, while the native iOS Ask→Practice loop (Phase 0–3) is implemented in code but awaiting device smoke-test.
+
+## Key findings
+- **Git activity**: HEAD at b7b497b ("Ship Cove web so early-access invites can go out") after c0cc60e ("Publish a recruiter-friendly README") and 2d7acf9 ("Remove hardcoded Supabase test credentials"); 35 files changed, 857 insertions, 593 deletions, with heavy web/ and src/ work uncommitted.
+- **Canonical docs**: `inbox/2026-08-10-halo-web-roadmap.md` shows H0–H2 complete and H3 physics started; `inbox/2026-08-10-ask-practice-roadmap.md` states Phase 0–3 implemented in app (2026-08-10) and waiting on Supabase restore + SQL apply + device install.
+- **Priority implementation files**: `web/src/components/InviteSetup.tsx`, `web/src/lib/ask-turn.ts`, `web/src/lib/suggest-chips.ts`, `src/engine/fact-miner.ts`, `src/stores/ask-store.ts`, `app/(tabs)/ask.tsx`, and `app/ask/approvals.tsx` contain the new Ask + Halo code.
+- **Phase status**: `docs/PHASE_1_75.md` is referenced but not loaded; `PHASE_1_5_CLOSEOUT.md` and `docs/VOICE_PHASE4.md` are listed in "Where summaries live" but not shown.
+- **Recent commits** confirm the web site is the current shipping surface; native Ask→Practice work remains in the working tree.
+
+## Risks or gaps
+- **Uncommitted August work**: All Halo UI and Ask scaffolding (35 files) sit in the working tree; a crash or revert would lose the live site.
+- **Device smoke-test missing**: `inbox/2026-08-10-ask-practice-roadmap.md` explicitly states Phase 3 exit check ("same approved fact gets spoken quiz") has not yet run on iPhone.
+- **Supabase schema drift**: Phase 0 tables (`ask_conversations`, `ask_messages`, `proposed_facts`) are implemented in code but the migration status is unknown without inspecting `supabase/migrations/`.
+- **No P0-P3/S0-S3 tags visible**: Neither `HANDOFF.md`, `README.md`, nor any inbox file contains priority or auto-queue labels.
+- **Next file to inspect if uncertain**: `docs/PHASE_1_75.md` to confirm whether Phase 1.75 steps are checked off.
+
+## Suggested next steps
+1. **Camron voice decision (P0)**: Approve commit of the 35-file working tree so the live Halo site is protected in git.
+2. **Camron voice decision (P1)**: Confirm whether the next native build should target the Ask→Practice loop (Phase 3 smoke-test) or continue Halo H3 motion polish.
+3. **Planning session item (P2)**: Schedule a 30-minute device test of the Ask→Practice loop once the fresh IPA is installed; capture `bug_reports`/`session_logs` if freeze recurs.
+4. **Planning session item (P3)**: Review `supabase/migrations/` for the ask_* and proposed_facts tables; apply any pending SQL before the device test.
+5. **Auto-queue (S0/S1)**: None today — no S0/S1 items surfaced in the provided context.

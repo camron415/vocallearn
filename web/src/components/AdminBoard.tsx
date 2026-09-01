@@ -40,9 +40,9 @@ export function AdminBoard({
           Counts only. No chat text, no files, no recipes themselves. Last 7
           days for asks and saves.
         </p>
-        <ul className="recipe-list">
+        <ul className="admin-list">
           {people.map((person) => (
-            <li key={person.id} className="recipe-card">
+            <li key={person.id} className="admin-row">
               <h2>{person.name}</h2>
               <p className="login-sub">
                 {person.role === "admin" ? "Admin" : "Member"} ·{" "}

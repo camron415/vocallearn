@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useLessonStore } from "@/stores/lesson-store";
 import { COLORS } from "@/constants/config";
+import { FROM_ASK_LESSON_ID } from "@/types/ask";
 
 export default function LessonDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -12,6 +13,13 @@ export default function LessonDetailScreen() {
   const currentFacts = useLessonStore((s) => s.currentFacts);
   const loading = useLessonStore((s) => s.loading);
   const fetchLessonWithFacts = useLessonStore((s) => s.fetchLessonWithFacts);
+
+  const isFromAsk = id === FROM_ASK_LESSON_ID;
+  const sessionHref = isFromAsk ? `/session/${id}?mode=review` : `/session/${id}?mode=lesson`;
+  const sessionLabel = isFromAsk ? "Practice approved facts" : "Start Learning Session";
+  const sessionHint = isFromAsk
+    ? "Quiz-only — skips the full teach intro since you already saw these in Ask."
+    : null;
 
   useEffect(() => {
     if (id) fetchLessonWithFacts(id);
@@ -113,7 +121,7 @@ export default function LessonDetailScreen() {
         borderTopColor: COLORS.borderLight,
       }}>
         <TouchableOpacity
-          onPress={() => router.push(`/session/${id}?mode=lesson`)}
+          onPress={() => router.push(sessionHref)}
           activeOpacity={0.8}
           style={{
             backgroundColor: COLORS.primary,
@@ -127,9 +135,14 @@ export default function LessonDetailScreen() {
         >
           <Ionicons name="play-circle" size={22} color="#fff" />
           <Text style={{ color: "#ffffff", fontSize: 17, fontWeight: "700" }}>
-            Start Learning Session
+            {sessionLabel}
           </Text>
         </TouchableOpacity>
+        {sessionHint ? (
+          <Text style={{ color: COLORS.textTertiary, fontSize: 12, textAlign: "center", marginTop: 10 }}>
+            {sessionHint}
+          </Text>
+        ) : null}
       </View>
     </View>
   );

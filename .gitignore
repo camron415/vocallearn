@@ -47,3 +47,6 @@ camronnotes.txt
 
 # local build outputs
 build/
+
+# harvest filmstrips (agent visual QA)
+web/captures/

@@ -2,6 +2,7 @@
 
 import { type CSSProperties } from "react";
 import { WaterCapsule } from "@/components/WaterCapsule";
+import { CHIP_LABEL_MAX } from "@/lib/suggest-chips";
 import { chipTitle } from "@/lib/constants";
 
 /* Anchored constellation around the hero. Slots are fixed: nothing wanders.
@@ -37,7 +38,7 @@ export function BubbleField({
             style={{ "--enter-delay": `${140 + i * 70}ms` } as CSSProperties}
             onClick={(el) => onSelect(item, el)}
           >
-            {chipTitle(item.title, 42)}
+            {chipTitle(item.title, CHIP_LABEL_MAX)}
           </WaterCapsule>
         </div>
       ))}

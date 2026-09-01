@@ -1,0 +1,727 @@
+/* Ownership: Cove Lab tokens + shared glass.
+   Edit: @property, :root, ink palettes, html[data-halo-*]/[data-home-ink] theme
+   bus, dark tokens, mist/sky backgrounds, .glass material, .brand-mark.
+   Do not: Home chips, chat bubbles, overlay layout, Paper skin, morph timing,
+   or water-edge physics. Dark overrides that were registered with :root stay
+   here so the theme bus does not drift. */
+
+/* ==========================================================================
+   Halo glass system
+   Registered props so the material can be animated (lensing, fill, light)
+   instead of faded with opacity — opacity on an ancestor kills backdrop-filter.
+   ========================================================================== */
+
+@property --halo-fill {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 1;
+}
+@property --halo-blur {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 24px;
+}
+@property --halo-edge {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 1;
+}
+@property --halo-glow {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+@property --halo-rise {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+@property --halo-lift {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+@property --halo-scale {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 1;
+}
+@property --halo-press {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 1;
+}
+@property --morph-x {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+@property --morph-y {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+/* Water surfaces materialize by modulating their own lensing, so this has to
+   inherit down to the skin and the outline strokes. */
+@property --water-in {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 1;
+}
+/* Attention on a wet surface. Registered so the still fallback can ease it;
+   inherited so the skin and the strokes read the value the engine writes. */
+@property --glow {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+
+:root {
+  color-scheme: light;
+
+  --halo-ink: #14202b;
+  --home-type: #3d4a56;
+  --halo-ink-soft: #35485a;
+  --halo-muted: #5a6e82;
+  --halo-accent: #2b6d8e;
+  --halo-accent-lit: #7fc4e4;
+  --halo-stone: #d6d2ca;
+  --halo-stone-hover: #cac6be;
+  --halo-stone-on: #beb9b0;
+  --halo-chat: 52rem;
+
+  /* material */
+  --frost: 1;
+  --glass-blur: 26px;
+  --glass-sat: 108%;
+  --glass-bright: 1.04;
+  --glass-radius: 26px;
+
+  --ease-glass: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-gel: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-travel: cubic-bezier(0.33, 0.04, 0.2, 1);
+  --travel: 1080ms;
+
+  --background: transparent;
+  --foreground: var(--halo-ink);
+  --font-display: var(--font-fraunces);
+  --font-body: var(--font-manrope);
+  --font-chip: var(--font-nunito);
+
+  --home-lift: 100;
+  --bead-when: 255 168 24;
+  --bead-when-hi: 255 200 64;
+  --bead-where: 0 186 198;
+  --bead-where-hi: 64 220 224;
+  --bead-who: 236 78 140;
+  --bead-who-hi: 255 124 172;
+  --bead-meaning: 46 196 86;
+  --bead-meaning-hi: 96 224 124;
+  --keep-when-hi: #ffc840;
+  --keep-when-lo: #ffa818;
+  --keep-where-hi: #40dce0;
+  --keep-where-lo: #00bac6;
+  --keep-who-hi: #ff7cac;
+  --keep-who-lo: #ec4e8c;
+  --keep-meaning-hi: #60e07c;
+  --keep-meaning-lo: #2ec456;
+}
+
+html[data-home-ink="citrus"] {
+  --bead-when: 255 168 24;
+  --bead-when-hi: 255 200 64;
+  --bead-where: 0 186 198;
+  --bead-where-hi: 64 220 224;
+  --bead-who: 236 78 140;
+  --bead-who-hi: 255 124 172;
+  --bead-meaning: 46 196 86;
+  --bead-meaning-hi: 96 224 124;
+  --keep-when-hi: #ffc840;
+  --keep-when-lo: #ffa818;
+  --keep-where-hi: #40dce0;
+  --keep-where-lo: #00bac6;
+  --keep-who-hi: #ff7cac;
+  --keep-who-lo: #ec4e8c;
+  --keep-meaning-hi: #60e07c;
+  --keep-meaning-lo: #2ec456;
+}
+
+html[data-home-ink="halo"] {
+  --bead-when: 245 200 68;
+  --bead-when-hi: 255 224 122;
+  --bead-where: 60 208 216;
+  --bead-where-hi: 106 224 232;
+  --bead-who: 248 120 156;
+  --bead-who-hi: 255 168 188;
+  --bead-meaning: 120 220 136;
+  --bead-meaning-hi: 158 236 168;
+  --keep-when-hi: #ffe07a;
+  --keep-when-lo: #f5c844;
+  --keep-where-hi: #6ae0e8;
+  --keep-where-lo: #3cd0d8;
+  --keep-who-hi: #ffa8bc;
+  --keep-who-lo: #f8789c;
+  --keep-meaning-hi: #9eeca8;
+  --keep-meaning-lo: #78dc88;
+}
+
+html[data-home-ink="gummy"] {
+  --bead-when: 255 186 40;
+  --bead-when-hi: 255 214 86;
+  --bead-where: 0 208 228;
+  --bead-where-hi: 72 236 244;
+  --bead-who: 210 96 255;
+  --bead-who-hi: 232 148 255;
+  --bead-meaning: 36 214 118;
+  --bead-meaning-hi: 92 240 148;
+  --keep-when-hi: #ffd656;
+  --keep-when-lo: #ffba28;
+  --keep-where-hi: #48ecf4;
+  --keep-where-lo: #00d0e4;
+  --keep-who-hi: #e894ff;
+  --keep-who-lo: #d260ff;
+  --keep-meaning-hi: #5cf094;
+  --keep-meaning-lo: #24d676;
+}
+
+html[data-home-ink="dusk"] {
+  --bead-when: 255 152 56;
+  --bead-when-hi: 255 186 98;
+  --bead-where: 56 164 230;
+  --bead-where-hi: 110 196 246;
+  --bead-who: 168 92 255;
+  --bead-who-hi: 196 140 255;
+  --bead-meaning: 28 186 150;
+  --bead-meaning-hi: 78 214 176;
+  --keep-when-hi: #ffba62;
+  --keep-when-lo: #ff9838;
+  --keep-where-hi: #6ec4f6;
+  --keep-where-lo: #38a4e6;
+  --keep-who-hi: #c48cff;
+  --keep-who-lo: #a85cff;
+  --keep-meaning-hi: #4ed6b0;
+  --keep-meaning-lo: #1cba96;
+}
+
+/* Frostier + still when the device or the user asks for calm */
+html[data-halo-motion="soft"],
+html[data-halo-perf="soft"] {
+  --frost: 1.85;
+  --glass-blur: 16px;
+  --glass-sat: 104%;
+}
+
+html[data-halo-bg="sky"] {
+  --glass-sat: 190%;
+  --glass-bright: 1.05;
+}
+
+html[data-halo-bg="sky"][data-halo-motion="soft"],
+html[data-halo-bg="sky"][data-halo-perf="soft"] {
+  --glass-sat: 150%;
+}
+
+html[data-halo-theme="dark"] {
+  color-scheme: dark;
+  --halo-ink: #e8eef4;
+  --home-type: #ece6da;
+  --halo-ink-soft: #c3ced9;
+  --halo-muted: #8b9aab;
+  --halo-accent: #7fc4e4;
+  --halo-accent-lit: #b6e0f2;
+  --halo-stone: #48484a;
+  --halo-stone-hover: #545456;
+  --halo-stone-on: #606062;
+  --frost: 0.48;
+  --glass-bright: 0.78;
+  --glass-sat: 112%;
+}
+
+html[data-halo-theme="dark"] {
+  background: #0e141a;
+  background-color: #0e141a;
+}
+
+html[data-halo-theme="dark"] body::before {
+  display: none;
+}
+
+html[data-halo-theme="dark"] body::after {
+  mix-blend-mode: overlay;
+  opacity: 0.035;
+}
+
+html[data-halo-theme="dark"] .glass::after {
+  display: none;
+}
+
+html[data-halo-theme="dark"] .water--pane .water__skin,
+html[data-halo-theme="dark"] .capsule__glass {
+  --glow: 0;
+  --tap: 0;
+  background:
+    linear-gradient(
+      168deg,
+      rgba(28, 36, 46, 0.92) 0%,
+      rgba(22, 28, 36, 0.9) 46%,
+      rgba(26, 34, 44, 0.94) 100%
+    );
+}
+
+html[data-halo-theme="dark"] .capsule__edge radialGradient stop {
+  stop-opacity: 0;
+}
+
+html[data-halo-theme="dark"] .water__stroke-spec {
+  opacity: 0;
+}
+
+html[data-halo-theme="dark"] .capsule__stroke-shade,
+html[data-halo-theme="dark"] .water__stroke-shade {
+  stroke: rgba(255, 255, 255, 0.2);
+}
+
+html[data-halo-theme="dark"] .capsule__stroke-rim,
+html[data-halo-theme="dark"] .water__stroke-rim {
+  stroke: rgba(255, 255, 255, 0.42);
+  stroke-width: 1.35px;
+}
+
+html[data-halo-theme="dark"] .capsule__stroke-dip,
+html[data-halo-theme="dark"] .water__stroke-dip {
+  stroke: rgba(0, 0, 0, 0.28);
+}
+
+html[data-halo-theme="dark"] .water--pane .water__ambient {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.16);
+}
+
+html[data-halo-theme="dark"] .water--bar .water__ambient {
+  box-shadow: 0 12px 28px -20px rgba(0, 0, 0, 0.4);
+}
+
+html[data-halo-theme="dark"] .water--pane.water--still .water__skin,
+html[data-halo-theme="dark"] .capsule--still .capsule__glass,
+html[data-halo-theme="dark"] .field--plain,
+html[data-halo-theme="dark"] .field--plain:focus {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.16),
+    0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+
+html[data-halo-theme="dark"] .field--plain,
+html[data-halo-theme="dark"] .field--plain:focus {
+  background: #1c242e;
+}
+
+html[data-halo-theme="dark"] .msg--assistant,
+html[data-halo-theme="dark"] .msg--live {
+  background: var(--paper-card, #2c2c2e);
+  color: var(--halo-ink);
+  box-shadow: none;
+}
+
+html[data-halo-theme="dark"] .chat-scroll .msg.msg--user {
+  background: var(--paper-inset, var(--halo-stone));
+  background-color: var(--paper-inset, var(--halo-stone));
+  box-shadow: none;
+}
+
+html[data-halo-theme="dark"] .msg--user .msg-copy {
+  background: rgba(28, 36, 46, 0.92);
+}
+
+html[data-halo-theme="dark"] .msg--user .msg-copy:hover,
+html[data-halo-theme="dark"] .msg--user .msg-copy:focus-visible {
+  background: #2c333c;
+}
+
+html[data-halo-theme="dark"] .history-overlay {
+  background: #121820;
+}
+
+html[data-halo-theme="dark"] .form-error {
+  color: #f0b4b7;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-body);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* --------------------------------------------------------------------------
+   Lit environment. Mist is paper: Apple/Google white (#fff / #fafafc),
+   not a cool-gray wash. Blue+yellow pools were reading green on some
+   displays. Sky stays opt-in via the Scene toggle.
+   -------------------------------------------------------------------------- */
+
+html {
+  background:
+    radial-gradient(980px 720px at 12% -10%, #fafafc 0%, rgba(250, 250, 252, 0) 62%),
+    radial-gradient(880px 640px at 94% 108%, #f5f5f7 0%, rgba(245, 245, 247, 0) 58%),
+    #ffffff;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-color: #ffffff;
+}
+
+html[data-halo-bg="sky"] {
+  background:
+    linear-gradient(
+        180deg,
+        rgba(17, 50, 84, 0.26) 0%,
+        rgba(17, 50, 84, 0.13) 38%,
+        rgba(17, 50, 84, 0) 100%
+      )
+      0 0 / 100% 250px no-repeat,
+    radial-gradient(
+      126% 106% at 50% 40%,
+      rgba(18, 44, 70, 0) 38%,
+      rgba(18, 44, 70, 0.12) 74%,
+      rgba(14, 36, 58, 0.28) 100%
+    ),
+    radial-gradient(1100px 740px at 8% -10%, #c5e3f6 0%, rgba(197, 227, 246, 0) 56%),
+    radial-gradient(900px 620px at 99% -8%, #f3e0b8 0%, rgba(243, 224, 184, 0) 46%),
+    radial-gradient(860px 680px at 90% 96%, #5eb5e0 0%, rgba(94, 181, 224, 0) 54%),
+    radial-gradient(840px 700px at 2% 96%, #6aadd8 0%, rgba(106, 173, 216, 0) 52%),
+    linear-gradient(164deg, #cfe6f5 0%, #9ec4de 46%, #7aa8c8 100%);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+body {
+  margin: 0;
+  color: var(--halo-ink);
+  font-family: var(--font-body), system-ui, sans-serif;
+  background: transparent;
+}
+
+/* faint paper grain only — no colored veils */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(42% 34% at 18% 8%, rgba(250, 250, 252, 0.9) 0%, rgba(250, 250, 252, 0) 72%),
+    radial-gradient(36% 30% at 78% 88%, rgba(245, 245, 247, 0.7) 0%, rgba(245, 245, 247, 0) 74%);
+}
+
+html[data-halo-bg="sky"] body::before {
+  inset: -12%;
+  background-size:
+    720px 540px,
+    cover,
+    auto,
+    auto,
+    auto,
+    auto,
+    auto;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='720' height='540'%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.014 0.02' numOctaves='2' seed='3' stitchTiles='stitch' result='n'/%3E%3CfeColorMatrix in='n' type='matrix' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 3.2 0 0 0 -1.55'/%3E%3CfeGaussianBlur stdDeviation='1.4'/%3E%3C/filter%3E%3Crect width='720' height='540' filter='url(%23f)' opacity='0.22'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1400' height='1000'%3E%3Cfilter id='c' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.0045 0.009' numOctaves='2' seed='11' result='n'/%3E%3CfeColorMatrix in='n' type='matrix' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 2.6 0 0 0 -1.15'/%3E%3CfeGaussianBlur stdDeviation='5'/%3E%3C/filter%3E%3Crect width='1400' height='1000' filter='url(%23c)' opacity='0.32'/%3E%3C/svg%3E"),
+    radial-gradient(42% 34% at 14% 10%, rgba(180, 220, 242, 0.7) 0%, rgba(180, 220, 242, 0) 70%),
+    radial-gradient(30% 26% at 78% 16%, rgba(255, 243, 219, 0.42) 0%, rgba(255, 243, 219, 0) 70%),
+    radial-gradient(34% 30% at 64% 78%, rgba(120, 196, 230, 0.48) 0%, rgba(120, 196, 230, 0) 72%),
+    radial-gradient(28% 24% at 8% 78%, rgba(110, 184, 220, 0.4) 0%, rgba(110, 184, 220, 0) 74%),
+    radial-gradient(18% 16% at 44% 46%, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0) 78%);
+  animation: halo-tide 96s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+}
+
+/* grain — gives the lens something to bend, and kills the plastic look */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.028;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 220px 220px;
+}
+
+@keyframes halo-tide {
+  from {
+    transform: translate3d(-1.4%, -1%, 0) scale(1.02);
+  }
+  to {
+    transform: translate3d(1.6%, 1.4%, 0) scale(1.06);
+  }
+}
+
+body > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Compile backdrop-filter offscreen so the first visible frame is already glass. */
+.halo-filter-warmup {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.001;
+  backdrop-filter: blur(24px) saturate(108%);
+  -webkit-backdrop-filter: blur(24px) saturate(108%);
+}
+
+.halo-defs {
+  position: fixed;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  opacity: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  border: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Type
+   -------------------------------------------------------------------------- */
+
+.brand-mark {
+  margin: 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: clamp(2.3rem, 5vw, 3.4rem);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  line-height: 1;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.brand-mark--sm {
+  font-size: 1.08rem;
+  letter-spacing: -0.02em;
+  opacity: 0.86;
+}
+
+/* --------------------------------------------------------------------------
+   THE MATERIAL
+   One surface used by login card, topbar, buttons, compose, chat dock.
+   Layers: lensed backdrop · low white fill · gradient rim · travelling spec.
+   -------------------------------------------------------------------------- */
+
+.glass {
+  --r: var(--glass-radius);
+  --spec-x: 50%;
+  --spec-y: 0%;
+  --spec-size: 62%;
+  position: relative;
+  border-radius: var(--r);
+  color: var(--halo-ink);
+  background:
+    radial-gradient(
+      132% 148% at 50% -34%,
+      rgba(255, 255, 255, calc(0.3 * var(--halo-fill) * var(--frost))) 0%,
+      rgba(255, 255, 255, 0) 64%
+    ),
+    linear-gradient(
+      168deg,
+      rgba(255, 255, 255, calc(0.82 * var(--halo-fill) * var(--frost))) 0%,
+      rgba(255, 255, 255, calc(0.7 * var(--halo-fill) * var(--frost))) 46%,
+      rgba(255, 255, 255, calc(0.78 * var(--halo-fill) * var(--frost))) 100%
+    );
+  backdrop-filter: blur(var(--halo-blur)) saturate(var(--glass-sat))
+    brightness(var(--glass-bright));
+  -webkit-backdrop-filter: blur(var(--halo-blur)) saturate(var(--glass-sat))
+    brightness(var(--glass-bright));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, calc(0.78 * var(--halo-edge))),
+    inset 0 -1px 0 rgba(255, 255, 255, calc(0.22 * var(--halo-edge))),
+    inset 0 0 26px rgba(255, 255, 255, calc((0.08 + 0.24 * var(--halo-glow)) * var(--halo-edge))),
+    0 0 0 1px rgba(0, 0, 0, calc(0.2 * var(--halo-edge))),
+    0 0.5px 0 rgba(255, 255, 255, calc(0.7 * var(--halo-edge))),
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 8px 22px rgba(0, 0, 0, calc(0.06 + 0.04 * var(--halo-glow))),
+    0 18px 36px -20px rgba(0, 0, 0, 0.1),
+    0 0 32px rgba(127, 196, 228, calc(0.3 * var(--halo-glow)));
+  transform: translate(
+      var(--morph-x),
+      calc(var(--halo-rise) + var(--halo-lift) + var(--morph-y))
+    )
+    scale(calc(var(--halo-scale) * var(--halo-press)));
+  transition:
+    --halo-glow 300ms var(--ease-gel),
+    --halo-lift 420ms var(--ease-glass),
+    --halo-press 200ms var(--ease-glass),
+    box-shadow 320ms var(--ease-gel);
+  animation: halo-materialize 760ms var(--ease-glass) both;
+  animation-delay: var(--enter-delay, 0ms);
+}
+
+/* rim: bright where light enters, near-gone on the shadow side.
+   A gradient hairline, not a fat white border. */
+.glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: rgba(32, 36, 42, calc(0.2 * var(--halo-edge)));
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* specular: fixed sheet reflection + a highlight that travels to the pointer */
+.glass::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(
+      var(--spec-size) 120% at var(--spec-x) var(--spec-y),
+      rgba(255, 255, 255, calc(0.1 + 0.34 * var(--halo-glow))) 0%,
+      rgba(255, 255, 255, 0) 72%
+    ),
+    linear-gradient(
+      177deg,
+      rgba(255, 255, 255, calc(0.34 * var(--halo-edge))) 0%,
+      rgba(255, 255, 255, 0) 38%
+    );
+  mix-blend-mode: plus-lighter;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.glass > * {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes halo-materialize {
+  from {
+    --halo-fill: 0;
+    --halo-blur: 0px;
+    --halo-edge: 0;
+    --halo-rise: 12px;
+    --halo-scale: 0.982;
+  }
+  to {
+    --halo-fill: 1;
+    --halo-blur: var(--glass-blur);
+    --halo-edge: 1;
+    --halo-rise: 0px;
+    --halo-scale: 1;
+  }
+}
+
+/* Chromium: real edge refraction inside the backdrop (SVG displacement). */
+html[data-halo-engine="chromium"] .glass {
+  backdrop-filter: blur(var(--halo-blur)) saturate(var(--glass-sat))
+    brightness(var(--glass-bright)) url(#halo-lens);
+}
+
+html[data-halo-engine="chromium"] .glass--bead {
+  backdrop-filter: blur(var(--halo-blur)) saturate(var(--glass-sat))
+    brightness(var(--glass-bright)) url(#halo-lens-bead);
+}
+
+/* Wide bars and small pills stretch the displacement map into a diagonal
+   slash. Keep the lens for panels; these shapes just want a quiet rim. */
+html[data-halo-engine="chromium"] .glass--bar,
+html[data-halo-engine="chromium"] .glass--pill {
+  backdrop-filter: blur(var(--halo-blur)) saturate(var(--glass-sat))
+    brightness(var(--glass-bright));
+}
+
+/* Safari 26: let the platform draw its own glass under our fill. */
+@supports (-apple-visual-effect: -apple-system-glass-material) {
+  .glass {
+    -apple-visual-effect: -apple-system-glass-material;
+    --frost: 0.6;
+  }
+}
+
+/* variants ---------------------------------------------------------------- */
+
+.glass--bar {
+  --r: 22px;
+  --glass-blur: 22px;
+}
+
+.glass--pill {
+  --r: 999px;
+  --glass-blur: 18px;
+  --spec-y: -20%;
+}
+
+.glass--bar::before,
+.glass--pill::before {
+  background: rgba(32, 36, 42, calc(0.2 * var(--halo-edge)));
+}
+
+.glass--bar::after,
+.glass--pill::after {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, calc(0.2 + 0.12 * var(--halo-glow))) 0%,
+    rgba(255, 255, 255, 0) 48%
+  );
+  mix-blend-mode: normal;
+}
+
+.glass--panel {
+  --r: 28px;
+}
+
+/* interactive glass: gel flex — instant energize, quiet rest */
+.glass--lit {
+  cursor: pointer;
+}
+
+.glass--lit:hover,
+.glass--lit:focus-visible {
+  --halo-glow: 0;
+  --halo-lift: 0px;
+}
+
+.glass--lit:active {
+  --halo-press: 0.984;
+  --halo-glow: 1;
+  transition:
+    --halo-press 90ms linear,
+    --halo-glow 90ms linear;
+}
+
+.glass:focus-visible {
+  outline: 2px solid rgba(43, 109, 142, 0.5);
+  outline-offset: 3px;
+}

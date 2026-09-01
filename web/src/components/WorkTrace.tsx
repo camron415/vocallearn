@@ -2,7 +2,7 @@
 
 import { ThinkingDots } from "@/components/Glass";
 
-export type WorkKind = "searching" | "reading" | "thinking";
+export type WorkKind = "searching" | "reading" | "thinking" | "checking";
 
 export type WorkStep = {
   id: string;
@@ -11,6 +11,9 @@ export type WorkStep = {
 };
 
 function labelFor(step: WorkStep): string {
+  if (step.kind === "checking") {
+    return step.detail ? `Checking ${step.detail}` : "Checking live data";
+  }
   if (step.kind === "searching") {
     return step.detail ? `Searching “${step.detail}”` : "Searching the web";
   }
@@ -31,17 +34,22 @@ export function WorkTrace({
   collapsed: boolean;
   waiting: boolean;
 }) {
-  const searched = steps.some((s) => s.kind === "searching" || s.kind === "reading");
+  const searched = steps.some((s) => s.kind === "searching");
+  const checked = steps.some(
+    (s) => s.kind === "checking" || s.kind === "reading"
+  );
   const thought = thinking.trim().length > 0;
+  const lookedUp = searched || checked;
 
   if (collapsed) {
-    if (!searched && !thought) return null;
+    if (!lookedUp && !thought) return null;
+    const lookupLabel = searched ? "Searched the web" : "Checked live data";
     return (
       <p className="work-summary">
-        {searched && thought
-          ? "Searched the web · thought it through"
-          : searched
-            ? "Searched the web"
+        {lookedUp && thought
+          ? `${lookupLabel} · thought it through`
+          : lookedUp
+            ? lookupLabel
             : "Thought it through"}
       </p>
     );
