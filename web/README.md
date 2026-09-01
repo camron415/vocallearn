@@ -42,9 +42,9 @@ Code entry points: `src/app/ask/`, `src/app/api/chat/`, `src/components/AskLandi
 
 ---
 
-## Version 2 — Lab preview
+## Lab preview (`/preview`)
 
-The Cove / Keep loop is built and walkable at `/preview` (no login). Toggle screens in the top bar: **Home · Chat · Invite · Login**.
+The Cove / Keep loop also runs here without login — same mechanics as production, plus mixer tools for development.
 
 **Try the loop:** Mix → **Loop** in the left rail, then use Reset / Demo pack / Due now / Bank / Clear / Miss / Master to walk Ask → Harvest → Keep → Due → Home → Clear → Mastered.
 

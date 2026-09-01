@@ -1,0 +1,34 @@
+name: Harvest tests
+
+on:
+  push:
+    branches: [main, halo-ui-streamline]
+    paths:
+      - "web/**"
+      - ".github/workflows/test-harvest.yml"
+  pull_request:
+    paths:
+      - "web/**"
+      - ".github/workflows/test-harvest.yml"
+
+defaults:
+  run:
+    working-directory: web
+
+jobs:
+  harvest-fixtures:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run harvest fixture suites
+        run: npm run test:harvest

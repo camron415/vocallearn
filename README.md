@@ -6,19 +6,23 @@
 
 This is the project I want hiring teams to open first.
 
+![Harvest tests](https://github.com/camron415/vocallearn/actions/workflows/test-harvest.yml/badge.svg)
+
 ---
 
 ## Quick links
 
 | | |
 | --- | --- |
-| **Live product (v1.1)** | [halo-gules-three.vercel.app](https://halo-gules-three.vercel.app) — Paper Ask + Cove/Keep for invited users |
-| **UI preview (no login)** | [halo-gules-three.vercel.app/preview](https://halo-gules-three.vercel.app/preview) — Lab mixer + dummy loop |
+| **Live product** | [halo-gules-three.vercel.app](https://halo-gules-three.vercel.app) — Paper Ask + Cove/Keep loop (invite-only) |
+| **UI preview (no login)** | [halo-gules-three.vercel.app/preview](https://halo-gules-three.vercel.app/preview) — Lab mixer + walkable loop demo |
 | **Code** | [`web/`](./web/) (Halo) · [`app/`](./app/) (VocalLearn iOS) |
 | **Stack** | TypeScript, React, Next.js, React Native, PostgreSQL, Supabase, Vercel, xAI/Grok |
 | **Recruiter summary** | [`docs/FOR_RECRUITERS.md`](./docs/FOR_RECRUITERS.md) |
 
 Halo is **invite-only** (no public signup). I provision accounts, watch what breaks, and push production updates.
+
+**Current release:** v1.1 (August 2026) — Cove/Keep learning loop shipped to early-access production, not just Lab.
 
 ---
 
@@ -30,76 +34,56 @@ Most AI chat apps are write-only — you ask, you read, you forget. Halo starts 
 
 **Gamification level:** about 5 out of 10. Light collection, mastery rings, a clear-the-day moment — still obviously a learning tool, not an RPG. No HP, maps, or combat chrome.
 
----
+## Screenshots
 
-## V1 vs V2 at a glance
-
-| | **V1 — Halo Ask** | **V1.1 — Cove / Keep** |
+| Home (due chips) | Harvest in chat | Keep panel |
 | --- | --- | --- |
-| **Status** | Superseded on `/ask` | **Live in production** |
-| **Who uses it** | — | Early-access + family (invited) |
-| **Core job** | Ask only | Ask + harvest + review loop |
-| **Learning loop** | — | Full Ask → Harvest → Keep → Due → Clear → Mastered |
-| **Lab demo** | — | `/preview` mixer (Camron) |
+| ![Home with due chips](./docs/screenshots/home-due.png) | ![Harvest highlights in chat](./docs/screenshots/harvest-chat.png) | ![Keep beads panel](./docs/screenshots/keep-beads.png) |
 
-V1.1 is what early-access and family users get on `/ask` after a hard refresh. `/preview` stays Lab-only.
+No-login demo: [halo-gules-three.vercel.app/preview](https://halo-gules-three.vercel.app/preview) → Mix → Loop.
 
 ---
 
-## Version 1 — Halo Ask (live today)
+## What's live today
 
-What early-access and family users actually use on the web.
-
-**Product:** A private AI search and chat that feels as clean as liquid glass. Ask real questions, get streaming Grok replies, keep conversation history, and return to recent topics from floating bubbles on Home.
-
-**Live URLs**
-
-- Production: https://halo-gules-three.vercel.app
-- Real Ask (login): https://halo-gules-three.vercel.app/ask
-- Preview shell (no login): https://halo-gules-three.vercel.app/preview
-
-**What's shipped**
-
-- Invite-only auth — email/password accounts I create in Supabase; invite links for onboarding
-- Ask chat with streaming Grok replies, conversation history, and recent-topic bubbles on Home
-- Dictation, thinking status, optional Sources block when the model is confident
-- Mist / Sky visual themes and Full / Soft motion toggle (auto-downgrades on weak hardware)
-- Liquid-glass UI — water-surface lighting, droplet morph on hover, spring open into chat
-- Per-user daily message cap (~40/day) and cost-aware model routing
-- Row-level security so each user's chats stay theirs
-- Production deploys on Vercel with Git-versioned patches after real usage
-
-**What V1 deliberately does not include yet:** harvesting facts from answers, spaced review, or the Keep/Home loop. That is all V2.
-
-**Rollout rings**
-
-| Ring | Who | Surface |
+| Surface | URL | What you get |
 | --- | --- | --- |
-| Lab | Camron | Preview deploys only |
-| Early access | Wife, parents | Live URL |
-| Family | Siblings and extended family | Same live URL; different invite type |
+| **Production** | `/ask` (login) | Full product: Ask + harvest + Keep + due Home + review rounds |
+| **Lab preview** | `/preview` (no login) | Mixer, dummy data, visual QA harness — same loop, no account |
+| **Native** | VocalLearn iOS | Voice-first tutor prototype (separate app in `app/`) |
+
+Early-access and family users run v1.1 on the live site after invite onboarding. `/preview` is my sandbox for tuning motion and harvest before the next promote.
 
 ---
 
-## Version 2 — Cove / Keep loop (Lab preview)
+## Halo web — the product
 
-The learning layer. Turn a great answer into facts you bank, review when due, and graduate when mastered.
+### Ask (front door)
 
-**Status:** Built and walkable in the Lab preview (`/preview`). Not yet promoted to the live early-access site. **This is the version shown in my resume demo** — a working preview of where the product is headed.
+A private AI search and chat that feels clean and fast on phone and desktop.
 
-**Try it:** open `/preview` → left rail **Mix → Loop** → use Reset, Demo pack, Due now, Bank, Clear, Miss, and Master to walk the full cycle without an account.
+- Streaming Grok replies with conversation history
+- Recent-topic bubbles on Home; composer morphs into chat
+- Dictation, thinking status, optional Sources when the model is confident
+- Paper visual system (flat pastel) on production; liquid-glass “Ours” skin tunable in Lab
+- Per-user daily message cap and cost-aware model routing
+- Invite-only auth, Supabase Postgres, row-level security
 
-### Three seats (where facts live)
+### Cove / Keep loop (learning layer)
+
+Turn a great answer into facts you bank, review when due, and graduate when mastered. **Shipped in v1.1 on production `/ask`.**
+
+#### Three seats (where facts live)
 
 | Seat | Meaning | What the user sees |
 | --- | --- | --- |
 | **Keep** | Not due — banked for later | Header beads, one per fact, cap 30 |
 | **Home** | Due — ready to review today | Field of chips to clear (up to 16 seats) |
-| **Mastered** | Done — graduated | Count in the header shelf, off the daily field |
+| **Mastered** | Done — graduated | Count in the header shelf (◎), off the daily field |
 
 Facts harvested from an Ask land in **Keep**, not on Home. They only appear on Home when the scheduler marks them due. The whole library never floods the field at once.
 
-### The daily loop
+#### The daily loop
 
 ```
   Ask a question
@@ -110,7 +94,7 @@ Facts harvested from an Ask land in **Keep**, not on Home. They only appear on H
        ↓
   Due — scheduler drops a cluster onto Home as chips
        ↓
-  Clear — tap a chip; review its cluster (same conversation context)
+  Clear — tap a chip; review its cluster (SEE all, then SAY all)
        ↓
   Ok → bead flies back to Keep with a mastery mark (bronze → silver → gold)
   Miss → stays due; round continues
@@ -126,52 +110,41 @@ Facts harvested from an Ask land in **Keep**, not on Home. They only appear on H
 | --- | --- | --- |
 | **who** | names, people | "Herodotus", "the pharaoh" |
 | **where** | places | "Egypt", "the Mediterranean" |
-| **when** | dates, durations | "4,130 miles", "ancient period" |
+| **when** | dates, durations | "4,130 miles", "1863" |
 | **meaning** | definitions | "the gift of the Nile" |
 
 Related facts from the same Ask **clump** on Home. Tap one chip to play the whole cluster.
 
-**Mastery shelf** — Keep beads sort gold → silver → bronze → new (left to right). Rank shows as a metal ring on the kind color — not gray bands, not bigger beads. New harvests dock on the right of the new band.
+**Mastery shelf** — Keep beads sort gold → silver → bronze → new (left to right). Rank shows as a metal ring on the kind color — not gray bands, not bigger beads.
 
-**Design rules that matter**
+### Engineering highlights
 
-- Ask is always the front door — Home with nothing due is just a clean composer and greeting
-- Harvest in one visit does **not** drop beads onto Home; they bank in Keep first
-- Gamification stays light: clear-the-day copy + a Keep pulse, not confetti every morning
-- Full RPG / medieval kingdom aesthetic is explicitly out — "Keep" is the metaphor
+Concrete work a reviewer can grep for:
 
-### Recently built (V2)
+| Area | Files / notes |
+| --- | --- |
+| **Loop state** | `web/src/lib/keep-memory.ts` — beads, clears, mastery, clusters; syncs to Supabase |
+| **Harvest** | `web/src/lib/learn-mine.ts`, `harvest-policy.ts` — miner extracts closed facts from replies |
+| **Motion** | `web/src/components/HarvestFlights.tsx` — facts animate from chat into Keep |
+| **Chat API** | `web/src/app/api/chat/route.ts` — streaming Grok, routing, caps |
+| **Tests** | `npm run test:harvest` — fixture suites for harvest gates and miner output |
+| **Deploy** | Vercel; Lab preview deploy vs production promote workflow |
 
-Concrete work shipped in the last few weeks:
+---
 
-- **Full loop in Lab** — Ask → Harvest → Keep → Due → Home → Clear → Mastered, walkable end to end
-- **Persisted Keep** — `keep-memory.ts` stores beads, clears, mastery rank, and cluster grouping in browser state
-- **Harvest flights** — facts animate from chat answer into the Keep row; composer morphs between Home and chat
-- **Home = due only** — pocket/header is Keep only; no library clutter on the field
-- **Mastery clear** — cluster review with ok/miss grading; three clears → mastered shelf
-- **Full-clear moment** — "You're clear" greeting + Keep pulse when Home is empty and facts are banked
-- **Paper vs Ours skins** — flat pastel Paper look and wet liquid-glass Ours look, switchable in the Home mixer
-- **Home style mixer** — palette, ink, lift, scatter, inner light — tunable without code changes
-- **Water physics** — surface lighting, droplet border-radius morph on cursor proximity, spring stage transitions
-- **Lab harness** — PreviewSwitcher with Loop mode, demo pack, Due now shortcut, Replay + film capture for visual QA
-- **Invite + auth preview** — full onboarding flow previewable without a real account
+## Lab preview (`/preview`)
 
-### Still in progress
+No login required — good for recruiters and for visual QA without an account.
 
-- Bubble collision soft-push and compose expand morph (motion polish)
-- Real calendar-day due scheduler (Lab uses "Due now" for testing)
-- Promoting the loop from Lab preview to the live early-access site
-- Soft Learn practice mode with AI-generated variations on harvested facts
-- Daily habit nudges and streaks
-- Overflow handling when Keep exceeds 30 beads
+**Try the loop:** open `/preview` → left rail **Mix → Loop** → Reset, Demo pack, Due now, Bank, Clear, Miss, Master.
 
-Product spec: [`web/HALO-LOOP.md`](./web/HALO-LOOP.md) · [`docs/COVE_KEEP_VISION.md`](./docs/COVE_KEEP_VISION.md)
+The mixer also exposes Paper vs Ours skins, harvest tuning, and film capture for regression checks. Production `/ask` uses Paper and real user data; `/preview` is the tuning bench.
 
 ---
 
 ## VocalLearn — iPhone lab (native)
 
-Voice-first spaced repetition, separate from the Halo web product but sharing Supabase and Grok. This is where I prototyped the core learning mechanics that V2 adapts for the web.
+Voice-first spaced repetition, separate from the Halo web product but sharing Supabase and Grok. This is where I prototyped core learning mechanics that the web Cove loop adapts.
 
 **Loop:** lesson → teach → spoken recall → AI scores meaning (not exact wording) → SM-2 schedules the next review.
 
@@ -184,7 +157,7 @@ Voice-first spaced repetition, separate from the Halo web product but sharing Su
 - Hint ladder on misses: hint 1 → hint 2 → reveal → forced repeat
 - Supabase auth, Postgres, and row-level security
 
-The web Cove loop is where active product work lives today. VocalLearn native is the research lab for voice-first learning mechanics.
+Active product work is on Halo web. VocalLearn native is the research lab for voice-first learning.
 
 ---
 
@@ -194,8 +167,8 @@ The web Cove loop is where active product work lives today. VocalLearn native is
 | --- | --- |
 | **Web UI** | React 19, Next.js 16, TypeScript, Tailwind CSS, Framer Motion |
 | **Mobile** | React Native, Expo SDK 54, Expo Router, Zustand |
-| **Data** | PostgreSQL, Supabase (auth, RLS, migrations) |
-| **AI** | xAI Grok (streaming chat, semantic scoring) |
+| **Data** | PostgreSQL, Supabase (auth, RLS, migrations in `supabase/`) |
+| **AI** | xAI Grok (streaming chat, harvest miner, semantic scoring) |
 | **Ship** | Git, Vercel (web), Xcode archive (iOS) |
 
 ---
@@ -205,36 +178,39 @@ The web Cove loop is where active product work lives today. VocalLearn native is
 ```text
 web/              Halo — Next.js production web app (start here)
   src/app/        Routes: /ask, /preview, /login, /invite
-  src/components/ UI: glass shell, harvest, Keep, Home bubbles
+  src/components/ UI: harvest, Keep, Home, chat, play sheet
   src/lib/        Grok client, Keep memory, harvest scoring
 app/              VocalLearn — Expo Router screens
 src/engine/       Spaced repetition, teaching plans, tutor logic
 src/hooks/        Session orchestration
 supabase/         Schema migrations
 docs/             Product vision, pricing, recruiter notes
+inbox/            Internal planning notes (not user-facing)
 ```
 
 ---
 
-## Roadmap (high level)
+## Roadmap (honest)
 
-| Phase | Goal |
+| Near term | Goal |
 | --- | --- |
-| **Now** | Finish V2 motion polish; promote Cove loop to early access |
-| **Next** | Calendar-day due scheduler; Soft Learn practice cards |
-| **Later** | Pricing tiers (Free / Plus / Family); invite-for-a-month referral; daily habit |
-| **Parked** | Public signup, ads, realtime voice, full RPG gamification |
+| **1.1.1** | Calendar-day due, timezone fixes, Saves (recipes/lists) |
+| **1.2** | Intent-aware harvest, Luna routing, light onboarding tour |
+| **1.3+** | Streaks, achievements, iOS shell, pricing |
 
-Details: [`inbox/2026-08-10-halo-web-roadmap.md`](./inbox/2026-08-10-halo-web-roadmap.md) · [`docs/HALO_PRICING_AND_SCALING.md`](./docs/HALO_PRICING_AND_SCALING.md)
+Parked until product fit: public signup, ads, full RPG gamification, realtime voice.
+
+Details: [`web/ROADMAP-VERSIONS.md`](./web/ROADMAP-VERSIONS.md) · [`docs/HALO_PRICING_AND_SCALING.md`](./docs/HALO_PRICING_AND_SCALING.md)
 
 ---
 
 ## For developers
 
 - [`web/README.md`](./web/README.md) — local run, env vars, deploy commands
-- [`HANDOFF.md`](./HANDOFF.md) — current engineering state (VocalLearn native)
+- [`HANDOFF.md`](./HANDOFF.md) — VocalLearn native engineering state
 - [`docs/ENGINEERING_README.md`](./docs/ENGINEERING_README.md) — deeper technical notes
 
 ## For recruiters
 
-- [`docs/FOR_RECRUITERS.md`](./docs/FOR_RECRUITERS.md) — 60-second summary, honest constraints, keywords
+- [`docs/FOR_RECRUITERS.md`](./docs/FOR_RECRUITERS.md) — 60-second summary, what to click, honest constraints
+- [`docs/GITHUB_SETUP.md`](./docs/GITHUB_SETUP.md) — one-time repo polish checklist (description, topics, default branch)

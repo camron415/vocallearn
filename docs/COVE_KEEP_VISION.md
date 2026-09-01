@@ -1,8 +1,8 @@
 # Cove — Keep vision (facts, Home, mastery)
 
-**Updated:** 2026-08-25  
-**Track:** Lab only. Do not promote. Early access Ask stays the frozen family site.  
-**Audience:** Camron, Lab UI agents. VocalLearn native is a side project, not this product.
+**Updated:** 2026-08-31  
+**Track:** Shipped in Halo v1.1 on production `/ask`; `/preview` remains the Lab mixer.  
+**Audience:** Product + engineering reference. VocalLearn native is a side project, not this product.
 
 Cove is a placeholder name. Paper is the current Lab look. This file is the product loop for harvested facts — not a request to reskin as a video game.
 
