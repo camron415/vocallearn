@@ -8,8 +8,8 @@ Shared desk for weekend V2. Not Atlas. Not Slack. One file every lane updates.
 
 **Harvest ops (telemetry, QA, mobile, promote):** [`web/HARVEST-OPS.md`](./HARVEST-OPS.md) — read before tuning or early access.
 
-Updated: 2026-09-01T22:05-06:00  
-By: Chief (1.1.1 Lab)
+Updated: 2026-09-01T22:22-06:00  
+By: Chief (1.1.1 wrap)
 
 ## Lanes
 
@@ -18,7 +18,7 @@ By: Chief (1.1.1 Lab)
 | A Auth paper | done | tab A | `AuthShell`, `LoginForm`, `InviteSetup`, `halo-boot`, `LoopSkin` auth | 13:52 |
 | S Settings audit | **done** | this tab | unlocked | 13:48 |
 | B Round GUI | idle | — | unlocked | 22:02 |
-| Chief | **done** | this chat | 1.1.1 Lab slices landed — wait Camron eyes + migration 016 | 22:05 |
+| Chief | **done** | this chat | 1.1.1 shipped + TZ hotfix — night closed | 22:22 |
 | M Menu+chat unify | done | this chat | unlocked | 12:35 |
 | Camron | **done** | — | v1.1 live at halo-gules-three.vercel.app — wife/parents hard refresh + Early access invite | 19:10 |
 | Chief QA fixes | done | prior chat | unlocked | 14:28 |
@@ -40,11 +40,13 @@ Status: `idle` · `claimed` · `in_progress` · `blocked` · `done`
 
 ## Blockers
 
-None — v1.1 promoted 2026-08-30.
+None.
 
 ## Log (newest first)
 
-- 2026-09-01 chief — **1.1.1 Lab code landed, not promoted.** Calendar-day due 1/3/7 (not rolling hours). Greeting = local TZ; “You’re clear” only after a review today. Profile TZ + Vercel city/country (no raw IP) for clock/weather/local news. Settings: dropped Answer length + Motion. Needs Camron: run `016_halo_geo.sql`, eyes on `/preview` Settings + greeting. Saves still parked.
+- 2026-09-01 chief — **Night closed.** 1.1.1 on early access: `b3f2a64` + TZ hotfix `cb68905` live at halo-gules-three.vercel.app. Camron confirmed Good evening + Settings trim. Migration 016 run. Chips with early UTC-midnight due repair on next load; Camron will review tomorrow. **Next:** Saves (1.1.1 item 4) or 1.2 when ready. Docs roadmap edits still uncommitted locally.
+- 2026-09-01 chief — **TZ hotfix** `cb68905`: reject UTC for due/greeting; morning from 5am; repair UTC-midnight dueAt on hydrate. Deployed prod same night after Camron saw Good morning at 10pm.
+- 2026-09-01 chief — **1.1.1 LIVE early access** `b3f2a64` → prod READY. Migration 016 on prod. Saves parked.
 - 2026-09-01 chief — **1.1.1 tonight plan (no code yet).** Waiting Camron go. Three slices: (1) first due = next local calendar day in `keep-memory.ts` `addKeepChip`; (2) IANA TZ on profile + Vercel geo headers for clock/weather (not raw IP); (3) greeting = local time-of-day unless today’s due field was actually cleared. Saves (item 4) parked. PASS_GAP 1/3/7 unchanged. No promote.
 - 2026-09-01 chief — **Roadmap locked (docs only):** `docs/PRODUCT_ROADMAP.md` § Trajectory adjustment — two-door Ask, intent qualify, Teach-me thin 1.3 / integrated 1.4 / premium 1.5, iOS 1.4 after Safari QA. Updated `web/PRODUCT-DISCOVERY.md`, `docs/COVE_KEEP_VISION.md`, `web/ROADMAP-VERSIONS.md`. No new files. No code.
 - 2026-09-01 chief — Vision weigh-in only (no code). Camron Atlas call + notes + Gemini Socratic thread vs `docs/PRODUCT_ROADMAP.md`. Signal: casual Ask harvest is the real tension; wife 24h wait already 1.1.1. Do **not** pivot to K-12 curriculum/textbook library. Slight adjustment candidate: Ask still answers; Teach-me / Socratic as opt-in second door (maybe pull toward 1.3, not 1.6). 1.1.1 Saves + calendar due unchanged. Sunday freeze (no XP/streaks in V2) still holds.
