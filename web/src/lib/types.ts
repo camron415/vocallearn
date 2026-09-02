@@ -24,6 +24,10 @@ export type HaloProfile = {
   onboarded: boolean;
   isAdmin: boolean;
   lane: HaloLane;
+  timeZone?: string;
+  geoCity?: string;
+  geoRegion?: string;
+  geoCountry?: string;
 };
 
 export type HaloRecipe = {

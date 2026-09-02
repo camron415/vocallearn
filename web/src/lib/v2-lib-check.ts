@@ -1,5 +1,6 @@
 import { runHarvestClientFixtures } from "./harvest-client-fixtures";
 import { runLearnMineFixtures } from "./learn-mine-fixtures";
+import { runLocalDayFixtures } from "./local-day-check";
 import { runOpenScoreFixtures } from "./open-score";
 
 type SuiteResult = { ok: boolean; failures: string[] };
@@ -18,6 +19,7 @@ const suites: Array<[string, () => SuiteResult]> = [
   ["learn-mine (intake gates + validation)", runLearnMineFixtures],
   ["harvest-client (dedup + re-flight)", runHarvestClientFixtures],
   ["open-score (gist grading)", runOpenScoreFixtures],
+  ["local-day (calendar due + greeting hour)", runLocalDayFixtures],
 ];
 
 let failed = 0;

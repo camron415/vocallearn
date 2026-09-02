@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { SITE_LANE, usagePercent } from "@/lib/limits";
+import { isIanaTimeZone } from "@/lib/local-day";
 import { usageSnapshot } from "@/lib/usage";
 import type { AnswerLength } from "@/lib/types";
 
@@ -48,6 +49,10 @@ export async function PATCH(request: Request) {
     displayName?: string;
     answerLength?: AnswerLength;
     onboarded?: boolean;
+    timeZone?: string;
+    geoCity?: string;
+    geoRegion?: string;
+    geoCountry?: string;
   };
   try {
     body = await request.json();
@@ -70,6 +75,21 @@ export async function PATCH(request: Request) {
   if (body.onboarded) {
     patch.halo_onboarded_at = new Date().toISOString();
   }
+  if (typeof body.timeZone === "string" && isIanaTimeZone(body.timeZone)) {
+    patch.timezone = body.timeZone;
+  }
+  if (typeof body.geoCity === "string") {
+    const city = body.geoCity.replace(/\s+/g, " ").trim().slice(0, 80);
+    if (city) patch.geo_city = city;
+  }
+  if (typeof body.geoRegion === "string") {
+    const region = body.geoRegion.replace(/\s+/g, " ").trim().slice(0, 40);
+    if (region) patch.geo_region = region;
+  }
+  if (typeof body.geoCountry === "string") {
+    const country = body.geoCountry.trim().slice(0, 2).toUpperCase();
+    if (/^[A-Z]{2}$/.test(country)) patch.geo_country = country;
+  }
 
   if (Object.keys(patch).length === 0) {
     return NextResponse.json({ ok: true });
@@ -77,7 +97,20 @@ export async function PATCH(request: Request) {
 
   const { error } = await supabase.from("profiles").update(patch).eq("id", user.id);
   if (error) {
-    return NextResponse.json({ error: "Could not save." }, { status: 500 });
+    const withoutGeo = { ...patch };
+    delete withoutGeo.timezone;
+    delete withoutGeo.geo_city;
+    delete withoutGeo.geo_region;
+    delete withoutGeo.geo_country;
+    if (Object.keys(withoutGeo).length) {
+      const retry = await supabase
+        .from("profiles")
+        .update(withoutGeo)
+        .eq("id", user.id);
+      if (retry.error) {
+        return NextResponse.json({ error: "Could not save." }, { status: 500 });
+      }
+    }
   }
 
   if (patch.display_name) {

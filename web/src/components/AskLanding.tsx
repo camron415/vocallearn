@@ -29,8 +29,10 @@ import {
   isDueChip,
   isMasteredChip,
   readKeepChips,
+  shouldShowClearGreeting,
   subscribeKeep,
 } from "@/lib/keep-memory";
+import { guessTimeZone, timeGreeting } from "@/lib/local-day";
 import { isLabPreviewPath, labPreviewChatHref } from "@/lib/lab-preview";
 import { useCoarsePointer } from "@/lib/coarse-pointer";
 import type { ChipKind } from "@/lib/harvest";
@@ -39,13 +41,6 @@ import type { AskConversation, HaloProfile } from "@/lib/types";
 const IDLE_MS = 420;
 const IDLE_COUNT = 4;
 const TYPE_COUNT = 5;
-
-function greetingForHour(date = new Date()) {
-  const h = date.getHours();
-  if (h < 12) return "Good morning";
-  if (h < 17) return "Good afternoon";
-  return "Good evening";
-}
 
 export function AskLanding({
   conversations,
@@ -81,6 +76,7 @@ export function AskLanding({
   const [dueCount, setDueCount] = useState<number | null>(null);
   const [keptCount, setKeptCount] = useState(0);
   const [justCleared, setJustCleared] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [grown, setGrown] = useState(false);
   const [playKind, setPlayKind] = useState<ChipKind | "">("");
@@ -194,13 +190,31 @@ export function AskLanding({
   }, [conversations]);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (demo) return;
+    void fetch("/api/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ timeZone: guessTimeZone() }),
+    });
+  }, [demo]);
+
+  useEffect(() => {
     if (demo || !profile || profile.onboarded) return;
     void fetch("/api/profile", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ answerLength: "medium", onboarded: true }),
+      body: JSON.stringify({ onboarded: true }),
     });
   }, [demo, profile]);
+
+  const heroGreet =
+    justCleared || (mounted && shouldShowClearGreeting())
+      ? "You're clear"
+      : timeGreeting();
 
   const chips = useMemo(
     () => {
@@ -345,6 +359,7 @@ export function AskLanding({
           message: message || undefined,
           attachments,
           prepareOnly: true,
+          timeZone: guessTimeZone(),
         }),
       });
       const data = await res.json();
@@ -427,11 +442,7 @@ export function AskLanding({
             className={`ask-greeting${justCleared ? " is-clear" : ""}`}
             suppressHydrationWarning
           >
-            {`${
-              dueCount === 0 && keptCount > 0
-                ? "You're clear"
-                : greetingForHour()
-            }, ${displayName}`}
+            {`${justCleared ? "You're clear" : heroGreet}, ${displayName}`}
           </p>
           <div
             className={`compose-stack${hints.length && !playing ? " is-open" : ""}`}

@@ -8,8 +8,8 @@ Shared desk for weekend V2. Not Atlas. Not Slack. One file every lane updates.
 
 **Harvest ops (telemetry, QA, mobile, promote):** [`web/HARVEST-OPS.md`](./HARVEST-OPS.md) — read before tuning or early access.
 
-Updated: 2026-08-30T18:35-06:00  
-By: H Harvest polish (this chat)
+Updated: 2026-09-01T22:05-06:00  
+By: Chief (1.1.1 Lab)
 
 ## Lanes
 
@@ -18,9 +18,9 @@ By: H Harvest polish (this chat)
 | A Auth paper | done | tab A | `AuthShell`, `LoginForm`, `InviteSetup`, `halo-boot`, `LoopSkin` auth | 13:52 |
 | S Settings audit | **done** | this tab | unlocked | 13:48 |
 | B Round GUI | idle | — | unlocked | 22:02 |
-| Chief | done | this chat | briefs only | 13:45 |
+| Chief | **done** | this chat | 1.1.1 Lab slices landed — wait Camron eyes + migration 016 | 22:05 |
 | M Menu+chat unify | done | this chat | unlocked | 12:35 |
-| Camron | **waiting** | Camron | Hard-refresh iPhone. Retest: capital of Maine (highlight+flyer); population of that city (number+flyer); largest city in the world (2 flyers even if marks partial). | — |
+| Camron | **done** | — | v1.1 live at halo-gules-three.vercel.app — wife/parents hard refresh + Early access invite | 19:10 |
 | Chief QA fixes | done | prior chat | unlocked | 14:28 |
 | QA-2 | done | prior chat | unlocked | 17:30 |
 | QA-3 | done | this chat | unlocked | 18:08 |
@@ -30,6 +30,7 @@ Status: `idle` · `claimed` · `in_progress` · `blocked` · `done`
 
 ## Locks
 
+- Chief 1.1.1 — unlocked.
 - Lane H — unlocked.
 - Lane A — unlocked.
 - Lane S — unlocked.
@@ -39,11 +40,17 @@ Status: `idle` · `claimed` · `in_progress` · `blocked` · `done`
 
 ## Blockers
 
-- Camron retest on iPhone (hard refresh): capital of Maine; population of that city; largest city in the world — expect highlights when the name/number is in the reply, and flyers even if a mark is missing.
+None — v1.1 promoted 2026-08-30.
 
 ## Log (newest first)
 
-- 2026-08-30 H — Harvest polish shipped. H1: `findHarvestNeedle` (exact → case → markdown-stripped → fact key / digits) in `harvestMarkdown` + `splitHarvestText`; miner keeps cards via token/answer if span misses; prompt nudges capital + population. H2: flyers fall back to last assistant bubble; silent instant only for reduced motion. Tests 3/3. Untouched: z-index 120, morph 1080, beads, seating, Keep sync.
+- 2026-09-01 chief — **1.1.1 Lab code landed, not promoted.** Calendar-day due 1/3/7 (not rolling hours). Greeting = local TZ; “You’re clear” only after a review today. Profile TZ + Vercel city/country (no raw IP) for clock/weather/local news. Settings: dropped Answer length + Motion. Needs Camron: run `016_halo_geo.sql`, eyes on `/preview` Settings + greeting. Saves still parked.
+- 2026-09-01 chief — **1.1.1 tonight plan (no code yet).** Waiting Camron go. Three slices: (1) first due = next local calendar day in `keep-memory.ts` `addKeepChip`; (2) IANA TZ on profile + Vercel geo headers for clock/weather (not raw IP); (3) greeting = local time-of-day unless today’s due field was actually cleared. Saves (item 4) parked. PASS_GAP 1/3/7 unchanged. No promote.
+- 2026-09-01 chief — **Roadmap locked (docs only):** `docs/PRODUCT_ROADMAP.md` § Trajectory adjustment — two-door Ask, intent qualify, Teach-me thin 1.3 / integrated 1.4 / premium 1.5, iOS 1.4 after Safari QA. Updated `web/PRODUCT-DISCOVERY.md`, `docs/COVE_KEEP_VISION.md`, `web/ROADMAP-VERSIONS.md`. No new files. No code.
+- 2026-09-01 chief — Vision weigh-in only (no code). Camron Atlas call + notes + Gemini Socratic thread vs `docs/PRODUCT_ROADMAP.md`. Signal: casual Ask harvest is the real tension; wife 24h wait already 1.1.1. Do **not** pivot to K-12 curriculum/textbook library. Slight adjustment candidate: Ask still answers; Teach-me / Socratic as opt-in second door (maybe pull toward 1.3, not 1.6). 1.1.1 Saves + calendar due unchanged. Sunday freeze (no XP/streaks in V2) still holds.
+- 2026-08-31 chief — **Portfolio `/preview`:** hide lab mixer on production; `?mixer=1` or localhost still shows `PreviewSwitcher`. Default `/preview` skin **paper** (middleware + halo-boot). `noindex`. **Deployed** prod `halo-gules-three.vercel.app`.
+- 2026-08-31 chief — Camron planning: header has no room for “Lists” text; recommend **bookmark icon** or **Library `≡` drawer** (Recipes + Lists), Cove not duplicate ← Home on chat; Save flyer lands on icon. Wrote `web/INTENT-HARVEST-RESEARCH.md` — memory science (4-chunk WM, retrieval practice, spacing), closed-only play, intent pipeline (classify → miner → validator → fallback), 3–5 chip budget by answer length, kind diversity, telemetry tuning. 1.1.1 Saves + 1.2 intent unchanged. No code.
+- 2026-08-30 promote — v1.1.0 commit `9015a3a` pushed `halo-ui-streamline`. `npx vercel deploy --prod` → **https://halo-gules-three.vercel.app** READY. Migrations 014+015 on prod (Camron). Next: Early access invites; wife/parents hard refresh Safari. Harvest polish shipped. H1: `findHarvestNeedle` (exact → case → markdown-stripped → fact key / digits) in `harvestMarkdown` + `splitHarvestText`; miner keeps cards via token/answer if span misses; prompt nudges capital + population. H2: flyers fall back to last assistant bubble; silent instant only for reduced motion. Tests 3/3. Untouched: z-index 120, morph 1080, beads, seating, Keep sync.
 - 2026-08-30 chief — Camron sign-off except harvest: capital asks inconsistent; Jakarta/largest-city got beads, no highlights, no flyers. Diagnosed: strict `indexOf` in `harvestMarkdown` + `spanInReply`; `HarvestFlights` silent instant after 36 frames. Wrote `web/V2-LANE-HARVEST-POLISH.md` — H1 fuzzy match + miner nudge, H2 flyer fallback from assistant bubble. Speed/mobile/sync OK. Untouched: z-index 120, morph 1080.
 - 2026-08-30 QA-3 — Phone dice-5 seats above greeting/composer (`home-pack` PHONE_MASTER, composer wall). Chat: wrap + 100% width chain, composer grid so Attach/Dictate/Send sit on a second row. Cove + ◎ left-aligned with History/Settings. Kept panel `position:fixed` inset + wrap. Keep sync: `halo_keep_state` + `GET/PUT /api/keep` + debounce push on persist. Need Camron to run migration 015. Untouched: harvest 120, morph 1080, bead diameter, desktop 16-seat map.
 - 2026-08-30 QA-2 — Reverted visualViewport stage pin (`--app-top` / `--app-height`). Keyboard sets `--kb-inset` only; pad Home/Chat/play. Stages use `100dvh`, `top: 0`. Chat: wrap + 12px inline, `width: auto` bubbles. Phone History/Settings icon-only. Typeahead 2 rows above field. Play SAY: preventScroll focus, scroll into play card. Untouched: harvest 120, morph 1080, bead diameter, seating.

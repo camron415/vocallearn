@@ -1,6 +1,7 @@
 import { pickReasoningEffort, type ReasoningEffort } from "@/lib/grok";
 import { gatherLiveBriefs } from "@/lib/live-lookups";
 import type { DisplaySource } from "@/lib/markdown-plain";
+import { localeLine, type HaloGeo } from "@/lib/request-geo";
 
 export type AskRoute = {
   kind: "lookup" | "reason";
@@ -70,16 +71,22 @@ export function resolveAskRoute(
   };
 }
 
+/** Settings length is gone — short by default, medium when the ask is deep. */
+export function answerLengthForRoute(route: AskRoute): "short" | "medium" {
+  if (route.effort === "medium" || route.effort === "high") return "medium";
+  return "short";
+}
+
 export async function liveLookupContext(
   userText: string,
-  options?: { allowSearch?: boolean }
+  options?: { allowSearch?: boolean; geo?: HaloGeo | null }
 ): Promise<{
   systemExtra: string;
   sources: DisplaySource[];
 }> {
   let live = { text: "", sources: [] as DisplaySource[] };
   try {
-    live = await gatherLiveBriefs(userText);
+    live = await gatherLiveBriefs(userText, options?.geo);
   } catch {
     live = { text: "", sources: [] };
   }
@@ -87,6 +94,7 @@ export async function liveLookupContext(
   const names = live.sources.map((row) => row.label).join(", ");
   const searchOn = Boolean(options?.allowSearch);
   const systemExtra = [
+    options?.geo ? localeLine(options.geo) : "",
     searchOn
       ? "You have a live snapshot from public feeds. Search the web if the user asked why, context, or news behind the numbers. Prefer the snapshot for prices, scores, weather, and headlines."
       : "Web search is off for this turn. Do not claim you searched the web.",

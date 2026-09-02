@@ -1,3 +1,5 @@
+import { guessTimeZone } from "@/lib/local-day";
+
 export type LearnCard = {
   id: string;
   prompt: string;
@@ -48,9 +50,9 @@ export const DEMO_CARDS: LearnCard[] = [
   },
 ];
 
-export function todayStamp(now = new Date()) {
+export function todayStamp(now = new Date(), timeZone = guessTimeZone()) {
   return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Denver",
+    timeZone,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",

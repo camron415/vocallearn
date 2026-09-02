@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChoicePicks } from "@/components/ChoicePicks";
 import { GlassButton } from "@/components/Glass";
-import { LengthPicks } from "@/components/LengthPicks";
 import { MenuSheet } from "@/components/MenuSheet";
 import { SimpleSheet } from "@/components/SimpleSheet";
 import { useMotionSettings } from "@/components/MotionProvider";
@@ -18,7 +17,7 @@ import {
   resetRoundsToday,
 } from "@/lib/keep-memory";
 import { createClient } from "@/lib/supabase/client";
-import type { AnswerLength, HaloProfile } from "@/lib/types";
+import type { HaloProfile } from "@/lib/types";
 
 async function patchProfile(body: Record<string, unknown>) {
   await fetch("/api/profile", {
@@ -46,14 +45,10 @@ export function SettingsMenu({
   demo?: boolean;
 }) {
   const router = useRouter();
-  const { intensity, setIntensity, theme, setTheme, autoSoft } =
-    useMotionSettings();
+  const { theme, setTheme } = useMotionSettings();
   const [open, setOpen] = useState(false);
   const coarse = useCoarsePointer();
   const [name, setName] = useState(profile?.displayName ?? "");
-  const [length, setLength] = useState<AnswerLength>(
-    profile?.answerLength ?? "medium"
-  );
   const [nameState, setNameState] = useState<"idle" | "saving" | "saved">(
     "idle"
   );
@@ -100,13 +95,6 @@ export function SettingsMenu({
     await patchProfile({ displayName: next });
     setNameState("saved");
     window.setTimeout(() => setNameState("idle"), 1200);
-    router.refresh();
-  }
-
-  async function saveLength(next: AnswerLength) {
-    setLength(next);
-    if (demo || next === length) return;
-    await patchProfile({ answerLength: next });
     router.refresh();
   }
 
@@ -237,23 +225,6 @@ export function SettingsMenu({
         </section>
 
         <section className="settings-block">
-          <p className="field-label">Answer length</p>
-          <LengthPicks value={length} onChange={(next) => void saveLength(next)} />
-        </section>
-
-        <section className="settings-block">
-          <p className="field-label">Motion</p>
-          <ChoicePicks
-            label="Motion"
-            value={intensity}
-            onChange={setIntensity}
-            options={
-              [
-                ["full", "Full"],
-                ["reduced", "Soft"],
-              ] as const
-            }
-          />
           <p className="field-label">Appearance</p>
           <ChoicePicks
             label="Appearance"
@@ -266,11 +237,6 @@ export function SettingsMenu({
               ] as const
             }
           />
-          {autoSoft ? (
-            <p className="login-sub">
-              This device started on Soft. You can still pick Full.
-            </p>
-          ) : null}
         </section>
 
         {demo ? null : (

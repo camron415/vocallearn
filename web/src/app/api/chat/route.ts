@@ -1,34 +1,32 @@
 import { NextResponse } from "next/server";
 import { prepareAskTurn, saveAssistantReply } from "@/lib/ask-turn";
 import { attachmentsToGrokParts } from "@/lib/files";
-import { resolveAskRoute, liveLookupContext, harvestAnswerHint } from "@/lib/ask-route";
+import {
+  resolveAskRoute,
+  liveLookupContext,
+  harvestAnswerHint,
+  answerLengthForRoute,
+} from "@/lib/ask-route";
 import { ASK_SYSTEM_PROMPT } from "@/lib/constants";
 import { streamGrokChat } from "@/lib/grok-stream";
 import { grokCostMicros, estimateAskMicros } from "@/lib/limits";
 import { encodeHaloEvent, type HaloStreamEvent } from "@/lib/halo-stream";
+import {
+  geoFromProfile,
+  loadHaloProfile,
+  rememberHaloGeo,
+} from "@/lib/halo-profile";
+import { isIanaTimeZone } from "@/lib/local-day";
 import { extractRecipe, firstImageAttachment, isSaveRecipeCommand } from "@/lib/recipes";
 import { saveRecipePhoto } from "@/lib/recipe-photo";
+import { geoFromRequest, localeLine, mergeHaloGeo } from "@/lib/request-geo";
 import { trackHaloEvent } from "@/lib/track";
 import { createClient } from "@/lib/supabase/server";
 import { attachSources } from "@/lib/markdown-plain";
-import type { AnswerLength, AskMessage, ChatAttachment } from "@/lib/types";
+import type { AskMessage, ChatAttachment } from "@/lib/types";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
-
-async function loadAnswerLength(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  userId: string
-): Promise<AnswerLength> {
-  const { data } = await supabase
-    .from("profiles")
-    .select("answer_length")
-    .eq("id", userId)
-    .maybeSingle();
-  const value = data?.answer_length;
-  if (value === "short" || value === "long" || value === "medium") return value;
-  return "medium";
-}
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -58,6 +56,7 @@ export async function POST(request: Request) {
     resume?: boolean;
     prepareOnly?: boolean;
     attachments?: ChatAttachment[];
+    timeZone?: string;
   };
   try {
     body = await request.json();
@@ -66,6 +65,18 @@ export async function POST(request: Request) {
   }
 
   const attachments = Array.isArray(body.attachments) ? body.attachments : [];
+
+  const profile = await loadHaloProfile(supabase, user);
+  const clientTz =
+    typeof body.timeZone === "string" && isIanaTimeZone(body.timeZone)
+      ? body.timeZone
+      : undefined;
+  const geo = mergeHaloGeo(
+    geoFromProfile(profile),
+    geoFromRequest(request),
+    clientTz ? { timeZone: clientTz } : null
+  );
+  void rememberHaloGeo(supabase, user.id, geo);
 
   const prepared = await prepareAskTurn(supabase, user, {
     ...body,
@@ -158,8 +169,8 @@ export async function POST(request: Request) {
   }
 
   const encoder = new TextEncoder();
-  const answerLength = await loadAnswerLength(supabase, user.id);
   const route = resolveAskRoute(userText, attachments.length > 0);
+  const answerLength = answerLengthForRoute(route);
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -176,6 +187,7 @@ export async function POST(request: Request) {
           send({ type: "status", status: "checking" });
           const live = await liveLookupContext(userText, {
             allowSearch: Boolean(route.tools),
+            geo,
           });
           lookupSources = live.sources;
           system = [ASK_SYSTEM_PROMPT, live.systemExtra, harvestHint]
@@ -191,11 +203,12 @@ export async function POST(request: Request) {
           answerLength,
           tools: route.tools,
           maxToolCalls: route.maxToolCalls,
+          timeZone: geo.timeZone,
           system:
             system ??
-            (harvestHint
-              ? `${ASK_SYSTEM_PROMPT}\n\n${harvestHint}`
-              : undefined),
+            [ASK_SYSTEM_PROMPT, localeLine(geo), harvestHint]
+              .filter(Boolean)
+              .join("\n\n"),
         })) {
           if (live.type === "done") {
             const finalText = lookupSources.length

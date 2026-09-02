@@ -398,6 +398,7 @@ export function ChatThread({
           message: opts.text,
           resume: opts.resume || undefined,
           attachments: opts.attachments,
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         }),
         signal: abort.signal,
       });

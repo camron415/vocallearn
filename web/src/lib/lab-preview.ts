@@ -1,5 +1,11 @@
 /** Lab `/preview` must never fall through to frozen family `/ask`. */
 
+/** Mixer rail: localhost always; production only with `?mixer=1`. */
+export function showPreviewMixer(mixer?: string) {
+  if (process.env.NODE_ENV === "development") return true;
+  return mixer === "1";
+}
+
 export function isLabPreviewPath(pathname?: string) {
   const path =
     pathname ??

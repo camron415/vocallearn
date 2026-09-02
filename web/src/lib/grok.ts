@@ -79,10 +79,14 @@ function lengthLine(length?: "short" | "medium" | "long") {
 
 export function grokInput(
   messages: GrokMessage[],
-  options?: { answerLength?: "short" | "medium" | "long"; system?: string }
+  options?: {
+    answerLength?: "short" | "medium" | "long";
+    system?: string;
+    timeZone?: string;
+  }
 ) {
   const system =
-    `${options?.system || ASK_SYSTEM_PROMPT}\n\n${lengthLine(options?.answerLength)}\n\n${clockLine()}`;
+    `${options?.system || ASK_SYSTEM_PROMPT}\n\n${lengthLine(options?.answerLength)}\n\n${clockLine(new Date(), options?.timeZone)}`;
   return [
     {
       role: "system",
@@ -104,11 +108,12 @@ export function grokResponsesBody(
     maxToolCalls?: number;
     answerLength?: "short" | "medium" | "long";
     system?: string;
+    timeZone?: string;
   }
 ) {
   const effort = options?.effort ?? DEFAULT_EFFORT;
   const useTools = options?.tools !== false;
-  const length = options?.answerLength || "medium";
+  const length = options?.answerLength || "short";
   const maxTokens =
     options?.maxTokens ??
     (length === "short" ? 500 : length === "long" ? 1800 : effort === "none" ? 1100 : 1600);
@@ -120,6 +125,7 @@ export function grokResponsesBody(
     input: grokInput(messages, {
       answerLength: length,
       system: options?.system,
+      timeZone: options?.timeZone,
     }),
     temperature: options?.temperature ?? 0.5,
     max_output_tokens: maxTokens,
@@ -143,6 +149,7 @@ export async function callGrokChat(
     maxToolCalls?: number;
     answerLength?: "short" | "medium" | "long";
     system?: string;
+    timeZone?: string;
   }
 ): Promise<string> {
   const { apiUrl, headers } = grokAuth();

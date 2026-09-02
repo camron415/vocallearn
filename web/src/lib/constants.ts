@@ -1,3 +1,5 @@
+import { guessTimeZone } from "@/lib/local-day";
+
 export const APP_NAME = "Cove";
 
 export const ASK_SYSTEM_PROMPT = `You are Ask, a clear and helpful personal assistant for a private family.
@@ -11,6 +13,7 @@ Style:
 
 Time:
 - Trust the Clock line in this prompt for "today", "this year", and "this week".
+- Trust the Locale line for the user's city and timezone. Use it for weather, local news, and "near me" unless they name another place.
 - Calendar facts (holidays, weekdays) must use that year. Do not assume last year.
 
 Search:
@@ -30,15 +33,15 @@ Credibility:
 - Never invent prices, stock, product specs, or calendar dates. If search did not confirm a number, say you could not verify it.
 `;
 
-export function clockLine(now = new Date()): string {
+export function clockLine(now = new Date(), timeZone = guessTimeZone()): string {
   const date = new Intl.DateTimeFormat("en-US", {
     weekday: "long",
     year: "numeric",
     month: "long",
     day: "numeric",
-    timeZone: "America/Denver",
+    timeZone,
   }).format(now);
-  return `Clock: Today is ${date} (America/Denver).`;
+  return `Clock: Today is ${date} (${timeZone}).`;
 }
 
 export const HISTORY_TITLE_MAX = 50;

@@ -1,13 +1,19 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { AskLanding } from "@/components/AskLanding";
 import { ChatThread } from "@/components/ChatThread";
 import { InviteSetup } from "@/components/InviteSetup";
 import { LoginForm } from "@/components/LoginForm";
 import { PreviewSwitcher } from "@/components/PreviewSwitcher";
+import { showPreviewMixer } from "@/lib/lab-preview";
 import { STARTERS } from "@/lib/suggest-chips";
 import type { AskMessage } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 const RECENTS = [
   { id: "1", title: "Sourdough starter schedule", user_id: "x", created_at: "", updated_at: "" },
@@ -47,9 +53,12 @@ export default async function PreviewPage({
     keep?: string;
     dock?: string;
     play?: string;
+    mixer?: string;
   }>;
 }) {
-  const { view, thread: threadId, orb, fly, keep, dock, play } = await searchParams;
+  const { view, thread: threadId, orb, fly, keep, dock, play, mixer } =
+    await searchParams;
+  const labMixer = showPreviewMixer(mixer);
   const harvestKey = `${orb || "drop"}-${fly || "burst"}-${keep || "pebble"}-${dock || "beads"}-${play || "0"}`;
 
   const rec = RECENTS.find((row) => row.id === threadId) ?? RECENTS[0];
@@ -80,9 +89,11 @@ export default async function PreviewPage({
   return (
     <>
       {screen}
-      <Suspense>
-        <PreviewSwitcher />
-      </Suspense>
+      {labMixer ? (
+        <Suspense>
+          <PreviewSwitcher />
+        </Suspense>
+      ) : null}
     </>
   );
 }

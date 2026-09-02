@@ -63,14 +63,18 @@ function mixerBlob(): Record<string, unknown> {
   return {};
 }
 
-/** Lab preview: URL, then cookie, then mixer. Signed-in app routes are paper. */
+/** Lab preview: URL, then cookie, then mixer. Portfolio (no ?mixer=1) on prod = paper. */
 export function resolvePreviewSkin(): "paper" | "ours" {
   if (typeof location !== "undefined" && !isLabPreviewPath(location.pathname)) {
     return "paper";
   }
-  const look = new URLSearchParams(location.search).get("look");
+  const q = new URLSearchParams(location.search);
+  const look = q.get("look");
   if (look === "paper" || look === "ours") return look;
-  return cookieSkin() ?? mixerSkin() ?? "ours";
+  const host = typeof location !== "undefined" ? location.hostname : "";
+  const local = host === "localhost" || host === "127.0.0.1";
+  if (!local && q.get("mixer") !== "1") return "paper";
+  return cookieSkin() ?? mixerSkin() ?? "paper";
 }
 
 export function previewWantsPaper(): boolean {

@@ -513,9 +513,9 @@ export function PreviewSwitcher() {
           <p className="preview-switcher__hint">
             Due {loop.due} · Keep {loop.keep} · Mastered {loop.mastered} ·{" "}
             {loop.total}/{loop.cap}. Miss stays on Home. Three clears → mastered.
-            Empty Keep keeps the time greeting. You’re clear only after the field
-            is empty and Keep still has beads. Keep sorts gold → silver → bronze →
-            new. Rings are rank; kind color stays. Mix Master fires the clear pulse.
+            Empty Keep keeps the time greeting. You’re clear only after a
+            review clears today’s field. Keep sorts silver → bronze → new.
+            Mix Master fires the clear pulse.
           </p>
           <div className="preview-switcher__group preview-switcher__group--wrap">
             <button type="button" onClick={() => seedTutorialPack()}>

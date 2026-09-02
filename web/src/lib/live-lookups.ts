@@ -4,6 +4,12 @@ import {
   placeFromWeatherAsk,
 } from "@/lib/weather";
 import type { DisplaySource } from "@/lib/markdown-plain";
+import { localDayKey } from "@/lib/local-day";
+import {
+  assumedPlaceNote,
+  defaultPlaceLabel,
+  type HaloGeo,
+} from "@/lib/request-geo";
 
 const UA = { "User-Agent": "CoveFamilyAsk/1.1 (lab)" };
 
@@ -125,7 +131,10 @@ function tagged(text: string | null, ...cites: DisplaySource[]): Tagged {
 }
 
 /** No-key public feeds. Skip xAI web_search when these cover the ask. */
-export async function gatherLiveBriefs(userText: string): Promise<LiveLookup> {
+export async function gatherLiveBriefs(
+  userText: string,
+  geo?: HaloGeo | null
+): Promise<LiveLookup> {
   const t = userText.toLowerCase();
   const jobs: Array<Promise<Tagged>> = [];
 
@@ -135,14 +144,14 @@ export async function gatherLiveBriefs(userText: string): Promise<LiveLookup> {
     )
   ) {
     jobs.push(
-      weatherBlock(userText).then((text) =>
+      weatherBlock(userText, geo).then((text) =>
         tagged(text, { label: "Open-Meteo", url: "https://open-meteo.com" })
       )
     );
   }
   if (/\b(air quality|aqi)\b/.test(t)) {
     jobs.push(
-      airQualityBlock(userText).then((text) =>
+      airQualityBlock(userText, geo).then((text) =>
         tagged(text, {
           label: "Open-Meteo Air Quality",
           url: "https://open-meteo.com/en/docs/air-quality-api",
@@ -152,7 +161,7 @@ export async function gatherLiveBriefs(userText: string): Promise<LiveLookup> {
   }
   if (/\b(news|headline|headlines)\b/.test(t)) {
     jobs.push(
-      newsBlock().then((text) =>
+      newsBlock(geo).then((text) =>
         tagged(
           text,
           { label: "BBC World", url: "https://www.bbc.com/news/world" },
@@ -200,7 +209,7 @@ export async function gatherLiveBriefs(userText: string): Promise<LiveLookup> {
   }
   if (/\b(holiday|holidays)\b/.test(t)) {
     jobs.push(
-      holidaysBlock().then((text) =>
+      holidaysBlock(geo).then((text) =>
         tagged(text, { label: "Nager.Date", url: "https://date.nager.at" })
       )
     );
@@ -237,7 +246,7 @@ export async function gatherLiveBriefs(userText: string): Promise<LiveLookup> {
   }
   if (/\b(time in|what time is it)\b/.test(t)) {
     jobs.push(
-      timeBlock(userText).then((text) =>
+      timeBlock(userText, geo).then((text) =>
         tagged(text, {
           label: "Open-Meteo Geocoding",
           url: "https://open-meteo.com/en/docs/geocoding-api",
@@ -277,31 +286,41 @@ export async function gatherLiveBriefs(userText: string): Promise<LiveLookup> {
   return { text: parts.map((part) => part.text).join("\n\n"), sources };
 }
 
-async function weatherBlock(userText: string) {
-  const place = placeFromWeatherAsk(userText) || "Salt Lake City";
+async function weatherBlock(userText: string, geo?: HaloGeo | null) {
+  const named = placeFromWeatherAsk(userText);
+  const place = named || defaultPlaceLabel(geo);
   try {
     const brief = await fetchWeatherBrief(place);
     if (!brief) return null;
-    const assumed = placeFromWeatherAsk(userText)
-      ? ""
-      : "\nNo city was named; used Salt Lake City (household default).";
-    return `${brief.summary}${assumed}`;
+    return `${brief.summary}${assumedPlaceNote(Boolean(named), geo)}`;
   } catch {
     return null;
   }
 }
 
-async function newsBlock() {
-  const [bbc, npr] = await Promise.all([
+async function newsBlock(geo?: HaloGeo | null) {
+  const country = geo?.country || "US";
+  const city = geo?.city;
+  const [bbc, npr, local] = await Promise.all([
     grab("https://feeds.bbci.co.uk/news/world/rss.xml"),
     grab("https://feeds.npr.org/1001/rss.xml"),
+    city
+      ? grab(
+          `https://news.google.com/rss/headlines/section/geo/${encodeURIComponent(city)}?hl=en&gl=${country}&ceid=${country}:en`
+        )
+      : Promise.resolve(null),
   ]);
+  const localItems = local ? rssItems(local, 5) : [];
   const headlines = [
+    ...localItems,
     ...(bbc ? rssItems(bbc, 6) : []),
     ...(npr ? rssItems(npr, 5) : []),
   ];
   if (!headlines.length) return null;
-  return `News (BBC World + NPR, delayed RSS, not a web search):\n${headlines.map((h, i) => `${i + 1}. ${h}`).join("\n")}`;
+  const where = city
+    ? `local ${city} + BBC World + NPR`
+    : "BBC World + NPR";
+  return `News (${where}, delayed RSS, not a web search):\n${headlines.map((h, i) => `${i + 1}. ${h}`).join("\n")}`;
 }
 
 async function stocksBlock(userText: string) {
@@ -456,18 +475,20 @@ async function sportsBlock(t: string) {
   return `Scores (ESPN public scoreboard):\n${lines.join("\n")}`;
 }
 
-async function holidaysBlock() {
-  const year = new Date().getFullYear();
+async function holidaysBlock(geo?: HaloGeo | null) {
+  const country = geo?.country || "US";
+  const year = Number(localDayKey(Date.now(), geo?.timeZone).slice(0, 4));
+  const today = localDayKey(Date.now(), geo?.timeZone);
   const data = await grabJson<Array<{ date?: string; name?: string }>>(
-    `https://date.nager.at/api/v3/PublicHolidays/${year}/US`
+    `https://date.nager.at/api/v3/PublicHolidays/${year}/${country}`
   );
   if (!Array.isArray(data)) return null;
   const upcoming = data
-    .filter((h) => (h.date ?? "") >= new Date().toISOString().slice(0, 10))
+    .filter((h) => (h.date ?? "") >= today)
     .slice(0, 5)
     .map((h) => `${h.date} — ${h.name}`);
   if (!upcoming.length) return null;
-  return `Upcoming US public holidays (Nager.Date):\n${upcoming.join("\n")}`;
+  return `Upcoming ${country} public holidays (Nager.Date):\n${upcoming.join("\n")}`;
 }
 
 async function quakesBlock() {
@@ -498,24 +519,22 @@ function namedPlace(text: string) {
   );
 }
 
-async function airQualityBlock(userText: string) {
-  const place = namedPlace(userText) || "Salt Lake City";
-  const geo = await geocodePlace(place);
-  if (!geo) return null;
+async function airQualityBlock(userText: string, geo?: HaloGeo | null) {
+  const named = namedPlace(userText);
+  const place = named || defaultPlaceLabel(geo);
+  const hit = await geocodePlace(place);
+  if (!hit) return null;
   const url = new URL("https://air-quality-api.open-meteo.com/v1/air-quality");
-  url.searchParams.set("latitude", String(geo.latitude));
-  url.searchParams.set("longitude", String(geo.longitude));
+  url.searchParams.set("latitude", String(hit.latitude));
+  url.searchParams.set("longitude", String(hit.longitude));
   url.searchParams.set("current", "us_aqi,pm2_5,pm10");
-  url.searchParams.set("timezone", geo.timezone);
+  url.searchParams.set("timezone", hit.timezone);
   const data = await grabJson<{
     current?: { us_aqi?: number; pm2_5?: number; pm10?: number };
   }>(url.toString());
   const cur = data?.current;
   if (cur?.us_aqi == null) return null;
-  const assumed = namedPlace(userText)
-    ? ""
-    : " No city was named; used Salt Lake City.";
-  return `Air quality in ${geo.label} (Open-Meteo): US AQI ${Math.round(cur.us_aqi)}, PM2.5 ${Math.round(cur.pm2_5 ?? 0)}, PM10 ${Math.round(cur.pm10 ?? 0)}.${assumed}`;
+  return `Air quality in ${hit.label} (Open-Meteo): US AQI ${Math.round(cur.us_aqi)}, PM2.5 ${Math.round(cur.pm2_5 ?? 0)}, PM10 ${Math.round(cur.pm10 ?? 0)}.${assumedPlaceNote(Boolean(named), geo)}`;
 }
 
 async function defineBlock(userText: string) {
@@ -580,27 +599,26 @@ async function countryBlock(userText: string) {
   return `Country (countries.dev): ${row.name}, capital ${row.capital ?? "—"}, population ${row.population?.toLocaleString("en-US") ?? "—"}, ${row.region ?? ""}${money ? `, ${money}` : ""}.`;
 }
 
-async function timeBlock(userText: string) {
+async function timeBlock(userText: string, geo?: HaloGeo | null) {
   const named =
     namedPlace(userText) ||
     userText.match(
       /(?:time in|what time is it in)\s+([A-Za-z][A-Za-z]+(?:\s+[A-Za-z][A-Za-z]+){0,3})/i
     )?.[1] ||
     null;
-  const place = named || "Salt Lake City";
-  const geo = await geocodePlace(place);
-  if (!geo) return null;
+  const place = named || defaultPlaceLabel(geo);
+  const hit = await geocodePlace(place);
+  if (!hit) return null;
+  const zone =
+    hit.timezone === "auto" ? geo?.timeZone || "America/Denver" : hit.timezone;
   const now = new Intl.DateTimeFormat("en-US", {
-    timeZone: geo.timezone === "auto" ? "America/Denver" : geo.timezone,
+    timeZone: zone,
     weekday: "short",
     hour: "numeric",
     minute: "2-digit",
     timeZoneName: "short",
   }).format(new Date());
-  const assumed = named
-    ? ""
-    : " No city was named; used Salt Lake City.";
-  return `Local time in ${geo.label} (${geo.timezone}): ${now}.${assumed}`;
+  return `Local time in ${hit.label} (${hit.timezone}): ${now}.${assumedPlaceNote(Boolean(named), geo)}`;
 }
 
 async function tvBlock(userText: string) {

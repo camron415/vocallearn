@@ -155,6 +155,7 @@ export async function* streamGrokChat(
     maxToolCalls?: number;
     answerLength?: "short" | "medium" | "long";
     system?: string;
+    timeZone?: string;
   }
 ): AsyncGenerator<GrokLiveEvent> {
   const effort = options?.effort ?? "low";

@@ -8,7 +8,7 @@ function previewSkinFromRequest(request: NextRequest): "paper" | "ours" | null {
     if (look === "paper" || look === "ours") return look;
     const cookie = request.cookies.get("halo-preview-skin")?.value;
     if (cookie === "paper" || cookie === "ours") return cookie;
-    return null;
+    return "paper";
   }
   return "paper";
 }

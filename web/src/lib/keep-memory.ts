@@ -4,14 +4,14 @@ import {
   type ChipSeat,
   type HarvestChip,
 } from "@/lib/harvest";
+import { addLocalCalendarDays, localDayKey } from "@/lib/local-day";
 
 const STORAGE_KEY = "halo-keep-v2";
 const KEEP_CAP = 30;
 const HOME_SEAT_CAP = 16;
 const DAY_ROUND_CAP = 3;
 const MASTER_AFTER = 3;
-const DAY_MS = 24 * 60 * 60 * 1000;
-/** After a clean r1 / r2 / r3: next due in ~1d, ~3d, ~7d. */
+/** After a clean r1 / r2 / r3: next due in 1 / 3 / 7 local calendar days. */
 const PASS_GAP_DAYS = [1, 3, 7] as const;
 
 export { HOME_SEAT_CAP, DAY_ROUND_CAP, MASTER_AFTER, PASS_GAP_DAYS };
@@ -51,8 +51,7 @@ function emit() {
 }
 
 function dayKey(now = Date.now()) {
-  const d = new Date(now);
-  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+  return localDayKey(now);
 }
 
 function rollDayCap(now = Date.now()) {
@@ -93,7 +92,7 @@ export function passGapDays(clears: number) {
 }
 
 export function nextDueAt(clears: number, from = Date.now()) {
-  return from + passGapDays(clears) * DAY_MS;
+  return addLocalCalendarDays(from, passGapDays(clears));
 }
 
 /**
@@ -505,7 +504,7 @@ export function addKeepChip(chip: HarvestChip) {
   if (index >= 0) {
     next = mergeHarvest(chips[index], next);
   } else if (!isGoldOrMastered(next) && next.dueAt == null) {
-    next = { ...next, dueAt: now + DAY_MS };
+    next = { ...next, dueAt: nextDueAt(0, now) };
   }
   const updated =
     index >= 0
@@ -656,6 +655,12 @@ export function readLoopStats() {
     dayCapped: roundsToday >= DAY_ROUND_CAP,
     roundsLifetime,
   };
+}
+
+/** Home greeting: “You’re clear” only after today’s due field was actually reviewed. */
+export function shouldShowClearGreeting() {
+  const stats = readLoopStats();
+  return stats.roundsToday > 0 && stats.due === 0 && stats.keep + stats.mastered > 0;
 }
 
 export type ChipRoundResult = { id: string; passed: boolean };
