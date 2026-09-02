@@ -32,7 +32,12 @@ import {
   shouldShowClearGreeting,
   subscribeKeep,
 } from "@/lib/keep-memory";
-import { guessTimeZone, timeGreeting } from "@/lib/local-day";
+import {
+  getUserTimeZone,
+  rememberUserTimeZone,
+  resolveUserTimeZone,
+  timeGreeting,
+} from "@/lib/local-day";
 import { isLabPreviewPath, labPreviewChatHref } from "@/lib/lab-preview";
 import { useCoarsePointer } from "@/lib/coarse-pointer";
 import type { ChipKind } from "@/lib/harvest";
@@ -77,6 +82,7 @@ export function AskLanding({
   const [keptCount, setKeptCount] = useState(0);
   const [justCleared, setJustCleared] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [timeZone, setTimeZone] = useState("");
   const [playing, setPlaying] = useState(false);
   const [grown, setGrown] = useState(false);
   const [playKind, setPlayKind] = useState<ChipKind | "">("");
@@ -190,17 +196,21 @@ export function AskLanding({
   }, [conversations]);
 
   useEffect(() => {
+    const tz = resolveUserTimeZone(profile?.timeZone);
+    rememberUserTimeZone(tz);
+    setTimeZone(tz);
     setMounted(true);
-  }, []);
+  }, [profile?.timeZone]);
 
   useEffect(() => {
     if (demo) return;
+    const tz = resolveUserTimeZone(profile?.timeZone);
     void fetch("/api/profile", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ timeZone: guessTimeZone() }),
+      body: JSON.stringify({ timeZone: tz }),
     });
-  }, [demo]);
+  }, [demo, profile?.timeZone]);
 
   useEffect(() => {
     if (demo || !profile || profile.onboarded) return;
@@ -211,10 +221,11 @@ export function AskLanding({
     });
   }, [demo, profile]);
 
-  const heroGreet =
-    justCleared || (mounted && shouldShowClearGreeting())
+  const heroGreet = !mounted
+    ? ""
+    : justCleared || shouldShowClearGreeting()
       ? "You're clear"
-      : timeGreeting();
+      : timeGreeting(undefined, timeZone);
 
   const chips = useMemo(
     () => {
@@ -359,7 +370,7 @@ export function AskLanding({
           message: message || undefined,
           attachments,
           prepareOnly: true,
-          timeZone: guessTimeZone(),
+          timeZone: resolveUserTimeZone(profile?.timeZone),
         }),
       });
       const data = await res.json();
@@ -442,7 +453,9 @@ export function AskLanding({
             className={`ask-greeting${justCleared ? " is-clear" : ""}`}
             suppressHydrationWarning
           >
-            {`${justCleared ? "You're clear" : heroGreet}, ${displayName}`}
+            {mounted
+              ? `${justCleared ? "You're clear" : heroGreet}, ${displayName}`
+              : "\u00a0"}
           </p>
           <div
             className={`compose-stack${hints.length && !playing ? " is-open" : ""}`}

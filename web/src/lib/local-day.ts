@@ -22,9 +22,48 @@ export function guessTimeZone(): string {
   return FALLBACK_TIME_ZONE;
 }
 
+const STORAGE_KEY = "halo-timezone";
+
+/** Prefer profile/browser TZ; never treat bare UTC as a user zone in the browser. */
+export function resolveUserTimeZone(profileTz?: string | null): string {
+  if (profileTz && isIanaTimeZone(profileTz) && profileTz !== "UTC") {
+    return profileTz;
+  }
+  const guessed = guessTimeZone();
+  if (guessed !== "UTC") return guessed;
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved && isIanaTimeZone(saved) && saved !== "UTC") return saved;
+  } catch {
+    /* private browsing */
+  }
+  return FALLBACK_TIME_ZONE;
+}
+
+export function rememberUserTimeZone(timeZone: string) {
+  if (!isIanaTimeZone(timeZone) || timeZone === "UTC") return;
+  try {
+    localStorage.setItem(STORAGE_KEY, timeZone);
+  } catch {
+    /* private browsing */
+  }
+}
+
+export function getUserTimeZone(): string {
+  if (typeof window === "undefined") return FALLBACK_TIME_ZONE;
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved && isIanaTimeZone(saved) && saved !== "UTC") return saved;
+  } catch {
+    /* private browsing */
+  }
+  const guessed = guessTimeZone();
+  return guessed === "UTC" ? FALLBACK_TIME_ZONE : guessed;
+}
+
 export function localDayKey(
   now = Date.now(),
-  timeZone = guessTimeZone()
+  timeZone = getUserTimeZone()
 ): string {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone,
@@ -79,7 +118,7 @@ export function zonedMidnight(ymd: string, timeZone: string): number {
 
 export function startOfLocalDay(
   from = Date.now(),
-  timeZone = guessTimeZone()
+  timeZone = getUserTimeZone()
 ): number {
   return zonedMidnight(localDayKey(from, timeZone), timeZone);
 }
@@ -88,37 +127,40 @@ export function startOfLocalDay(
 export function addLocalCalendarDays(
   from: number,
   days: number,
-  timeZone = guessTimeZone()
+  timeZone = getUserTimeZone()
 ): number {
   return zonedMidnight(addYmd(localDayKey(from, timeZone), days), timeZone);
 }
 
 export function localHour(
   now = Date.now(),
-  timeZone = guessTimeZone()
+  timeZone = getUserTimeZone()
 ): number {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone,
     hour: "numeric",
-    hourCycle: "h23",
+    hour12: false,
   }).formatToParts(new Date(now));
-  let h = Number(parts.find((p) => p.type === "hour")?.value);
-  const dayPeriod = parts.find((p) => p.type === "dayPeriod")?.value;
-  if (dayPeriod && Number.isFinite(h) && h <= 12) {
-    const pm = /p/i.test(dayPeriod);
-    if (pm && h < 12) h += 12;
-    if (!pm && h === 12) h = 0;
-  }
+  const h = Number(parts.find((p) => p.type === "hour")?.value);
   if (h === 24) return 0;
   return Number.isFinite(h) ? h : new Date(now).getHours();
 }
 
 export function timeGreeting(
   now = Date.now(),
-  timeZone = guessTimeZone()
+  timeZone = getUserTimeZone()
 ): string {
   const h = localHour(now, timeZone);
+  if (h < 5) return "Good evening";
   if (h < 12) return "Good morning";
   if (h < 17) return "Good afternoon";
   return "Good evening";
+}
+
+/** Fix chips scheduled at UTC midnight instead of local midnight (1.1.1 hotfix). */
+export function repairUtcMidnightDue(dueAt: number, timeZone: string): number {
+  if (!Number.isFinite(dueAt) || timeZone === "UTC") return dueAt;
+  const utcKey = localDayKey(dueAt, "UTC");
+  if (dueAt !== zonedMidnight(utcKey, "UTC")) return dueAt;
+  return zonedMidnight(utcKey, timeZone);
 }

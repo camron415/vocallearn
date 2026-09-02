@@ -4,7 +4,7 @@ import {
   type ChipSeat,
   type HarvestChip,
 } from "@/lib/harvest";
-import { addLocalCalendarDays, localDayKey } from "@/lib/local-day";
+import { addLocalCalendarDays, getUserTimeZone, localDayKey, repairUtcMidnightDue } from "@/lib/local-day";
 
 const STORAGE_KEY = "halo-keep-v2";
 const KEEP_CAP = 30;
@@ -262,6 +262,13 @@ function isChip(value: unknown): value is HarvestChip {
   return Boolean(chip.id && chip.token && chip.kind && chip.prompt && chip.answer);
 }
 
+function withRepairedDue(chip: HarvestChip): HarvestChip {
+  if (chip.dueAt == null) return chip;
+  const tz = getUserTimeZone();
+  const dueAt = repairUtcMidnightDue(chip.dueAt, tz);
+  return dueAt === chip.dueAt ? chip : { ...chip, dueAt };
+}
+
 function hydrate() {
   if (hydrated) return;
   hydrated = true;
@@ -280,7 +287,7 @@ function hydrate() {
       updatedAt?: unknown;
     };
     if (Array.isArray(parsed.chips)) {
-      const loaded = parsed.chips.filter(isChip);
+      const loaded = parsed.chips.filter(isChip).map(withRepairedDue);
       chips = applyDueSeats(
         loaded
           .map((chip, i) =>
@@ -443,6 +450,7 @@ export function applyKeepCloudPayload(payload: KeepCloudPayload, at: number) {
   applyingRemote = true;
   chips = applyDueSeats(
     payload.chips
+      .map(withRepairedDue)
       .map((chip, i) =>
         withSeat(stampKeptAt(chip, Date.now() - (payload.chips.length - i) * 1000))
       )

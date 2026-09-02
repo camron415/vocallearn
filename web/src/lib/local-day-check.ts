@@ -2,6 +2,7 @@ import {
   addLocalCalendarDays,
   localDayKey,
   localHour,
+  repairUtcMidnightDue,
   timeGreeting,
   zonedMidnight,
 } from "./local-day";
@@ -52,6 +53,25 @@ export function runLocalDayFixtures(): SuiteResult {
   const morning = Date.parse("2026-09-01T14:00:00.000Z"); // 08:00 MDT
   if (timeGreeting(morning, tz) !== "Good morning") {
     failures.push(`morning greeting: ${timeGreeting(morning, tz)}`);
+  }
+
+  const lateNight = Date.parse("2026-09-02T06:30:00.000Z"); // 00:30 MDT Sep 2
+  if (timeGreeting(lateNight, tz) !== "Good evening") {
+    failures.push(`late night greeting: ${timeGreeting(lateNight, tz)}`);
+  }
+
+  const earlyMorning = Date.parse("2026-09-02T11:00:00.000Z"); // 05:00 MDT
+  if (timeGreeting(earlyMorning, tz) !== "Good morning") {
+    failures.push(`5am greeting: ${timeGreeting(earlyMorning, tz)}`);
+  }
+
+  const utcDue = zonedMidnight("2026-09-02", "UTC");
+  const repaired = repairUtcMidnightDue(utcDue, tz);
+  if (repaired !== zonedMidnight("2026-09-02", tz)) {
+    failures.push("UTC midnight due repair failed");
+  }
+  if (timeGreeting(Date.parse("2026-09-02T04:14:00.000Z"), "UTC") !== "Good evening") {
+    failures.push("UTC 4am should be evening before 5am");
   }
 
   return { ok: failures.length === 0, failures };
