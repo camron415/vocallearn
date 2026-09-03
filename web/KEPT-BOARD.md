@@ -8,8 +8,8 @@ Shared desk for weekend V2. Not Atlas. Not Slack. One file every lane updates.
 
 **Harvest ops (telemetry, QA, mobile, promote):** [`web/HARVEST-OPS.md`](./HARVEST-OPS.md) — read before tuning or early access.
 
-Updated: 2026-09-03T00:28-06:00  
-By: Chief (1.1.2-mobile shipping)
+Updated: 2026-09-03T00:32-06:00  
+By: Chief (night closed — 1.1.2-mobile)
 
 ## Lanes
 
@@ -18,7 +18,7 @@ By: Chief (1.1.2-mobile shipping)
 | A Auth paper | done | tab A | `AuthShell`, `LoginForm`, `InviteSetup`, `halo-boot`, `LoopSkin` auth | 13:52 |
 | S Settings audit | **done** | this tab | unlocked | 13:48 |
 | B Round GUI | idle | — | unlocked | 22:02 |
-| Chief | **done** | this chat | 1.1.2-mobile shipped early access | 00:28 |
+| Chief | **idle** | — | night closed | 00:32 |
 | M Menu+chat unify | done | this chat | unlocked | 12:35 |
 | Camron | **done** | — | v1.1 live at halo-gules-three.vercel.app — wife/parents hard refresh + Early access invite | 19:10 |
 | Chief QA fixes | done | prior chat | unlocked | 14:28 |
@@ -44,7 +44,7 @@ Status: `idle` · `claimed` · `in_progress` · `blocked` · `done`
 
 ## Log (newest first)
 
-- 2026-09-03 chief — **1.1.2-mobile LIVE early access.** Mobile-only: recipes scroll, header crowding, History clock + Settings gear icons. Desktop unchanged (`@media` only). Camron LAN QA pass. `PATCH-1.1.2-MOBILE.md`.
+- 2026-09-03 chief — **Night closed.** 1.1.2-mobile on early access (`136d15f` → prod). Mobile-only header + recipes scroll; Camron LAN QA good. Demo tomorrow on phone — hard refresh Safari. Parked: AskShell `/preview`. Uncommitted locally: roadmap/docs, AskShell lab files, duplicate `* 2.ts` inbox clutter — not in tonight's ship. Next: demo; then Saves/1.2 or revisit composer morph.
 - 2026-09-03 chief — Lab proof attempt on `/preview`: persistent AskShell + chip-style copy fade. Family `/ask` layout passthrough. (Superseded — did not pass Camron QA.)
 - 2026-09-02 chief — **Morph hotfix shipped** (`73eacb5`). Travel starts with Enter (parallel prepareOnly); no home→chat ghost overlap; chat→home travel restored; chips wait for composer; save highlight `fit-content`.
 - 2026-09-02 chief — Camron asked Saves-from-chat + opt-in facts. **Unity:** Keep auto-harvest stays; Library is opt-in recipes/lists. **Tonight if go:** Save-this-recipe pill (~4/10). Opt-in facts 8/10 — 1.2. Detail in `LIBRARY-BACKLOG.md`.
