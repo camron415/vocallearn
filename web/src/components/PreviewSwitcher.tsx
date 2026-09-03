@@ -587,7 +587,7 @@ export function PreviewSwitcher() {
         <>
           <p className="preview-switcher__label">Harvest lab</p>
           <p className="preview-switcher__hint">
-            Chat screen. Canned = instant replay. Live = real Grok miner (localhost). Run Replay once, then Re-visit to test no second flight.
+            Chat screen. Canned = instant replay. Live = real Grok miner (localhost). Save pill = canned pasta + button (no extract). Live recipe extract is on signed-in /ask.
           </p>
           <div className="preview-switcher__group preview-switcher__group--wrap">
             <button
@@ -614,6 +614,16 @@ export function PreviewSwitcher() {
             </button>
             <button type="button" onClick={resetHarvestLab} title="Clear Keep + highlights">
               Reset
+            </button>
+            <button
+              type="button"
+              title="Reset canned Baked Alaska + highlights + Save pill (no API)"
+              onClick={() => {
+                window.dispatchEvent(new Event("halo-save-offer-demo"));
+                setLabStatus("Save demo reset — tap Save this recipe");
+              }}
+            >
+              Save demo
             </button>
           </div>
           {labStatus ? (

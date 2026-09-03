@@ -16,6 +16,11 @@
   position: relative;
 }
 
+.history-wrap.is-collect-hit .stone-btn {
+  background: var(--halo-stone-hover);
+  transition: background 180ms var(--ease-gel);
+}
+
 .history-overlay {
   position: fixed;
   inset: 0;

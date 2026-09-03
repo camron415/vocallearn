@@ -1,0 +1,14 @@
+---
+description: Definition of done before any Halo patch ships to Lab or production
+alwaysApply: true
+---
+
+# Ship checklist (definition of done)
+
+Before marking a patch **done** or running `deploy:lab` / `deploy:early`, complete all three without Camron asking:
+
+1. **Build + tests** — `cd web && npm run test:harvest && npm run build` (fix failures; do not skip).
+2. **Smoke** — At minimum: desktop Chrome on the changed path(s). If auth, routing, or mobile layout touched: also Safari iPhone or `deploy:lab` on phone.
+3. **Kept board** — Same turn: update `web/KEPT-BOARD.md` log (what shipped, what's next, blockers).
+
+Do not promote (`deploy:early` / `--prod`) unless Camron says **promote**, **early access**, **production**, or **emergency**.

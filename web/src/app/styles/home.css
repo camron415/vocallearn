@@ -282,6 +282,17 @@
   padding: 0.72rem 1.2rem;
 }
 
+.login-footer {
+  margin-top: 1rem;
+  padding-top: 0.25rem;
+}
+
+.login-footer .login-submit {
+  display: inline-flex;
+  justify-content: center;
+  text-decoration: none;
+}
+
 .ask-stage,
 .chat-stage {
   position: relative;
@@ -1066,6 +1077,20 @@ html[data-halo-theme="dark"] .harvest-span--meaning {
   z-index: 120;
   pointer-events: none;
   overflow: visible;
+  will-change: left, top, transform, opacity;
+}
+
+/* Library collect — same z as harvest, stone fill (not kind candy). Do not retune 120. */
+.collect-fly {
+  position: fixed;
+  z-index: 120;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 50%;
+  pointer-events: none;
+  background: var(--halo-stone);
+  border: 1px solid color-mix(in srgb, var(--halo-ink) 8%, transparent);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
   will-change: left, top, transform, opacity;
 }
 

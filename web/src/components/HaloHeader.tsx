@@ -6,6 +6,7 @@ import { HistoryMenu, type HistoryItem } from "@/components/HistoryMenu";
 import { KeepPocket } from "@/components/KeepPocket";
 import { GoldKeptBadge } from "@/components/GoldKeptBadge";
 import { LearnReview } from "@/components/LearnReview";
+import { LibraryMenu } from "@/components/LibraryMenu";
 import { SettingsMenu } from "@/components/SettingsMenu";
 import { ChromeBar } from "@/components/WaterSurface";
 import { APP_NAME } from "@/lib/constants";
@@ -105,6 +106,7 @@ export function HaloHeader({
       )}
       <div className="topbar-actions">
         <KeepPocket chips={keep} />
+        <LibraryMenu demo={demo} />
         <HistoryMenu
           items={conversations}
           currentId={currentId}

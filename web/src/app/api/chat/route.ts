@@ -236,6 +236,7 @@ export async function POST(request: Request) {
               inputTokens: live.usage?.inputTokens ?? 0,
               outputTokens: live.usage?.outputTokens ?? 0,
             });
+            let replyId = "";
             if (assistantError || !assistantRow) {
               const fallback: AskMessage = {
                 id: `local-${Date.now()}`,
@@ -244,8 +245,10 @@ export async function POST(request: Request) {
                 content: finalText,
                 created_at: new Date().toISOString(),
               };
+              replyId = fallback.id;
               send({ type: "done", conversationId, reply: fallback });
             } else {
+              replyId = (assistantRow as AskMessage).id;
               send({
                 type: "done",
                 conversationId,
@@ -270,6 +273,15 @@ export async function POST(request: Request) {
             });
             if (harvested.length) {
               send({ type: "harvest", chips: harvested });
+            }
+            const { detectSaveOffer } = await import("@/lib/save-offer");
+            const saveKind = detectSaveOffer(userText, live.text);
+            if (saveKind && replyId) {
+              send({
+                type: "saveOffer",
+                kind: saveKind,
+                messageId: replyId,
+              });
             }
             continue;
           }

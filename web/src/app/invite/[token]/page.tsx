@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { InviteSetup } from "@/components/InviteSetup";
 import { AuthShell } from "@/components/AuthShell";
 import { createClient } from "@/lib/supabase/server";
@@ -26,6 +27,11 @@ export default async function InvitePage({
       <AuthShell
         title="Invite needed"
         sub={`${reason} Ask Camron for a new link.`}
+        footer={
+          <Link href="/login" className="stone-btn login-submit">
+            Sign in
+          </Link>
+        }
       />
     );
   }

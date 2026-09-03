@@ -9,6 +9,7 @@ export type HaloStreamEvent =
   | { type: "delta"; text: string }
   | { type: "done"; conversationId: string; reply: AskMessage }
   | { type: "harvest"; chips: HarvestChip[] }
+  | { type: "saveOffer"; kind: "recipe"; messageId: string }
   | { type: "error"; error: string };
 
 export function encodeHaloEvent(event: HaloStreamEvent): string {

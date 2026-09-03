@@ -438,6 +438,44 @@ html[data-halo-theme="dark"] .msg--live {
   animation: none;
 }
 
+.save-offer {
+  margin: 0;
+}
+
+.chat-action-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  margin-top: 0.7rem;
+  margin-bottom: 0.15rem;
+  padding-left: 0.1rem;
+}
+
+.save-offer.stone-btn.is-saved {
+  opacity: 0.78;
+}
+
+.save-offer-error {
+  margin: 0.25rem 0 0;
+  font-size: 0.82rem;
+  color: var(--halo-muted);
+}
+
+.save-span {
+  color: inherit;
+  font: inherit;
+  padding: 0.05em 0.2em;
+  border-radius: 0.42em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  background: color-mix(in srgb, var(--halo-stone) 52%, transparent);
+}
+
+html[data-halo-theme="dark"] .save-span {
+  background: color-mix(in srgb, var(--halo-stone) 68%, transparent);
+}
+
 @keyframes halo-msg-in {
   from {
     opacity: 0;

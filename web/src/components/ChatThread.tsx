@@ -8,10 +8,11 @@ import { ComposeField } from "@/components/ComposeField";
 import { DictateButton } from "@/components/DictateButton";
 import { HaloHeader } from "@/components/HaloHeader";
 import { HarvestFlights } from "@/components/HarvestFlights";
+import { CollectFlights } from "@/components/CollectFlights";
 import { type HistoryItem } from "@/components/HistoryMenu";
 import { MessageCopy } from "@/components/MessageCopy";
 import { WorkTrace, type WorkStep } from "@/components/WorkTrace";
-import { useEffectiveMotion, useMotionSettings } from "@/components/MotionProvider";
+import { useEffectiveMotion } from "@/components/MotionProvider";
 import {
   SpringStage,
   COMPOSE_TRAVEL_MS,
@@ -32,6 +33,7 @@ import {
 } from "@/lib/harvest";
 import { readKeepChips } from "@/lib/keep-memory";
 import { readHaloStream, type HaloStreamEvent } from "@/lib/halo-stream";
+import { PREVIEW_RECIPE_ASK, PREVIEW_RECIPE_REPLY } from "@/lib/save-offer";
 import { isLabPreviewPath, labPreviewChatHref, labPreviewHomeHref } from "@/lib/lab-preview";
 import { stripMarkdownForDisplay } from "@/lib/markdown-plain";
 import { readAttachments } from "@/lib/read-files";
@@ -46,6 +48,12 @@ const generating = new Set<string>();
 /** Survives Strict Mode / RSC remount of the same chat so we don't double-stream. */
 const resumeDone = new Set<string>();
 const turnAborts = new Map<string, AbortController>();
+
+type SaveOfferState = {
+  kind: "recipe";
+  status: "ready" | "saving" | "saved" | "error";
+  error?: string;
+};
 
 function shouldResume(messages: AskMessage[]) {
   const last = messages[messages.length - 1];
@@ -62,6 +70,7 @@ export function ChatThread({
   conversations = [],
   homeHref = "/ask",
   demo = false,
+  saveDemo = false,
   profile,
 }: {
   conversationId: string;
@@ -70,11 +79,11 @@ export function ChatThread({
   conversations?: HistoryItem[];
   homeHref?: string;
   demo?: boolean;
+  saveDemo?: boolean;
   profile?: HaloProfile;
 }) {
   const router = useRouter();
   const soft = useEffectiveMotion() === "reduced";
-  const { prefersReduced } = useMotionSettings();
   const [messages, setMessages] = useState(initialMessages);
   const [draft, setDraft] = useState("");
   const [files, setFiles] = useState<File[]>([]);
@@ -89,6 +98,10 @@ export function ChatThread({
   const [chats, setChats] = useState(conversations);
   const [harvest, setHarvest] = useState<HarvestChip[]>([]);
   const [flying, setFlying] = useState<HarvestChip[]>([]);
+  const [saveOffers, setSaveOffers] = useState<Record<string, SaveOfferState>>(
+    {}
+  );
+  const [collectToken, setCollectToken] = useState<string | null>(null);
   const [moreOpen, setMoreOpen] = useState(false);
   const [moreTaken, setMoreTaken] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -112,6 +125,25 @@ export function ChatThread({
     if (existingDueHarvest(readKeepChips(), chip)) return;
     window.dispatchEvent(new CustomEvent("halo-keep-add", { detail: chip }));
   }, []);
+
+  const landCollect = useCallback((token: string) => {
+    setSaveOffers((prev) => ({
+      ...prev,
+      [token]: { kind: "recipe", status: "saved" },
+    }));
+    setCollectToken(null);
+    const pocket = document.querySelector("[data-saves-pocket]");
+    pocket?.classList.add("is-collect-hit");
+    window.setTimeout(() => pocket?.classList.remove("is-collect-hit"), 700);
+  }, []);
+
+  function rememberSaveOffer(messageId: string) {
+    if (!messageId) return;
+    setSaveOffers((prev) => {
+      if (prev[messageId]?.status === "saved") return prev;
+      return { ...prev, [messageId]: { kind: "recipe", status: "ready" } };
+    });
+  }
 
   function beginHarvest(chips: HarvestChip[]) {
     if (!chips.length) return;
@@ -184,7 +216,7 @@ export function ChatThread({
   }
 
   useEffect(() => {
-    if (!demo) return;
+    if (!demo || saveDemo) return;
     const ready = messages.some(
       (row) => row.role === "assistant" && row.content.includes("Nile")
     );
@@ -195,7 +227,15 @@ export function ChatThread({
       beginHarvest(PREVIEW_HARVEST_CHIPS);
     }, 640);
     return () => window.clearTimeout(t);
-  }, [demo, messages]);
+  }, [demo, saveDemo, messages]);
+
+  useEffect(() => {
+    if (!saveDemo) return;
+    const assistant = [...initialMessages]
+      .reverse()
+      .find((row) => row.role === "assistant" && row.content.trim());
+    if (assistant) rememberSaveOffer(assistant.id);
+  }, [saveDemo, initialMessages]);
 
   useEffect(() => {
     if (!demo) return;
@@ -205,6 +245,8 @@ export function ChatThread({
     function onClear() {
       setHarvest([]);
       setFlying([]);
+      setSaveOffers({});
+      setCollectToken(null);
       setMoreOpen(false);
       setMoreTaken(false);
       demoHarvested.current = false;
@@ -234,13 +276,44 @@ export function ChatThread({
       }
       if (detail.chips?.length) beginHarvest(detail.chips);
     }
+    function onSaveDemo() {
+      const userId = "save-demo-user";
+      const replyId = "save-demo-assistant";
+      setHarvest([]);
+      setFlying([]);
+      setSaveOffers({});
+      setCollectToken(null);
+      setMoreOpen(false);
+      setMoreTaken(false);
+      demoHarvested.current = true;
+      markFresh(replyId);
+      setMessages([
+        {
+          id: userId,
+          conversation_id: conversationId,
+          role: "user",
+          content: PREVIEW_RECIPE_ASK,
+          created_at: new Date().toISOString(),
+        },
+        {
+          id: replyId,
+          conversation_id: conversationId,
+          role: "assistant",
+          content: PREVIEW_RECIPE_REPLY,
+          created_at: new Date().toISOString(),
+        },
+      ]);
+      rememberSaveOffer(replyId);
+    }
     window.addEventListener("halo-harvest-replay", onReplay);
     window.addEventListener("halo-harvest-clear", onClear);
     window.addEventListener("halo-harvest-live", onLive);
+    window.addEventListener("halo-save-offer-demo", onSaveDemo);
     return () => {
       window.removeEventListener("halo-harvest-replay", onReplay);
       window.removeEventListener("halo-harvest-clear", onClear);
       window.removeEventListener("halo-harvest-live", onLive);
+      window.removeEventListener("halo-save-offer-demo", onSaveDemo);
     };
   }, [demo, conversationId]);
 
@@ -311,6 +384,9 @@ export function ChatThread({
     }
     if (event.type === "harvest") {
       beginHarvest(event.chips);
+    }
+    if (event.type === "saveOffer") {
+      rememberSaveOffer(event.messageId);
     }
   }
 
@@ -450,6 +526,10 @@ export function ChatThread({
             beginHarvest(event.chips);
             return;
           }
+          if (event.type === "saveOffer") {
+            rememberSaveOffer(event.messageId);
+            return;
+          }
           handleLive(event);
         },
         abort.signal
@@ -571,6 +651,48 @@ export function ChatThread({
     .reverse()
     .find((row) => row.role === "assistant" && row.content.trim())?.id;
 
+  async function saveOfferedRecipe(messageId: string) {
+    const offer = saveOffers[messageId];
+    if (!offer || offer.status === "saved" || offer.status === "saving") return;
+    setSaveOffers((prev) => ({
+      ...prev,
+      [messageId]: { kind: "recipe", status: "saving" },
+    }));
+    if (demo) {
+      setCollectToken(messageId);
+      return;
+    }
+    try {
+      const res = await fetch("/api/recipes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ conversationId }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setSaveOffers((prev) => ({
+          ...prev,
+          [messageId]: {
+            kind: "recipe",
+            status: "error",
+            error: data.error || "Could not save that recipe.",
+          },
+        }));
+        return;
+      }
+      setCollectToken(messageId);
+    } catch {
+      setSaveOffers((prev) => ({
+        ...prev,
+        [messageId]: {
+          kind: "recipe",
+          status: "error",
+          error: "Could not save that recipe.",
+        },
+      }));
+    }
+  }
+
   return (
     <div className={`chat-stage is-entering${exit ? " is-leaving" : ""}`} data-harvest-capture="true">
       <HaloHeader
@@ -625,12 +747,41 @@ export function ChatThread({
                   }`}
                 >
                   {m.role === "assistant" ? (
-                    <AnswerBody content={m.content} harvest={harvest} />
+                    <AnswerBody
+                      content={m.content}
+                      harvest={harvest}
+                      saveHighlight={Boolean(saveOffers[m.id])}
+                    />
                   ) : (
                     <p>{stripMarkdownForDisplay(m.content)}</p>
                   )}
                   <MessageCopy content={m.content} />
                 </div>
+                {m.role === "assistant" && saveOffers[m.id] ? (
+                  <div className="chat-action-row">
+                    <button
+                      type="button"
+                      data-save-origin={m.id}
+                      className={`stone-btn save-offer${
+                        saveOffers[m.id].status === "saved" ? " is-saved" : ""
+                      }`}
+                      disabled={
+                        saveOffers[m.id].status === "saving" ||
+                        saveOffers[m.id].status === "saved"
+                      }
+                      onClick={() => void saveOfferedRecipe(m.id)}
+                    >
+                      {saveOffers[m.id].status === "saved"
+                        ? "Saved ✓"
+                        : saveOffers[m.id].status === "saving"
+                          ? "Saving…"
+                          : "Save this recipe"}
+                    </button>
+                    {saveOffers[m.id].status === "error" ? (
+                      <p className="save-offer-error">{saveOffers[m.id].error}</p>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
             );
           })}
@@ -721,7 +872,12 @@ export function ChatThread({
           </div>
         </form>
       </ComposeStadium>
-      <HarvestFlights chips={flying} reduced={prefersReduced} onLanded={landChip} />
+      <HarvestFlights chips={flying} reduced={soft} onLanded={landChip} />
+      <CollectFlights
+        token={collectToken}
+        reduced={soft}
+        onDone={landCollect}
+      />
     </div>
   );
 }

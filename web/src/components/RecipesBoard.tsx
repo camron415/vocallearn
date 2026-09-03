@@ -175,8 +175,8 @@ export function RecipesBoard({
       <main className="recipes-main">
         {items.length === 0 ? (
           <p className="chat-empty">
-            No recipes yet. After Cove gives you one, say “save this recipe” —
-            or attach a photo of the finished dish and say that.
+            No recipes yet. After Cove gives you one, tap{" "}
+            <strong>Save this recipe</strong> under the answer.
           </p>
         ) : (
           <ul className="recipe-list">

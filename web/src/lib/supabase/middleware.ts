@@ -90,6 +90,7 @@ export async function updateSession(request: NextRequest) {
     path === "/favicon.ico" ||
     path === "/preview" ||
     path.startsWith("/preview/") ||
+    path === "/demo" ||
     path.startsWith("/invite/") ||
     path.startsWith("/api/invite/reserve") ||
     path.startsWith("/api/invite/join") ||
@@ -103,7 +104,7 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (user && isAuthRoute) {
+  if (user && (isAuthRoute || path.startsWith("/invite/"))) {
     const url = request.nextUrl.clone();
     url.pathname = "/ask";
     return NextResponse.redirect(url);

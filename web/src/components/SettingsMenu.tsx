@@ -45,7 +45,7 @@ export function SettingsMenu({
   demo?: boolean;
 }) {
   const router = useRouter();
-  const { theme, setTheme } = useMotionSettings();
+  const { theme, setTheme, intensity, setIntensity } = useMotionSettings();
   const [open, setOpen] = useState(false);
   const coarse = useCoarsePointer();
   const [name, setName] = useState(profile?.displayName ?? "");
@@ -234,6 +234,26 @@ export function SettingsMenu({
               [
                 ["light", "Light"],
                 ["dark", "Dark"],
+              ] as const
+            }
+          />
+        </section>
+
+        <section className="settings-block">
+          <p className="field-label">Motion</p>
+          <p className="login-sub">
+            Soft skips Home↔Chat morph, entrance fades, and harvest fly arcs.
+            Full keeps the loop motion. Your phone’s accessibility setting
+            always wins.
+          </p>
+          <ChoicePicks
+            label="Motion"
+            value={intensity}
+            onChange={setIntensity}
+            options={
+              [
+                ["full", "Full"],
+                ["reduced", "Soft"],
               ] as const
             }
           />

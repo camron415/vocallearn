@@ -31,3 +31,14 @@ export function labPreviewHomeHref() {
   const q = next.toString();
   return q ? `/preview?${q}` : "/preview";
 }
+
+/** Repeatable save-recipe demo — canned Baked Alaska, highlights + pill, no API. */
+export function labPreviewSaveDemoHref() {
+  const next = new URLSearchParams(
+    typeof window === "undefined" ? "" : window.location.search
+  );
+  next.set("view", "chat");
+  next.set("save", "1");
+  if (process.env.NODE_ENV === "development") next.set("mixer", "1");
+  return `/preview?${next.toString()}`;
+}
