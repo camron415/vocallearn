@@ -332,11 +332,9 @@ export function AskLanding({
     rememberHeroCompose(composeRef.current);
     travelComposeTowardDock(composeRef.current);
     window.setTimeout(() => {
-      const el = composeRef.current;
-      pinComposeGhost(el);
-      if (el) el.style.visibility = "hidden";
+      pinComposeGhost(composeRef.current);
+      captureComposeMorph(composeRef.current);
       setDraft("");
-      captureComposeMorph(el);
       void run();
     }, COMPOSE_TRAVEL_MS);
   }

@@ -42,35 +42,30 @@ export function clearComposeGhost() {
   document.querySelector("[data-compose-ghost]")?.remove();
 }
 
-/** Covers the one-frame hole when Chat unmounts and Home mounts. */
+/**
+ * One-frame cover while the live composer unmounts. A painted stadium — not a
+ * DOM clone — so a transformed field never double-prints or blinks.
+ */
 export function pinComposeGhost(el: HTMLElement | null) {
   if (typeof document === "undefined" || !el) return;
   clearComposeGhost();
   const rect = el.getBoundingClientRect();
-  const clone = el.cloneNode(true) as HTMLElement;
-  clone.dataset.composeGhost = "1";
-  clone.removeAttribute("id");
-  clone.querySelectorAll("[id]").forEach((node) => node.removeAttribute("id"));
-  clone.querySelectorAll("textarea, input, button, select").forEach((node) => {
-    const field = node as HTMLTextAreaElement | HTMLInputElement | HTMLButtonElement;
-    field.tabIndex = -1;
-    if ("readOnly" in field) field.readOnly = true;
-    if ("disabled" in field) field.disabled = true;
-  });
-  clone.setAttribute("aria-hidden", "true");
-  clone.style.cssText = [
+  const cs = getComputedStyle(el);
+  const ghost = document.createElement("div");
+  ghost.dataset.composeGhost = "1";
+  ghost.setAttribute("aria-hidden", "true");
+  ghost.style.cssText = [
     "position:fixed",
     `left:${rect.left}px`,
     `top:${rect.top}px`,
     `width:${rect.width}px`,
     `height:${rect.height}px`,
-    "margin:0",
+    `border-radius:${cs.borderRadius}`,
+    `background:${cs.backgroundColor}`,
     "z-index:24",
     "pointer-events:none",
-    "transform:none",
-    "transition:none",
   ].join(";");
-  document.body.appendChild(clone);
+  document.body.appendChild(ghost);
   window.setTimeout(clearComposeGhost, MORPH_MS + 80);
 }
 
@@ -170,12 +165,9 @@ export function useComposeMorph(
   ref: RefObject<HTMLDivElement | null>,
   enabled: boolean
 ) {
-  // Read at mount time only: a later motion-setting change must not tear a
-  // travel that is already under way.
   const allowed = useRef(enabled);
   allowed.current = enabled;
 
-  // Runs before paint so the dock never shows up at its final spot first.
   useLayoutEffect(() => {
     const from = handoff;
     const el = ref.current;
@@ -195,14 +187,13 @@ export function useComposeMorph(
     const dy = from.top - rect.top;
     if (Math.abs(dx) < 1 && Math.abs(dy) < 1) {
       handoff = null;
-      clearComposeGhost();
+      // Drop the cover on the next frame, after this composer has painted.
+      window.requestAnimationFrame(clearComposeGhost);
       return;
     }
 
-    // Ghost stays until this paint so the destination composer never pops
-    // in at rest. Flip from the recorded pose, then drop the cover.
     const gen = flipCompose(el, dx, dy, 0, 0);
-    clearComposeGhost();
+    window.requestAnimationFrame(clearComposeGhost);
     const cleared = window.setTimeout(() => {
       if (gen !== morphGen) return;
       handoff = null;

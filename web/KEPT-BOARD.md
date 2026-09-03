@@ -8,8 +8,8 @@ Shared desk for weekend V2. Not Atlas. Not Slack. One file every lane updates.
 
 **Harvest ops (telemetry, QA, mobile, promote):** [`web/HARVEST-OPS.md`](./HARVEST-OPS.md) — read before tuning or early access.
 
-Updated: 2026-09-02T23:00-06:00  
-By: Chief (morph: one FLIP, ghost cover, no sequential blank)
+Updated: 2026-09-02T23:12-06:00  
+By: Chief (restore morph choreography from 623b1bc + text rides)
 
 ## Lanes
 
@@ -18,7 +18,7 @@ By: Chief (morph: one FLIP, ghost cover, no sequential blank)
 | A Auth paper | done | tab A | `AuthShell`, `LoginForm`, `InviteSetup`, `halo-boot`, `LoopSkin` auth | 13:52 |
 | S Settings audit | **done** | this tab | unlocked | 13:48 |
 | B Round GUI | idle | — | unlocked | 22:02 |
-| Chief | **done** | this chat | SpringStage, AskLanding, ChatThread, home.css | 23:05 |
+| Chief | **done** | this chat | SpringStage, AskLanding, ChatThread | 23:12 |
 | M Menu+chat unify | done | this chat | unlocked | 12:35 |
 | Camron | **done** | — | v1.1 live at halo-gules-three.vercel.app — wife/parents hard refresh + Early access invite | 19:10 |
 | Chief QA fixes | done | prior chat | unlocked | 14:28 |
@@ -44,7 +44,7 @@ None.
 
 ## Log (newest first)
 
-- 2026-09-02 chief — **Morph sequential-blank fix.** Home→Chat: clone ghost at dock so composer isn't hidden into empty Home; Chat→Home: one receive FLIP (no leave-then-wait); greeting/chips fade in during that travel. Restored `--travel` enter fade. `--travel` 1080 / harvest 120 untouched. Camron: hard-refresh, screen-record both legs.
+- 2026-09-02 chief — **Morph restore to 623b1bc choreography.** Leave travel both ways; stadium ghost (not clone); never `visibility:hidden`. Text still rides down and clears at the swap. Prep still parallel so travel starts on Enter. Ghost drops one frame after dest paints. `--travel` 1080 / harvest 120 untouched. Production hotfix.
 - 2026-09-02 chief — **Morph hotfix shipped** (`73eacb5`). Travel starts with Enter (parallel prepareOnly); no home→chat ghost overlap; chat→home travel restored; chips wait for composer; save highlight `fit-content`.
 - 2026-09-02 chief — Camron asked Saves-from-chat + opt-in facts. **Unity:** Keep auto-harvest stays; Library is opt-in recipes/lists. **Tonight if go:** Save-this-recipe pill (~4/10). Opt-in facts 8/10 — 1.2. Detail in `LIBRARY-BACKLOG.md`.
 - 2026-09-02 chief — Library trimmed: recipes only; Motion removed from Library. Soft now skips harvest flights (was OS-only). Parking lot: `web/LIBRARY-BACKLOG.md`.
