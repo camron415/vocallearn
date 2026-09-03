@@ -44,6 +44,7 @@ None.
 
 ## Log (newest first)
 
+- 2026-09-02 chief — **Morph dead-air shipped** (`057a948`). Chat route prefetched during travel; thread arrival fade 1080→360ms (was reading as a blank screen); `is-arrive-fast` settles greeting + chips in 340ms when coming from chat instead of a second full travel. `--travel` still 1.08s, harvest z 120 untouched. Open: model call still starts on chat mount, not during travel.
 - 2026-09-02 chief — **Morph hotfix shipped** (`73eacb5`). Travel starts with Enter (parallel prepareOnly); no home→chat ghost overlap; chat→home travel restored; chips wait for composer; save highlight `fit-content`.
 - 2026-09-02 chief — Camron asked Saves-from-chat + opt-in facts. **Unity:** Keep auto-harvest stays; Library is opt-in recipes/lists. **Tonight if go:** Save-this-recipe pill (~4/10). Opt-in facts 8/10 — 1.2. Detail in `LIBRARY-BACKLOG.md`.
 - 2026-09-02 chief — Library trimmed: recipes only; Motion removed from Library. Soft now skips harvest flights (was OS-only). Parking lot: `web/LIBRARY-BACKLOG.md`.
