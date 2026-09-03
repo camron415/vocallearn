@@ -14,8 +14,8 @@ import {
   COMPOSE_TRAVEL_MS,
   captureComposeMorph,
   rememberHeroCompose,
+  resetComposeTravel,
   travelComposeTowardDock,
-  pinComposeGhost,
   useComposeMorph,
   clearComposeHandoff,
 } from "@/components/SpringStage";
@@ -310,7 +310,7 @@ export function AskLanding({
     });
   }
 
-  function goAfterLeave(run: () => void) {
+  function goAfterLeave(run: () => void | Promise<void>) {
     if (leaving.current) return;
     if (playing) {
       window.dispatchEvent(new Event("halo-home-play-end"));
@@ -318,12 +318,12 @@ export function AskLanding({
       setGrown(false);
       setPlayKind("");
       clearComposeHandoff();
-      run();
+      void run();
       return;
     }
     if (soft) {
       setDraft("");
-      run();
+      void run();
       return;
     }
     leaving.current = true;
@@ -331,11 +331,20 @@ export function AskLanding({
     rememberHeroCompose(composeRef.current);
     travelComposeTowardDock(composeRef.current);
     window.setTimeout(() => {
-      pinComposeGhost(composeRef.current);
+      const el = composeRef.current;
+      if (el) el.style.visibility = "hidden";
       setDraft("");
-      captureComposeMorph(composeRef.current);
-      run();
+      captureComposeMorph(el);
+      void run();
     }, COMPOSE_TRAVEL_MS);
+  }
+
+  function abortLeave(message: string) {
+    leaving.current = false;
+    stageRef.current?.classList.remove("is-leaving");
+    resetComposeTravel(composeRef.current);
+    setSending(false);
+    setError(message);
   }
 
   async function startAsk(text: string, fromEl?: HTMLElement | null) {
@@ -359,9 +368,7 @@ export function AskLanding({
       return;
     }
 
-    captureComposeMorph(composeRef.current);
-
-    try {
+    const prepWork = (async () => {
       const attachments = files.length ? await readAttachments(files) : [];
       const res = await fetch("/api/chat", {
         method: "POST",
@@ -378,14 +385,18 @@ export function AskLanding({
         throw new Error(data.error || "Failed to send");
       }
       stashAskAttachments(data.conversationId, attachments);
-      goAfterLeave(() => {
-        sessionStorage.setItem(`halo-ask-live:${data.conversationId}`, "1");
-        router.push(`/ask/${data.conversationId}`);
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
-      setSending(false);
-    }
+      return data.conversationId as string;
+    })();
+
+    goAfterLeave(async () => {
+      try {
+        const conversationId = await prepWork;
+        sessionStorage.setItem(`halo-ask-live:${conversationId}`, "1");
+        router.push(`/ask/${conversationId}`);
+      } catch (err) {
+        abortLeave(err instanceof Error ? err.message : "Something went wrong");
+      }
+    });
   }
 
   async function onSubmit(e: FormEvent) {

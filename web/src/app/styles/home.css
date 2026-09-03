@@ -1193,6 +1193,19 @@ html[data-halo-morph] .compose-dock {
   opacity: 1 !important;
 }
 
+html[data-halo-morph] .home-bubbles.is-arriving .recent-slot.is-packed,
+html[data-halo-home-arrive="1"] .home-bubbles.is-arriving .recent-slot.is-packed {
+  opacity: 0;
+  animation: none !important;
+  pointer-events: none;
+}
+
+html[data-halo-morph] .ask-stage.is-entering .ask-greeting,
+html[data-halo-home-arrive="1"] .ask-stage.is-entering .ask-greeting {
+  opacity: 0;
+  animation: none !important;
+}
+
 html[data-halo-motion="soft"] .home-bubbles.is-arriving .recent-slot.is-packed,
 html[data-halo-perf="soft"] .home-bubbles.is-arriving .recent-slot.is-packed,
 html[data-halo-motion="soft"] .ask-stage.is-entering .ask-greeting,

@@ -105,9 +105,19 @@ function clearMorph(el: HTMLElement) {
   delete el.dataset.morph;
   el.style.removeProperty("transition");
   el.style.removeProperty("transform");
+  el.style.removeProperty("visibility");
   el.style.removeProperty("--morph-x");
   el.style.removeProperty("--morph-y");
   delete document.documentElement.dataset.haloMorph;
+  delete document.documentElement.dataset.haloHomeArrive;
+}
+
+/** Undo a leave travel when prepare fails after the composer already moved. */
+export function resetComposeTravel(el: HTMLElement | null) {
+  if (!el) return;
+  clearMorph(el);
+  clearComposeGhost();
+  clearComposeHandoff();
 }
 
 /** FLIP: write the from pose, flush layout, then ease to the to pose. */
@@ -171,8 +181,6 @@ export function useComposeMorph(
     const from = handoff;
     const el = ref.current;
     if (!el || !from || !allowed.current) {
-      // iPhone auto-soft skips morph. Still drop the Chat→Home ghost or
-      // a stadium-sized gray sheet sits on Home forever.
       clearComposeGhost();
       if (!allowed.current) handoff = null;
       return;
@@ -189,13 +197,16 @@ export function useComposeMorph(
     if (Math.abs(dx) < 1 && Math.abs(dy) < 1) {
       handoff = null;
       clearComposeGhost();
+      el.style.visibility = "visible";
+      delete document.documentElement.dataset.haloHomeArrive;
       return;
     }
 
-    // Carried over, so it must not also play the arrival animation — it is
-    // already on screen, just standing somewhere else.
-    const gen = flipCompose(el, dx, dy, 0, 0);
     clearComposeGhost();
+    el.style.visibility = "hidden";
+
+    const gen = flipCompose(el, dx, dy, 0, 0);
+    el.style.visibility = "";
     const cleared = window.setTimeout(() => {
       if (gen !== morphGen) return;
       handoff = null;

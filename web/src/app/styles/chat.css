@@ -474,6 +474,8 @@ html[data-halo-theme="dark"] .msg--live {
 
 .answer--save-offer ul > li,
 .answer--save-offer ol > li {
+  width: fit-content;
+  max-width: 100%;
   padding: 0.12rem 0.5rem 0.12rem 0.35rem;
   margin: 0.2rem 0;
   border-radius: 0.45rem;
