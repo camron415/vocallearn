@@ -109,7 +109,6 @@ function clearMorph(el: HTMLElement) {
   el.style.removeProperty("--morph-x");
   el.style.removeProperty("--morph-y");
   delete document.documentElement.dataset.haloMorph;
-  delete document.documentElement.dataset.haloHomeArrive;
 }
 
 /** Undo a leave travel when prepare fails after the composer already moved. */
@@ -198,7 +197,6 @@ export function useComposeMorph(
       handoff = null;
       clearComposeGhost();
       el.style.visibility = "visible";
-      delete document.documentElement.dataset.haloHomeArrive;
       return;
     }
 

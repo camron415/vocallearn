@@ -316,9 +316,11 @@
   animation: none;
 }
 
+/* The composer already travelled on Home, so the thread should be readable as
+   soon as the route lands — a full-length fade here reads as a blank screen. */
 .chat-stage.is-entering .topbar,
 .chat-stage.is-entering .chat-scroll {
-  animation: halo-travel-in var(--travel) var(--ease-travel) both;
+  animation: halo-travel-in 360ms var(--ease-glass) both;
 }
 
 .chat-stage.is-entering .compose-dock,
@@ -1193,17 +1195,16 @@ html[data-halo-morph] .compose-dock {
   opacity: 1 !important;
 }
 
-html[data-halo-morph] .home-bubbles.is-arriving .recent-slot.is-packed,
-html[data-halo-home-arrive="1"] .home-bubbles.is-arriving .recent-slot.is-packed {
-  opacity: 0;
-  animation: none !important;
-  pointer-events: none;
+/* Arriving from chat: the dock already travelled, so a second full-length
+   travel behind it reads as the greeting being late. One short beat instead. */
+.ask-stage.is-arrive-fast.is-entering .ask-greeting {
+  animation: halo-greeting-in 340ms var(--ease-glass) both;
 }
 
-html[data-halo-morph] .ask-stage.is-entering .ask-greeting,
-html[data-halo-home-arrive="1"] .ask-stage.is-entering .ask-greeting {
-  opacity: 0;
-  animation: none !important;
+html[data-halo-morph] .ask-stage.is-arrive-fast .home-bubbles.is-arriving .recent-slot.is-packed,
+.ask-stage.is-arrive-fast .home-bubbles.is-arriving .recent-slot.is-packed {
+  animation: halo-recents-in-packed 340ms var(--ease-glass) both !important;
+  animation-delay: calc(var(--enter-delay, 0ms) / 3) !important;
 }
 
 html[data-halo-motion="soft"] .home-bubbles.is-arriving .recent-slot.is-packed,

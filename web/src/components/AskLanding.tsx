@@ -78,6 +78,7 @@ export function AskLanding({
   const stageRef = useRef<HTMLDivElement | null>(null);
   const leaving = useRef(false);
   const [entering, setEntering] = useState(!soft);
+  const [arriveFast, setArriveFast] = useState(false);
   const [dueCount, setDueCount] = useState<number | null>(null);
   const [keptCount, setKeptCount] = useState(0);
   const [justCleared, setJustCleared] = useState(false);
@@ -190,6 +191,17 @@ export function AskLanding({
     const id = window.setTimeout(() => setEntering(false), COMPOSE_TRAVEL_MS);
     return () => window.clearTimeout(id);
   }, [soft]);
+
+  // Chat already rode the dock up before it handed over, so the field settles
+  // in one short beat instead of replaying the full travel behind it.
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    if (root.dataset.haloHomeArrive !== "1") return;
+    delete root.dataset.haloHomeArrive;
+    setArriveFast(true);
+    const id = window.setTimeout(() => setArriveFast(false), 520);
+    return () => window.clearTimeout(id);
+  }, []);
 
   useEffect(() => {
     setChats(conversations);
@@ -368,6 +380,9 @@ export function AskLanding({
       return;
     }
 
+    // Runs alongside the 1080ms travel. Prefetch as soon as the id exists so
+    // the route is warm before the morph lands — otherwise Home sits blank
+    // while the chat RSC payload is still in flight.
     const prepWork = (async () => {
       const attachments = files.length ? await readAttachments(files) : [];
       const res = await fetch("/api/chat", {
@@ -385,14 +400,14 @@ export function AskLanding({
         throw new Error(data.error || "Failed to send");
       }
       stashAskAttachments(data.conversationId, attachments);
+      sessionStorage.setItem(`halo-ask-live:${data.conversationId}`, "1");
+      router.prefetch(`/ask/${data.conversationId}`);
       return data.conversationId as string;
     })();
 
     goAfterLeave(async () => {
       try {
-        const conversationId = await prepWork;
-        sessionStorage.setItem(`halo-ask-live:${conversationId}`, "1");
-        router.push(`/ask/${conversationId}`);
+        router.push(`/ask/${await prepWork}`);
       } catch (err) {
         abortLeave(err instanceof Error ? err.message : "Something went wrong");
       }
@@ -421,7 +436,12 @@ export function AskLanding({
   }
 
   return (
-    <div className={`ask-stage${entering ? " is-entering" : ""}${playing ? " is-playing" : ""}`} ref={stageRef}>
+    <div
+      className={`ask-stage${entering ? " is-entering" : ""}${
+        arriveFast ? " is-arrive-fast" : ""
+      }${playing ? " is-playing" : ""}`}
+      ref={stageRef}
+    >
       <HaloHeader
         conversations={chats.map((c) => ({ id: c.id, title: c.title }))}
         demo={demo}

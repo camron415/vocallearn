@@ -44,7 +44,7 @@ None.
 
 ## Log (newest first)
 
-- 2026-09-02 chief — **1.1.2 hotfix shipped** (`eab43b2`). Recipe dark cards, manila list wash, local save parse, morph draft/ghost. Prod early access.
+- 2026-09-02 chief — **Morph hotfix shipped** (`73eacb5`). Travel starts with Enter (parallel prepareOnly); no home→chat ghost overlap; chat→home travel restored; chips wait for composer; save highlight `fit-content`.
 - 2026-09-02 chief — Camron asked Saves-from-chat + opt-in facts. **Unity:** Keep auto-harvest stays; Library is opt-in recipes/lists. **Tonight if go:** Save-this-recipe pill (~4/10). Opt-in facts 8/10 — 1.2. Detail in `LIBRARY-BACKLOG.md`.
 - 2026-09-02 chief — Library trimmed: recipes only; Motion removed from Library. Soft now skips harvest flights (was OS-only). Parking lot: `web/LIBRARY-BACKLOG.md`.
 - 2026-09-01 chief — **Night closed.** 1.1.1 on early access: `b3f2a64` + TZ hotfix `cb68905` live at halo-gules-three.vercel.app. Camron confirmed Good evening + Settings trim. Migration 016 run. Chips with early UTC-midnight due repair on next load; Camron will review tomorrow. **Next:** Saves (1.1.1 item 4) or 1.2 when ready. Docs roadmap edits still uncommitted locally.
