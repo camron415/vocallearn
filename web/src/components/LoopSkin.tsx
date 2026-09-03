@@ -705,8 +705,9 @@ html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] .capsu
     -webkit-mask-image: linear-gradient(to right, transparent, #000 1.15rem, #000 100%) !important;
   }
   html[data-halo-loop="17"] .keep-pocket {
-    max-width: min(6rem, 32vw) !important;
+    max-width: min(4.5rem, 26vw) !important;
     min-width: 0 !important;
+    overflow: hidden !important;
   }
   html[data-halo-loop="17"] .ask-stage .topbar > .water__content,
   html[data-halo-loop="17"] .chat-stage .topbar > .water__content {

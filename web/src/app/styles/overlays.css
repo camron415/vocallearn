@@ -613,6 +613,21 @@ html[data-halo-theme="dark"] .learn-token {
     margin-top: 1rem;
     padding: 0 0.1rem 1.5rem;
   }
+
+  /* Recipes (/recipes) — ask-stage is locked to 100dvh on phone; scroll the body. */
+  .ask-stage--page-scroll {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .ask-stage--page-scroll .recipes-main {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
 }
 
 .mode-overlay {

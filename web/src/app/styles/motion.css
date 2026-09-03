@@ -559,17 +559,41 @@ html[data-halo-perf="soft"] body::before {
     flex: 0 1 auto;
     justify-content: flex-end;
     justify-self: end;
-    gap: 0.12rem;
+    gap: 0.08rem;
+  }
+
+  .topbar-actions .history-wrap {
+    flex: 0 0 auto;
+  }
+
+  .topbar-actions .history-wrap .stone-btn {
+    min-height: 2.15rem;
+    padding: 0.32rem 0.42rem;
+  }
+
+  .brand-row {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .gold-kept {
+    flex-shrink: 0;
   }
 
   .keep-pocket {
     min-width: 0;
     flex: 1 1 0;
-    max-width: min(6rem, 32vw);
+    max-width: min(4.5rem, 26vw);
+    overflow: hidden;
   }
 
   .keep-dock--beads {
     max-width: 100%;
+  }
+
+  .keep-dock--beads.is-clipped {
+    mask-image: linear-gradient(to right, transparent, #000 1rem, #000 100%);
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 1rem, #000 100%);
   }
 
   html[data-halo-kb] .ask-stage.is-playing .compose.is-play-lesson.is-grown {

@@ -160,7 +160,7 @@ export function RecipesBoard({
   }
 
   return (
-    <div className="ask-stage">
+    <div className="ask-stage ask-stage--page-scroll">
       <HaloHeader
         conversations={chats}
         homeHref="/ask"
