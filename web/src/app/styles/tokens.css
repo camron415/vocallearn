@@ -89,6 +89,8 @@
   --halo-stone-hover: #cac6be;
   --halo-stone-on: #beb9b0;
   --halo-chat: 52rem;
+  /* Manila wash for savable recipe lines — not stone, not kind candy. */
+  --save-mark: color-mix(in srgb, #e8c85a 36%, var(--paper-card, #e8e6e2));
 
   /* material */
   --frost: 1;
@@ -232,6 +234,7 @@ html[data-halo-theme="dark"] {
   --halo-stone: #48484a;
   --halo-stone-hover: #545456;
   --halo-stone-on: #606062;
+  --save-mark: color-mix(in srgb, #e8c85a 22%, var(--paper-card, #2c2c2e));
   --frost: 0.48;
   --glass-bright: 0.78;
   --glass-sat: 112%;

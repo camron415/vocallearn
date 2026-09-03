@@ -21,39 +21,6 @@ export const PREVIEW_RECIPE_REPLY = `Here's a classic **Baked Alaska** for two.
 3. Cover the frozen cake with meringue, sealing to the plate.
 4. Bake at 500°F until golden, about 3 minutes. Serve immediately.`;
 
-/** Neutral highlights for savable recipe lines (stone, not kind candy). */
-export function recipeSaveMarkdown(md: string): string {
-  if (!md.trim()) return md;
-  const lines = md.split("\n");
-  const out: string[] = [];
-  let mode: "intro" | "ingredients" | "steps" = "intro";
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (/^\*\*Ingredients\*\*|^#{1,3}\s*Ingredients\b/i.test(trimmed)) {
-      mode = "ingredients";
-      out.push(`[${line}](save://head/ingredients)`);
-      continue;
-    }
-    if (/^\*\*Steps\*\*|^#{1,3}\s*Steps\b/i.test(trimmed)) {
-      mode = "steps";
-      out.push(`[${line}](save://head/steps)`);
-      continue;
-    }
-    if (mode === "ingredients" && /^[-*]\s+/.test(line)) {
-      out.push(`[${line}](save://line/ingredient)`);
-      continue;
-    }
-    if (mode === "steps" && /^\d+[\.)]\s+/.test(line)) {
-      out.push(`[${line}](save://line/step)`);
-      continue;
-    }
-    if (!trimmed && mode !== "intro") mode = "intro";
-    out.push(line);
-  }
-  return out.join("\n");
-}
-
 const RECIPE_ASK =
   /\b(recipe|cookbook|cook(?:ing)?|bake|dinner|ingredients?|meal idea)\b/i;
 const RECIPE_BODY =

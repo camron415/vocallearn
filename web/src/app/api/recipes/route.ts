@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let body: { conversationId?: string };
+  let body: { conversationId?: string; markdown?: string };
   try {
     body = await request.json();
   } catch {
@@ -53,7 +53,10 @@ export async function POST(request: Request) {
       content: sanitizeModelText(String(m.content ?? "")),
     }));
 
-  const extracted = await extractRecipe(history);
+  const markdown =
+    typeof body.markdown === "string" ? body.markdown.slice(0, 8000) : "";
+
+  const extracted = await extractRecipe(history, markdown);
   if (!extracted) {
     return NextResponse.json(
       { error: "Couldn't find a recipe in this chat to save." },

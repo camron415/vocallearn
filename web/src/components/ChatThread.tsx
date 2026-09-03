@@ -15,11 +15,9 @@ import { WorkTrace, type WorkStep } from "@/components/WorkTrace";
 import { useEffectiveMotion } from "@/components/MotionProvider";
 import {
   SpringStage,
-  COMPOSE_TRAVEL_MS,
   captureComposeMorph,
   clearComposeHandoff,
   pinComposeGhost,
-  travelComposeTowardHero,
   useComposeMorph,
 } from "@/components/SpringStage";
 import { ComposeStadium, WaterAction } from "@/components/WaterSurface";
@@ -185,13 +183,10 @@ export function ChatThread({
       return;
     }
     leaving.current = true;
-    travelComposeTowardHero(dockRef.current);
     setExit(true);
-    window.setTimeout(() => {
-      pinComposeGhost(dockRef.current);
-      captureComposeMorph(dockRef.current);
-      router.replace(dest);
-    }, COMPOSE_TRAVEL_MS);
+    pinComposeGhost(dockRef.current);
+    captureComposeMorph(dockRef.current);
+    router.replace(dest);
   }
 
   useEffect(() => {
@@ -663,10 +658,12 @@ export function ChatThread({
       return;
     }
     try {
+      const markdown =
+        messages.find((row) => row.id === messageId)?.content ?? "";
       const res = await fetch("/api/recipes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conversationId }),
+        body: JSON.stringify({ conversationId, markdown }),
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {

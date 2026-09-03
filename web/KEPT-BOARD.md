@@ -8,8 +8,8 @@ Shared desk for weekend V2. Not Atlas. Not Slack. One file every lane updates.
 
 **Harvest ops (telemetry, QA, mobile, promote):** [`web/HARVEST-OPS.md`](./HARVEST-OPS.md) — read before tuning or early access.
 
-Updated: 2026-09-02T21:35-06:00  
-By: Chief (1.1.2 save pill → lab)
+Updated: 2026-09-02T22:45-06:00  
+By: Chief (1.1.2 hotfix: recipes dark + save speed + morph)
 
 ## Lanes
 
@@ -18,7 +18,7 @@ By: Chief (1.1.2 save pill → lab)
 | A Auth paper | done | tab A | `AuthShell`, `LoginForm`, `InviteSetup`, `halo-boot`, `LoopSkin` auth | 13:52 |
 | S Settings audit | **done** | this tab | unlocked | 13:48 |
 | B Round GUI | idle | — | unlocked | 22:02 |
-| Chief | **done** | this chat | save pill coded + tests green — lab deploy needs Camron `npm run deploy:lab` | 21:45 |
+| Chief | **done** | this chat | recipe dark, manila list wash, local parse save, morph ghost/draft | 22:45 |
 | M Menu+chat unify | done | this chat | unlocked | 12:35 |
 | Camron | **done** | — | v1.1 live at halo-gules-three.vercel.app — wife/parents hard refresh + Early access invite | 19:10 |
 | Chief QA fixes | done | prior chat | unlocked | 14:28 |
@@ -30,7 +30,7 @@ Status: `idle` · `claimed` · `in_progress` · `blocked` · `done`
 
 ## Locks
 
-- Chief 1.1.2 save pill — unlocked.
+- Chief 1.1.2 hotfix — unlocked. Morph `--travel` 1080ms and harvest z-index 120 untouched.
 - Lane H — unlocked.
 - Lane A — unlocked.
 - Lane S — unlocked.
@@ -44,7 +44,7 @@ None.
 
 ## Log (newest first)
 
-- 2026-09-02 chief — **Save demo URL + highlights.** `/preview?view=chat&save=1` or `/demo?save=1` = canned Baked Alaska, stone highlights on ingredients/steps, pill ready. Mixer **Save demo** resets. Live `/ask` highlights when saveOffer fires after stream.
+- 2026-09-02 chief — **1.1.2 hotfix (local, not deployed).** Recipe Library cards use paper-card + ink (dark was white card / light type). Save highlight no longer wraps markdown into pills — same list, manila `--save-mark` wash. Save parses the reply locally so the flyer isn't waiting on Grok. Home Ask keeps the draft through leave travel; Chat→Home uses a clone ghost and one receive FLIP (no empty stadium stutter). `--travel` 1080ms / harvest z 120 untouched. Camron hard-refresh `/ask` + `/recipes` light/dark; say go to commit/deploy.
 - 2026-09-02 chief — Camron asked Saves-from-chat + opt-in facts. **Unity:** Keep auto-harvest stays; Library is opt-in recipes/lists. **Tonight if go:** Save-this-recipe pill (~4/10). Opt-in facts 8/10 — 1.2. Detail in `LIBRARY-BACKLOG.md`.
 - 2026-09-02 chief — Library trimmed: recipes only; Motion removed from Library. Soft now skips harvest flights (was OS-only). Parking lot: `web/LIBRARY-BACKLOG.md`.
 - 2026-09-01 chief — **Night closed.** 1.1.1 on early access: `b3f2a64` + TZ hotfix `cb68905` live at halo-gules-three.vercel.app. Camron confirmed Good evening + Settings trim. Migration 016 run. Chips with early UTC-midnight due repair on next load; Camron will review tomorrow. **Next:** Saves (1.1.1 item 4) or 1.2 when ready. Docs roadmap edits still uncommitted locally.

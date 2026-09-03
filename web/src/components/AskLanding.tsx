@@ -322,6 +322,7 @@ export function AskLanding({
       return;
     }
     if (soft) {
+      setDraft("");
       run();
       return;
     }
@@ -331,6 +332,7 @@ export function AskLanding({
     travelComposeTowardDock(composeRef.current);
     window.setTimeout(() => {
       pinComposeGhost(composeRef.current);
+      setDraft("");
       captureComposeMorph(composeRef.current);
       run();
     }, COMPOSE_TRAVEL_MS);
@@ -343,9 +345,7 @@ export function AskLanding({
     setListening(false);
     setSending(true);
     setError(null);
-    setDraft("");
     setComposeOpen(false);
-    setFilled(false);
     composeRef.current?.querySelector("textarea")?.blur();
 
     if (demo || isLabPreviewPath()) {

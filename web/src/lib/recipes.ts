@@ -50,6 +50,77 @@ type Extracted = {
   steps: string;
 };
 
+const HEAD_ING =
+  /^\*{0,2}ingredients?\*{0,2}\s*:?\s*$|^#{1,3}\s*ingredients?\b/i;
+const HEAD_STEPS =
+  /^\*{0,2}(steps|instructions|directions|method)\*{0,2}\s*:?\s*$|^#{1,3}\s*(steps|instructions|directions|method)\b/i;
+const BULLET = /^[-*•]\s+(.+)$/;
+const NUMBERED = /^\d+[\.)]\s+(.+)$/;
+
+function stripSources(md: string) {
+  return md.replace(/##\s*Sources[\s\S]*$/i, "").trim();
+}
+
+function titleFromIntro(intro: string[]) {
+  for (const line of intro) {
+    const bold = line.match(/\*\*([^*]+)\*\*/);
+    if (bold?.[1]) return bold[1].replace(/\s+/g, " ").trim();
+    const heading = line.match(/^#{1,3}\s+(.+)/);
+    if (heading?.[1]) {
+      return heading[1].replace(/\*+/g, "").replace(/\s+/g, " ").trim();
+    }
+  }
+  const first = intro[0]?.replace(/\*+/g, "").replace(/\s+/g, " ").trim() ?? "";
+  if (first.length >= 3 && first.length <= 80) return first;
+  return "";
+}
+
+/** Sync kitchen card from markdown. No model call. */
+export function parseRecipeMarkdown(md: string): Extracted | null {
+  const cleaned = stripSources(md);
+  if (cleaned.length < 40) return null;
+
+  const intro: string[] = [];
+  const ingredients: string[] = [];
+  const steps: string[] = [];
+  let mode: "intro" | "ingredients" | "steps" = "intro";
+
+  for (const raw of cleaned.split(/\r?\n/)) {
+    const trimmed = raw.trim();
+    if (!trimmed) continue;
+    if (HEAD_ING.test(trimmed)) {
+      mode = "ingredients";
+      continue;
+    }
+    if (HEAD_STEPS.test(trimmed)) {
+      mode = "steps";
+      continue;
+    }
+    if (mode === "ingredients") {
+      const bullet = trimmed.match(BULLET);
+      ingredients.push((bullet?.[1] ?? trimmed).trim());
+      continue;
+    }
+    if (mode === "steps") {
+      const numbered = trimmed.match(NUMBERED);
+      const bullet = trimmed.match(BULLET);
+      const text = (numbered?.[1] ?? bullet?.[1] ?? trimmed).trim();
+      if (text) steps.push(`${steps.length + 1}. ${text}`);
+      continue;
+    }
+    intro.push(trimmed);
+  }
+
+  if (ingredients.length < 2 && steps.length < 2) return null;
+  const title = (titleFromIntro(intro) || "Saved recipe").slice(0, 80);
+  if (!title) return null;
+  return {
+    title,
+    ingredients: ingredients.join("\n"),
+    steps: steps.join("\n"),
+  };
+}
+
 function lastAssistantText(history: GrokMessage[]) {
   for (let i = history.length - 1; i >= 0; i--) {
     const m = history[i];
@@ -89,10 +160,14 @@ function parseCard(raw: string): Extracted | null {
 }
 
 export async function extractRecipe(
-  history: GrokMessage[]
+  history: GrokMessage[],
+  markdown?: string
 ): Promise<Extracted | null> {
-  const recipe = lastAssistantText(history);
+  const recipe = stripSources(markdown || "") || lastAssistantText(history);
   if (!recipe) return null;
+
+  const local = parseRecipeMarkdown(recipe);
+  if (local) return local;
 
   const raw = await callGrokChat(
     [

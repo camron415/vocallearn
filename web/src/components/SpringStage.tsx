@@ -47,22 +47,30 @@ export function pinComposeGhost(el: HTMLElement | null) {
   if (typeof document === "undefined" || !el) return;
   clearComposeGhost();
   const rect = el.getBoundingClientRect();
-  const cs = getComputedStyle(el);
-  const ghost = document.createElement("div");
-  ghost.dataset.composeGhost = "1";
-  ghost.setAttribute("aria-hidden", "true");
-  ghost.style.cssText = [
+  const clone = el.cloneNode(true) as HTMLElement;
+  clone.dataset.composeGhost = "1";
+  clone.removeAttribute("id");
+  clone.querySelectorAll("[id]").forEach((node) => node.removeAttribute("id"));
+  clone.querySelectorAll("textarea, input, button, select").forEach((node) => {
+    const field = node as HTMLTextAreaElement | HTMLInputElement | HTMLButtonElement;
+    field.tabIndex = -1;
+    if ("readOnly" in field) field.readOnly = true;
+    if ("disabled" in field) field.disabled = true;
+  });
+  clone.setAttribute("aria-hidden", "true");
+  clone.style.cssText = [
     "position:fixed",
     `left:${rect.left}px`,
     `top:${rect.top}px`,
     `width:${rect.width}px`,
     `height:${rect.height}px`,
-    `border-radius:${cs.borderRadius}`,
-    `background:${cs.backgroundColor}`,
+    "margin:0",
     "z-index:24",
     "pointer-events:none",
+    "transform:none",
+    "transition:none",
   ].join(";");
-  document.body.appendChild(ghost);
+  document.body.appendChild(clone);
   window.setTimeout(clearComposeGhost, MORPH_MS + 80);
 }
 

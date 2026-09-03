@@ -11,7 +11,6 @@ import {
   type DisplaySource,
 } from "@/lib/markdown-plain";
 import { harvestMarkdown, type HarvestChip } from "@/lib/harvest";
-import { recipeSaveMarkdown } from "@/lib/save-offer";
 
 function childText(children: unknown): string {
   if (typeof children === "string") return children;
@@ -107,14 +106,17 @@ export function AnswerBody({
   saveHighlight?: boolean;
 }) {
   const sources = collectSources(content);
-  let body = stabilizeMarkdown(
+  const body = stabilizeMarkdown(
     linkifyBareCitations(promoteSourcesHeading(content), sources)
   );
-  if (saveHighlight && !streaming) body = recipeSaveMarkdown(body);
   const markdown = harvestMarkdown(body, harvest);
 
   return (
-    <div className={`answer${streaming ? " answer--streaming" : ""}`}>
+    <div
+      className={`answer${streaming ? " answer--streaming" : ""}${
+        saveHighlight && !streaming ? " answer--save-offer" : ""
+      }`}
+    >
       <Markdown
         key={harvest.map((chip) => chip.id).join("-") || "plain"}
         remarkPlugins={[remarkGfm]}

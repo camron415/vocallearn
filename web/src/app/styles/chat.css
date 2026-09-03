@@ -469,11 +469,15 @@ html[data-halo-theme="dark"] .msg--live {
   border-radius: 0.42em;
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
-  background: color-mix(in srgb, var(--halo-stone) 52%, transparent);
+  background: var(--save-mark);
 }
 
-html[data-halo-theme="dark"] .save-span {
-  background: color-mix(in srgb, var(--halo-stone) 68%, transparent);
+.answer--save-offer ul > li,
+.answer--save-offer ol > li {
+  padding: 0.12rem 0.5rem 0.12rem 0.35rem;
+  margin: 0.2rem 0;
+  border-radius: 0.45rem;
+  background: var(--save-mark);
 }
 
 @keyframes halo-msg-in {

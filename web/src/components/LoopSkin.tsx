@@ -51,6 +51,19 @@ html[data-halo-loop="17"] .msg--live {
   border: 0 !important;
   box-shadow: none !important;
 }
+html[data-halo-loop="17"] .recipe-card {
+  color: var(--halo-ink) !important;
+  background: var(--paper-card) !important;
+  background-color: var(--paper-card) !important;
+  box-shadow: var(--paper-card-shadow) !important;
+}
+html[data-halo-loop="17"] .recipe-card h2,
+html[data-halo-loop="17"] .recipe-card pre {
+  color: var(--halo-ink) !important;
+}
+html[data-halo-loop="17"] .recipe-card h3 {
+  color: var(--halo-muted) !important;
+}
 html[data-halo-loop="17"] .work-thinking {
   max-height: none !important;
   overflow: visible !important;
