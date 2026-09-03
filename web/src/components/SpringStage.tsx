@@ -196,15 +196,13 @@ export function useComposeMorph(
     if (Math.abs(dx) < 1 && Math.abs(dy) < 1) {
       handoff = null;
       clearComposeGhost();
-      el.style.visibility = "visible";
       return;
     }
 
-    clearComposeGhost();
-    el.style.visibility = "hidden";
-
+    // Ghost stays until this paint so the destination composer never pops
+    // in at rest. Flip from the recorded pose, then drop the cover.
     const gen = flipCompose(el, dx, dy, 0, 0);
-    el.style.visibility = "";
+    clearComposeGhost();
     const cleared = window.setTimeout(() => {
       if (gen !== morphGen) return;
       handoff = null;

@@ -16,6 +16,7 @@ import {
   rememberHeroCompose,
   resetComposeTravel,
   travelComposeTowardDock,
+  pinComposeGhost,
   useComposeMorph,
   clearComposeHandoff,
 } from "@/components/SpringStage";
@@ -78,7 +79,6 @@ export function AskLanding({
   const stageRef = useRef<HTMLDivElement | null>(null);
   const leaving = useRef(false);
   const [entering, setEntering] = useState(!soft);
-  const [arriveFast, setArriveFast] = useState(false);
   const [dueCount, setDueCount] = useState<number | null>(null);
   const [keptCount, setKeptCount] = useState(0);
   const [justCleared, setJustCleared] = useState(false);
@@ -191,17 +191,6 @@ export function AskLanding({
     const id = window.setTimeout(() => setEntering(false), COMPOSE_TRAVEL_MS);
     return () => window.clearTimeout(id);
   }, [soft]);
-
-  // Chat already rode the dock up before it handed over, so the field settles
-  // in one short beat instead of replaying the full travel behind it.
-  useLayoutEffect(() => {
-    const root = document.documentElement;
-    if (root.dataset.haloHomeArrive !== "1") return;
-    delete root.dataset.haloHomeArrive;
-    setArriveFast(true);
-    const id = window.setTimeout(() => setArriveFast(false), 520);
-    return () => window.clearTimeout(id);
-  }, []);
 
   useEffect(() => {
     setChats(conversations);
@@ -344,6 +333,7 @@ export function AskLanding({
     travelComposeTowardDock(composeRef.current);
     window.setTimeout(() => {
       const el = composeRef.current;
+      pinComposeGhost(el);
       if (el) el.style.visibility = "hidden";
       setDraft("");
       captureComposeMorph(el);
@@ -436,12 +426,7 @@ export function AskLanding({
   }
 
   return (
-    <div
-      className={`ask-stage${entering ? " is-entering" : ""}${
-        arriveFast ? " is-arrive-fast" : ""
-      }${playing ? " is-playing" : ""}`}
-      ref={stageRef}
-    >
+    <div className={`ask-stage${entering ? " is-entering" : ""}${playing ? " is-playing" : ""}`} ref={stageRef}>
       <HaloHeader
         conversations={chats.map((c) => ({ id: c.id, title: c.title }))}
         demo={demo}

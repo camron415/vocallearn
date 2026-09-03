@@ -15,11 +15,9 @@ import { WorkTrace, type WorkStep } from "@/components/WorkTrace";
 import { useEffectiveMotion } from "@/components/MotionProvider";
 import {
   SpringStage,
-  COMPOSE_TRAVEL_MS,
   captureComposeMorph,
   clearComposeHandoff,
   pinComposeGhost,
-  travelComposeTowardHero,
   useComposeMorph,
 } from "@/components/SpringStage";
 import { ComposeStadium, WaterAction } from "@/components/WaterSurface";
@@ -185,18 +183,9 @@ export function ChatThread({
       return;
     }
     leaving.current = true;
-    travelComposeTowardHero(dockRef.current);
-    setExit(true);
-    window.setTimeout(() => {
-      const el = dockRef.current;
-      if (el) el.style.visibility = "hidden";
-      pinComposeGhost(el);
-      captureComposeMorph(el);
-      if (typeof document !== "undefined") {
-        document.documentElement.dataset.haloHomeArrive = "1";
-      }
-      router.replace(dest);
-    }, COMPOSE_TRAVEL_MS);
+    pinComposeGhost(dockRef.current);
+    captureComposeMorph(dockRef.current);
+    router.replace(dest);
   }
 
   useEffect(() => {
