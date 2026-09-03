@@ -54,6 +54,15 @@ export function pinComposeGhost(el: HTMLElement | null) {
   const ghost = document.createElement("div");
   ghost.dataset.composeGhost = "1";
   ghost.setAttribute("aria-hidden", "true");
+  const fillEl =
+    (el.querySelector(".water__skin") as HTMLElement | null) ?? el;
+  const fill = getComputedStyle(fillEl).backgroundColor;
+  const bg =
+    !fill || fill === "transparent" || fill === "rgba(0, 0, 0, 0)"
+      ? getComputedStyle(document.documentElement)
+          .getPropertyValue("--paper-card")
+          .trim() || "#e8e6e2"
+      : fill;
   ghost.style.cssText = [
     "position:fixed",
     `left:${rect.left}px`,
@@ -61,7 +70,7 @@ export function pinComposeGhost(el: HTMLElement | null) {
     `width:${rect.width}px`,
     `height:${rect.height}px`,
     `border-radius:${cs.borderRadius}`,
-    `background:${cs.backgroundColor}`,
+    `background:${bg}`,
     "z-index:24",
     "pointer-events:none",
   ].join(";");

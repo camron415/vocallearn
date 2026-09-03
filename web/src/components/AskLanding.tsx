@@ -25,6 +25,7 @@ import { matchPrompts, topIdlePrompts } from "@/lib/prompt-trie";
 import { suggestChips, type SuggestChip } from "@/lib/suggest-chips";
 import { readAttachments } from "@/lib/read-files";
 import { stashAskAttachments } from "@/lib/pending-attach";
+import { abortPendingTurn, armPendingResume } from "@/lib/pending-turn";
 import {
   isBankedChip,
   isDueChip,
@@ -334,7 +335,6 @@ export function AskLanding({
     window.setTimeout(() => {
       pinComposeGhost(composeRef.current);
       captureComposeMorph(composeRef.current);
-      setDraft("");
       void run();
     }, COMPOSE_TRAVEL_MS);
   }
@@ -343,6 +343,7 @@ export function AskLanding({
     leaving.current = false;
     stageRef.current?.classList.remove("is-leaving");
     resetComposeTravel(composeRef.current);
+    abortPendingTurn();
     setSending(false);
     setError(message);
   }
@@ -390,6 +391,7 @@ export function AskLanding({
       stashAskAttachments(data.conversationId, attachments);
       sessionStorage.setItem(`halo-ask-live:${data.conversationId}`, "1");
       router.prefetch(`/ask/${data.conversationId}`);
+      armPendingResume(data.conversationId, attachments);
       return data.conversationId as string;
     })();
 

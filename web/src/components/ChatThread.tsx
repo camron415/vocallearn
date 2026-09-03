@@ -41,6 +41,7 @@ import {
   clearAskAttachments,
   peekAskAttachments,
 } from "@/lib/pending-attach";
+import { takePendingResume } from "@/lib/pending-turn";
 import type { AskMessage, HaloProfile } from "@/lib/types";
 
 const RESUME_MS = 3 * 60 * 1000;
@@ -457,27 +458,51 @@ export function ChatThread({
 
     abortRef.current?.abort();
     turnAborts.get(conversationId)?.abort();
-    const abort = new AbortController();
+    const armed =
+      opts.resume && !opts.text ? takePendingResume(conversationId) : null;
+    const abort = armed?.abort ?? new AbortController();
     abortRef.current = abort;
     turnAborts.set(conversationId, abort);
     let result: "ok" | "blocked" | "fail" = "fail";
 
     try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "text/event-stream",
-        },
-        body: JSON.stringify({
-          conversationId,
-          message: opts.text,
-          resume: opts.resume || undefined,
-          attachments: opts.attachments,
-          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        }),
-        signal: abort.signal,
-      });
+      let res: Response;
+      if (armed) {
+        try {
+          res = await armed.response;
+        } catch {
+          res = await fetch("/api/chat", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "text/event-stream",
+            },
+            body: JSON.stringify({
+              conversationId,
+              resume: true,
+              attachments: opts.attachments,
+              timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            }),
+            signal: abort.signal,
+          });
+        }
+      } else {
+        res = await fetch("/api/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "text/event-stream",
+          },
+          body: JSON.stringify({
+            conversationId,
+            message: opts.text,
+            resume: opts.resume || undefined,
+            attachments: opts.attachments,
+            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          }),
+          signal: abort.signal,
+        });
+      }
 
       const contentType = res.headers.get("content-type") || "";
       if (!res.ok) {

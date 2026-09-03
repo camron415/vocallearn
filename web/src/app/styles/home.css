@@ -1183,6 +1183,11 @@ html[data-halo-theme="dark"] .harvest-span--meaning {
   animation: halo-greeting-in var(--travel) var(--ease-travel) both;
 }
 
+.ask-stage.is-entering .home-bubbles.is-arriving .recent-slot.is-packed {
+  animation: halo-greeting-in var(--travel) var(--ease-travel) both !important;
+  animation-delay: 0ms !important;
+}
+
 .ask-stage.is-entering .compose-stack,
 .ask-stage.is-entering .compose,
 .ask-stage.is-entering .stage--hero .compose-stack .compose,
