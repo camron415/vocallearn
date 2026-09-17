@@ -40,7 +40,7 @@ const HARD =
   /\b(step by step|analy[sz]e|compare|trade-?offs?|debug|refactor|architect|prove|derive|deep dive|reason about|implement|walk me through|in detail|detailed)\b/i;
 
 const DEPTH =
-  /\b(why|how come|what happened|what caused|tell me more|more detail|in depth|in detail|detailed|explain|should i|is it (a )?good|news about|behind (the |this )|analy[sz]e|compare|trade-?offs?)\b/i;
+  /\b(why|how come|what happened|what caused|tell me more|more details?|in depth|in details?|detailed|explain|should i|is it (a )?good|news about|behind (the |this )|analy[sz]e|compare|trade-?offs?)\b/i;
 
 /** Default low. Medium when the turn asks for depth or is clearly heavy. */
 export function pickReasoningEffort(userText: string): ReasoningEffort {
@@ -112,7 +112,7 @@ export function grokResponsesBody(
   }
 ) {
   const effort = options?.effort ?? DEFAULT_EFFORT;
-  const useTools = options?.tools !== false;
+  const useTools = options?.tools === true;
   const length = options?.answerLength || "short";
   const maxTokens =
     options?.maxTokens ??

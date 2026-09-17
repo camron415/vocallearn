@@ -197,7 +197,7 @@ export async function gatherLiveBriefs(
     );
   }
   if (
-    /\b(sport|score|nfl|nba|mlb|nhl|hockey|world cup|soccer|football|f1|formula 1)\b/.test(
+    /\b(sport|score|nfl|nba|mlb|nhl|hockey|world cup|soccer|football|f1|formula 1|next game|byu)\b/.test(
       t
     )
   ) {
@@ -411,46 +411,90 @@ async function forexBlock() {
   return `FX from ECB via Frankfurter (${data.date ?? "today"}): ${bits}`;
 }
 
-async function sportsBlock(t: string) {
+const COLLEGE_FOOTBALL_BOARD =
+  "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard";
+const NFL_BOARD =
+  "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard";
+
+const COLLEGE_TEAMS: Record<string, string> = {
+  byu: "252",
+  cougars: "252",
+};
+
+/** Public ESPN scoreboard URLs for a sports ask. No network. */
+export function espnScoreboardUrls(t: string): string[] {
   const urls: string[] = [];
-  if (/\b(world cup|soccer|fifa)\b/.test(t)) {
+  const collegeTeam = Object.keys(COLLEGE_TEAMS).find((key) =>
+    new RegExp(`\\b${key}\\b`, "i").test(t)
+  );
+  const college =
+    Boolean(collegeTeam) ||
+    /\b(ncaaf|college football|ncaa)\b/i.test(t) ||
+    (/\bfootball\b/i.test(t) &&
+      !/\bnfl\b/i.test(t) &&
+      /\b(university|college|next game)\b/i.test(t));
+
+  if (/\b(world cup|soccer|fifa)\b/i.test(t)) {
     urls.push(
       "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard"
     );
   }
-  if (/\bnfl\b/.test(t) || urls.length === 0) {
-    urls.push(
-      "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard"
-    );
+  if (college) {
+    if (collegeTeam) {
+      urls.push(
+        `https://site.api.espn.com/apis/site/v2/sports/football/college-football/teams/${COLLEGE_TEAMS[collegeTeam]}/schedule`
+      );
+    }
+    urls.push(COLLEGE_FOOTBALL_BOARD);
+  } else if (/\bnfl\b/i.test(t) || /\bfootball\b/i.test(t)) {
+    urls.push(NFL_BOARD);
   }
-  if (/\bnba\b/.test(t)) {
+  if (/\bnba\b/i.test(t)) {
     urls.push(
       "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard"
     );
   }
-  if (/\bmlb\b/.test(t)) {
+  if (/\bmlb\b/i.test(t)) {
     urls.push(
       "https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard"
     );
   }
-  if (/\b(nhl|hockey)\b/.test(t)) {
+  if (/\b(nhl|hockey)\b/i.test(t)) {
     urls.push(
       "https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard"
     );
   }
-  if (/\b(f1|formula 1)\b/.test(t)) {
+  if (/\b(f1|formula 1)\b/i.test(t)) {
     urls.push(
       "https://site.api.espn.com/apis/site/v2/sports/racing/f1/scoreboard"
     );
   }
-  if (/\bsport/.test(t) && urls.length < 2) {
+  if (urls.length === 0) {
+    urls.push(NFL_BOARD);
+  }
+  if (/\bsport/.test(t) && urls.length < 2 && !college) {
     urls.push(
       "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard"
     );
   }
+  return [...new Set(urls)].slice(0, 3);
+}
 
+function focusSportLines(lines: string[], t: string): string[] {
+  const needles = Object.keys(COLLEGE_TEAMS).filter((key) =>
+    new RegExp(`\\b${key}\\b`, "i").test(t)
+  );
+  if (!needles.length) return lines.slice(0, 10);
+  const hit = lines.filter((line) =>
+    needles.some((key) => line.toLowerCase().includes(key))
+  );
+  return (hit.length ? hit : lines).slice(0, 10);
+}
+
+async function sportsBlock(t: string) {
+  const urls = espnScoreboardUrls(t);
   const boards = await Promise.all(
-    [...new Set(urls)].slice(0, 3).map((url) => grabJson<EspnScoreboard>(url))
+    urls.map((url) => grabJson<EspnScoreboard>(url))
   );
   const lines: string[] = [];
   for (const board of boards) {
@@ -468,11 +512,12 @@ async function sportsBlock(t: string) {
       const status = comp?.status?.type?.shortDetail ?? "";
       const venue = comp?.venue?.fullName ? ` @ ${comp.venue.fullName}` : "";
       if (score) lines.push(`${score}${status ? ` (${status})` : ""}${venue}`);
-      if (lines.length >= 10) break;
+      if (lines.length >= 40) break;
     }
   }
-  if (!lines.length) return null;
-  return `Scores (ESPN public scoreboard):\n${lines.join("\n")}`;
+  const focused = focusSportLines(lines, t);
+  if (!focused.length) return null;
+  return `Scores (ESPN public scoreboard):\n${focused.join("\n")}`;
 }
 
 async function holidaysBlock(geo?: HaloGeo | null) {

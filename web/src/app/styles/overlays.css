@@ -584,11 +584,13 @@ html[data-halo-theme="dark"] .learn-token {
 }
 
 @media (max-width: 640px) {
+  /* 12px gutter is the shared Home/Chat inset. */
   .ask-stage,
   .chat-stage {
-    padding: 0.5rem max(0.7rem, env(safe-area-inset-right))
+    padding: calc(0.5rem + env(safe-area-inset-top, 0px))
+      max(12px, env(safe-area-inset-right))
       max(0.35rem, env(safe-area-inset-bottom))
-      max(0.7rem, env(safe-area-inset-left));
+      max(12px, env(safe-area-inset-left));
   }
 
   .topbar {

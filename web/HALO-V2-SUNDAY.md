@@ -60,7 +60,7 @@ Calendar may *schedule* when r2/r3 become due. Difficulty is **round index**, no
 
 ## End — replaces the 0.7s dump
 
-Cross-fade the **content column inside the same sheet** at 260ms; the band stays, the six filled dots stay. Headline `You did good.` at ~28px/500. Beneath it one line per fact — `Egypt — gift of the Nile`, cue at 50% black, answer at 85% — staggered 60ms, 12px rows. Text button `Done` in the kind color, bottom-right of the content column. **No auto-dismiss.** No percent, no miss count, no time, no "next review in 3 days," no rank change, no share.
+Cross-fade the **content column inside the same sheet** at 260ms; the band stays, the six filled dots stay. Headline `You did good.` at ~28px/500. Beneath it one line per fact — `Egypt — gift of the Nile`, cue at 50% black, answer at 85% — staggered 60ms, 12px rows. Text button `Done` bottom-right of the content column — **Camron 2026-09-17:** `--halo-ink` on stone, not kind color. **No auto-dismiss.** No percent, no miss count, no time, no "next review in 3 days," no rank change, no share.
 
 ## Day cap
 

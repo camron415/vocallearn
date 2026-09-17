@@ -1,6 +1,9 @@
 import { classifyRecall } from "./learn-recall";
 import { gradeLocally } from "./learn";
+import { closedHit, edits1, stripSpeakFillers } from "./closed-grade";
 import { resolveChipRecall, type ChipRecall } from "./chip-recall";
+import type { ChipKind } from "./harvest";
+import { contentWords, foldClozeWord } from "./open-cloze";
 
 export type OpenScoreMethod = "local" | "model" | "skip";
 
@@ -29,13 +32,94 @@ function foldJson(text: string): { ok?: boolean } | null {
   }
 }
 
-/** Sync, free. Closed facts never leave here. Open facts that already match also stop here. */
+function stripFillers(text: string) {
+  return stripSpeakFillers(text);
+}
+
+function vitalFolds(text: string): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const word of contentWords(text).sort(
+    (a, b) => b.fold.length - a.fold.length || a.start - b.start
+  )) {
+    if (seen.has(word.fold)) continue;
+    seen.add(word.fold);
+    out.push(word.fold);
+    if (out.length >= 6) break;
+  }
+  return out;
+}
+
+function gistWordHit(saidFolds: string[], vital: string) {
+  return saidFolds.some((token) => {
+    if (token === vital) return true;
+    if (vital.length >= 6 && token.length >= 6 && edits1(token, vital)) {
+      return true;
+    }
+    if (vital.length >= 4 && token.length >= 4) {
+      return token.includes(vital) || vital.includes(token);
+    }
+    return false;
+  });
+}
+
+/**
+ * VocalLearn LOW strictness, pass/fail only: paraphrase and STT fillers are OK;
+ * label-only, "I don't know", and a different concept fail. No hint ladder.
+ */
+export function scoreGistLocal(opts: {
+  prompt?: string;
+  expected: string;
+  said: string;
+  token?: string;
+}): OpenScoreResult {
+  const said = stripFillers(opts.said).trim().slice(0, 500);
+  const expected = opts.expected.trim();
+  const token = (opts.token ?? "").trim();
+  const kind = classifyRecall(said);
+
+  if (kind === "blank" || kind === "dontknow") {
+    return { ok: false, method: "skip", reason: "no attempt" };
+  }
+  if (kind === "hint" || kind === "answer") {
+    return { ok: false, method: "skip", reason: "asked for help" };
+  }
+  if (!expected) {
+    return { ok: false, method: "skip", reason: "no expected answer" };
+  }
+  if (
+    contentWords(said).length >= 4 &&
+    gradeLocally(said, expected)
+  ) {
+    return { ok: true, method: "local", reason: "matches answer" };
+  }
+
+  const saidFolds = said
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .map(foldClozeWord)
+    .filter((word) => word.length >= 3);
+  const tokenFold = foldClozeWord(token);
+  const vitals = vitalFolds(expected).filter((word) => word !== tokenFold);
+  const hits = vitals.filter((vital) => gistWordHit(saidFolds, vital)).length;
+  const need = Math.max(2, Math.ceil(Math.max(vitals.length, 1) * 0.3));
+  if (contentWords(said).length < 2) {
+    return { ok: false, method: "local", reason: "too brief" };
+  }
+  if (vitals.length && hits >= need) {
+    return { ok: true, method: "local", reason: "gist overlap" };
+  }
+  return { ok: false, method: "local", reason: "gist miss" };
+}
+
+/** Sync, free. Closed = exact token. Open = VocalLearn-style gist pass/fail. */
 export function scoreOpenLocal(opts: {
   prompt?: string;
   expected: string;
   said: string;
   token?: string;
   recall?: ChipRecall | string | null;
+  kind?: ChipKind;
 }): OpenScoreResult {
   const said = opts.said.trim().slice(0, 500);
   const expected = opts.expected.trim();
@@ -57,20 +141,38 @@ export function scoreOpenLocal(opts: {
     return { ok: false, method: "skip", reason: "no expected answer" };
   }
 
-  if (gradeLocally(said, expected) || (token && gradeLocally(said, token))) {
-    return { ok: true, method: "local", reason: "matches token or answer" };
-  }
-
   if (recall === "closed") {
+    if (
+      closedHit(said, {
+        kind: opts.kind ?? "meaning",
+        answer: expected,
+        token,
+        span: token,
+      })
+    ) {
+      return { ok: true, method: "local", reason: "matches token or answer" };
+    }
     return { ok: false, method: "local", reason: "closed token mismatch" };
   }
 
-  return {
-    ok: false,
-    method: "local",
-    reason: "open gist needs cheap model",
-    needsModel: true,
-  };
+  return scoreGistLocal({
+    prompt: opts.prompt,
+    expected,
+    said,
+    token,
+  });
+}
+
+/** Play + lock-in: no extra model call. */
+export function scoreLockIn(opts: {
+  prompt?: string;
+  expected: string;
+  said: string;
+  token?: string;
+  recall?: ChipRecall | string | null;
+  kind?: ChipKind;
+}): OpenScoreResult {
+  return scoreOpenLocal(opts);
 }
 
 /**
@@ -83,6 +185,7 @@ export async function scoreOpenFact(opts: {
   said: string;
   token?: string;
   recall?: ChipRecall | string | null;
+  kind?: ChipKind;
 }): Promise<OpenScoreResult> {
   const local = scoreOpenLocal(opts);
   if (!local.needsModel) return local;
@@ -127,6 +230,17 @@ export function runOpenScoreFixtures(): { ok: boolean; failures: string[] } {
       want: { ok: true, method: "local" },
     },
     {
+      name: "closed drops trailing era",
+      opts: {
+        expected: "Mesozoic Era",
+        said: "Mesozoic",
+        token: "Mesozoic Era",
+        recall: "closed",
+        kind: "meaning",
+      },
+      want: { ok: true, method: "local" },
+    },
+    {
       name: "closed miss",
       opts: { expected: "The Nile", said: "Amazon", token: "Nile", recall: "closed" },
       want: { ok: false, method: "local" },
@@ -147,7 +261,7 @@ export function runOpenScoreFixtures(): { ok: boolean; failures: string[] } {
       want: { ok: true, method: "local" },
     },
     {
-      name: "open needs model",
+      name: "open gist paraphrase",
       opts: {
         expected:
           "Photosynthesis is how plants make food from sunlight, water, and carbon dioxide.",
@@ -155,7 +269,29 @@ export function runOpenScoreFixtures(): { ok: boolean; failures: string[] } {
         token: "photosynthesis",
         recall: "open",
       },
-      want: { needsModel: true },
+      want: { ok: true, method: "local" },
+    },
+    {
+      name: "open label only",
+      opts: {
+        expected:
+          "Photosynthesis is how plants make food from sunlight, water, and carbon dioxide.",
+        said: "photosynthesis",
+        token: "photosynthesis",
+        recall: "open",
+      },
+      want: { ok: false, method: "local" },
+    },
+    {
+      name: "open dontknow",
+      opts: {
+        expected:
+          "Photosynthesis is how plants make food from sunlight, water, and carbon dioxide.",
+        said: "I don't know",
+        token: "photosynthesis",
+        recall: "open",
+      },
+      want: { ok: false, method: "skip" },
     },
   ];
 
@@ -171,6 +307,32 @@ export function runOpenScoreFixtures(): { ok: boolean; failures: string[] } {
       failures.push(`${row.name}: expected needsModel`);
     }
   }
+
+  const lockOk = scoreLockIn({
+    expected:
+      "Photosynthesis is how plants make food from sunlight, water, and carbon dioxide.",
+    said: "plants use sunlight and water to make their own food",
+    token: "photosynthesis",
+    recall: "open",
+  });
+  if (!lockOk.ok) failures.push("lock-in open overlap should pass");
+
+  const lockMiss = scoreLockIn({
+    expected:
+      "Photosynthesis is how plants make food from sunlight, water, and carbon dioxide.",
+    said: "the amazon is a long river",
+    token: "photosynthesis",
+    recall: "open",
+  });
+  if (lockMiss.ok) failures.push("lock-in open mismatch should fail");
+
+  const filler = scoreGistLocal({
+    expected:
+      "Compound interest earns interest on both the principal and past interest.",
+    said: "um it earns interest on interest so it grows faster",
+    token: "compound interest",
+  });
+  if (!filler.ok) failures.push("STT fillers should still pass a real gist");
 
   return { ok: failures.length === 0, failures };
 }

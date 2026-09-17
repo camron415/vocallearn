@@ -15,15 +15,16 @@ This is the project I want hiring teams to open first.
 | | |
 | --- | --- |
 | **Live product** | [halo-gules-three.vercel.app](https://halo-gules-three.vercel.app) — Paper Ask + Cove/Keep loop (invite-only) |
-| **UI preview (no login)** | [halo-gules-three.vercel.app/preview](https://halo-gules-three.vercel.app/preview) — Lab mixer + walkable loop demo |
+| **UI preview (no login)** | [halo-gules-three.vercel.app/demo](https://halo-gules-three.vercel.app/demo) — short link; same as `/preview` |
 | **Code** | [`web/`](./web/) (Halo) · [`app/`](./app/) (VocalLearn iOS) |
 | **Stack** | TypeScript, React, Next.js, React Native, PostgreSQL, Supabase, Vercel, xAI/Grok |
 | **Recruiter summary** | [`docs/FOR_RECRUITERS.md`](./docs/FOR_RECRUITERS.md) |
 | **Vision & roadmap** | [`docs/PRODUCT_ROADMAP.md`](./docs/PRODUCT_ROADMAP.md) |
+| **Wesley founder notes** | [`docs/WESLEY_FOUNDER_ADVICE.md`](./docs/WESLEY_FOUNDER_ADVICE.md) — 2026-09-12 sit-down; users then pay-test; do not pivot to kids |
 
 Halo is **invite-only** (no public signup). I provision accounts, watch what breaks, and push production updates.
 
-**Current release:** v1.1 (August 2026) — Cove/Keep learning loop shipped to early-access production, not just Lab.
+**Current release (live `/ask`):** v1.2.0 (September 2026) — Luna, intent harvest, lock-in, phone Home, signed review sheet.
 
 ---
 

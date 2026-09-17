@@ -25,3 +25,5 @@ export async function createClient() {
     }
   );
 }
+
+export { createServiceClient } from "@/lib/supabase/admin";

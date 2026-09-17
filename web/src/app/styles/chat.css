@@ -1,6 +1,7 @@
 /* Ownership: Cove Lab Chat — thread, bubbles, dock-adjacent chat chrome.
    Edit: .chat-scroll, .msg, .answer, stage-hero entrance keyframes (they
    followed Chat in the old cascade; Home owns the hero markup).
+   1.2 unbox: assistant sits on the field; user stays a sunk bubble.
    Do not: retune morph --travel, harvest flight, Paper skin, overlay menus. */
 
 /* --------------------------------------------------------------------------
@@ -78,70 +79,14 @@
   align-items: flex-end;
 }
 
+.msg-wrap--assistant {
+  width: 100%;
+  max-width: 100%;
+  align-items: stretch;
+}
+
 .msg-wrap--fresh {
   animation: halo-msg-in 520ms var(--ease-glass) both;
-}
-
-.msg-copy {
-  position: absolute;
-  right: 0.5rem;
-  bottom: 0.42rem;
-  z-index: 2;
-  display: grid;
-  place-items: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  border: 0;
-  border-radius: 999px;
-  padding: 0;
-  color: var(--halo-muted);
-  background: var(--halo-stone);
-  box-shadow: none;
-  cursor: pointer;
-  opacity: 0;
-  pointer-events: none;
-  -webkit-tap-highlight-color: transparent;
-  transition:
-    opacity 160ms var(--ease-gel),
-    background 160ms var(--ease-gel),
-    color 160ms var(--ease-gel);
-}
-
-.msg:hover .msg-copy,
-.msg:focus-within .msg-copy,
-.msg-copy:focus-visible {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.msg-copy:hover,
-.msg-copy:focus-visible {
-  background: var(--halo-stone-hover);
-  color: var(--halo-ink);
-  outline: none;
-}
-
-.msg-copy.is-copied {
-  opacity: 1;
-  pointer-events: auto;
-  color: var(--halo-ink);
-}
-
-.msg--user .msg-copy {
-  background: rgba(255, 255, 255, 0.88);
-  box-shadow: none;
-}
-
-.msg--user .msg-copy:hover,
-.msg--user .msg-copy:focus-visible {
-  background: #ffffff;
-}
-
-@media (hover: none) {
-  .msg:focus-within .msg-copy {
-    opacity: 1;
-    pointer-events: auto;
-  }
 }
 
 .msg--user {
@@ -403,8 +348,8 @@ html[data-halo-perf="soft"] .stream-caret {
 }
 
 /* You: recessed sunk fill, no outline — a bubble gets no hairline, so the fill
-   has to carry the separation from the field in both modes. Ask: paper card
-   fill, no outline. */
+   has to carry the separation from the field in both modes. Ask: unboxed
+   field type (no card). Nested code/quote/recipe surfaces keep their fills. */
 .chat-scroll .msg.msg--user {
   margin-left: auto;
   border-bottom-right-radius: 9px;
@@ -414,20 +359,95 @@ html[data-halo-perf="soft"] .stream-caret {
   box-shadow: none;
 }
 
-.msg--assistant {
-  border-bottom-left-radius: 9px;
-  background: var(--paper-card, #f3f2f0);
+.msg.msg--assistant,
+.msg.msg--live {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  max-width: 100%;
+  padding: 0.12rem 0.08rem 0.2rem;
+  border-radius: 0;
+  background: transparent;
+  background-color: transparent;
   color: var(--halo-ink);
   border: 0;
   box-shadow: none;
 }
 
-html[data-halo-theme="dark"] .msg--assistant,
-html[data-halo-theme="dark"] .msg--live {
-  background: var(--paper-card, #2c2c2e);
+html[data-halo-theme="dark"] .msg.msg--assistant,
+html[data-halo-theme="dark"] .msg.msg--live {
+  background: transparent;
+  background-color: transparent;
   color: var(--halo-ink);
   border: 0;
   box-shadow: none;
+}
+
+.chat-action-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+  margin-top: 0.2rem;
+}
+
+.msg-wrap--user .chat-action-row {
+  align-items: flex-end;
+}
+
+.chat-action-chips {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.08rem;
+}
+
+.msg-action.stone-btn {
+  width: 2.15rem;
+  height: 2.15rem;
+  min-height: 2.15rem;
+  min-width: 2.15rem;
+  padding: 0;
+  font-size: 0;
+  font-weight: 500;
+  color: var(--halo-ink);
+  background: transparent;
+  box-shadow: none;
+  text-shadow: none;
+  gap: 0;
+  flex: 0 0 auto;
+}
+
+.msg-action.stone-btn:hover:not(:disabled),
+.msg-action.stone-btn:focus-visible {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--halo-ink);
+  outline: none;
+}
+
+html[data-halo-theme="dark"] .msg-action.stone-btn:hover:not(:disabled),
+html[data-halo-theme="dark"] .msg-action.stone-btn:focus-visible {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.msg-action.stone-btn:disabled {
+  opacity: 0.72;
+}
+
+.msg-action.stone-btn.is-copied,
+.save-offer.stone-btn.is-saved {
+  opacity: 0.78;
+}
+
+.save-offer {
+  margin: 0;
+}
+
+.save-offer-error {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--halo-muted);
 }
 
 .msg--pending {
@@ -436,30 +456,6 @@ html[data-halo-theme="dark"] .msg--live {
 
 .msg--fresh {
   animation: none;
-}
-
-.save-offer {
-  margin: 0;
-}
-
-.chat-action-row {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.35rem;
-  margin-top: 0.7rem;
-  margin-bottom: 0.15rem;
-  padding-left: 0.1rem;
-}
-
-.save-offer.stone-btn.is-saved {
-  opacity: 0.78;
-}
-
-.save-offer-error {
-  margin: 0.25rem 0 0;
-  font-size: 0.82rem;
-  color: var(--halo-muted);
 }
 
 .save-span {
@@ -624,4 +620,210 @@ html[data-halo-theme="dark"] .msg--live {
     opacity: 1;
     transform: none;
   }
+}
+
+.harvest-lock {
+  --play-kind: rgb(var(--bead-who));
+  margin: 0.85rem 0 0.35rem;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 1.15rem;
+  background: var(--paper-card);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 10%, transparent);
+  text-align: center;
+}
+
+.harvest-lock[data-kind="when"] {
+  --play-kind: rgb(var(--bead-when));
+}
+.harvest-lock[data-kind="where"] {
+  --play-kind: rgb(var(--bead-where));
+}
+.harvest-lock[data-kind="who"] {
+  --play-kind: rgb(var(--bead-who));
+}
+.harvest-lock[data-kind="meaning"] {
+  --play-kind: rgb(var(--bead-meaning));
+}
+
+.harvest-lock .compose-play-band {
+  border-radius: 0;
+}
+
+.harvest-lock__body.compose-play-beat {
+  padding: 0.85rem 1rem 0.95rem;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.85rem;
+  animation: none;
+}
+
+.harvest-lock .compose-play-prompt {
+  font-size: clamp(1.12rem, 1rem + 0.6vw, 1.45rem);
+  max-width: none;
+}
+
+.harvest-lock .home-play-choices {
+  width: 100%;
+}
+
+.harvest-lock .home-play-choice {
+  min-height: 3.6rem;
+}
+
+.harvest-lock__say {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.7rem;
+}
+
+.harvest-lock__say .home-play-say {
+  min-height: 4.8rem;
+}
+
+.harvest-lock:has(.harvest-lock__say) {
+  min-height: 16rem;
+}
+
+.harvest-lock__say-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+.harvest-lock__check {
+  color: var(--play-kind);
+}
+
+.harvest-lock__voice {
+  margin: 0;
+  font-size: 0.82rem;
+  opacity: 0.72;
+}
+
+.harvest-lock__foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.85rem 1.15rem;
+  margin-top: 0.15rem;
+}
+
+.harvest-kept-line {
+  margin: 0.45rem 0.4rem 1rem;
+  padding: 0.55rem 0.9rem;
+  border-radius: 1rem;
+  background: var(--paper-card);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 8%, transparent);
+  font-size: 0.92rem;
+  line-height: 1.35;
+  opacity: 0.88;
+}
+
+.harvest-lock__kicker {
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--home-chip-ink, var(--halo-ink));
+  opacity: 0.78;
+}
+
+html[data-halo-theme="dark"] .harvest-lock__kicker {
+  color: var(--play-kind);
+  opacity: 0.9;
+}
+
+.harvest-lock__list {
+  margin: 0.6rem 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.harvest-lock__list li {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.harvest-lock__kind {
+  margin: 0 0 0.45rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+
+.harvest-lock__prompt {
+  margin: 0;
+}
+
+.harvest-lock__skip,
+.harvest-lock__drop {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: color-mix(in srgb, var(--halo-ink) 48%, transparent);
+  opacity: 1;
+  font: inherit;
+  font-size: 0.82rem;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+  cursor: pointer;
+}
+
+@media (max-width: 720px) {
+  .harvest-lock__body.compose-play-beat {
+    padding: 0.68rem 0.9rem 0.72rem;
+    gap: 0.55rem;
+  }
+
+  .harvest-lock .compose-play-prompt {
+    font-size: 1.22rem;
+    line-height: 1.3;
+  }
+
+  .harvest-lock .home-play-choice {
+    min-height: 3.2rem;
+    font-size: 1.12rem;
+    padding: 0.78rem 0.95rem;
+  }
+
+  .harvest-lock .home-play-choices:not(.home-play-choices--stack) {
+    grid-template-columns: 1fr;
+    max-width: 20rem;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .harvest-lock:has(.harvest-lock__say) {
+    min-height: 0;
+  }
+
+  .harvest-lock__say .home-play-say {
+    min-height: 3.4rem;
+  }
+}
+
+.chat-stage .compose-row.is-stacked {
+  flex-wrap: wrap;
+}
+
+.chat-stage .compose-row.is-stacked .field {
+  flex: 1 1 100%;
+  width: 100%;
+  max-width: none;
+}
+
+.chat-stage .compose-row.is-stacked .compose-actions {
+  flex: 1 0 100%;
+  width: 100%;
+  justify-content: flex-end;
 }

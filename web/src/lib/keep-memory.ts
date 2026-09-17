@@ -1,13 +1,15 @@
 import {
   PREVIEW_HOME_CHIPS,
+  existingDueHarvest,
   type ChipKind,
   type ChipSeat,
   type HarvestChip,
 } from "@/lib/harvest";
+import { resolveChipRecall } from "@/lib/chip-recall";
 import { addLocalCalendarDays, getUserTimeZone, localDayKey, repairUtcMidnightDue } from "@/lib/local-day";
 
 const STORAGE_KEY = "halo-keep-v2";
-const KEEP_CAP = 30;
+export const KEEP_CAP = 30;
 const HOME_SEAT_CAP = 16;
 const DAY_ROUND_CAP = 3;
 const MASTER_AFTER = 3;
@@ -176,9 +178,22 @@ function wakeHeat(chip: HarvestChip): HarvestChip["heat"] {
   return chip.heat;
 }
 
+function isPlayableChip(chip: HarvestChip) {
+  const recall = resolveChipRecall({
+    recall: chip.recall,
+    token: chip.token,
+    answer: chip.answer,
+  });
+  if (recall === "open") {
+    return Boolean(chip.answer?.trim());
+  }
+  return recall === "closed";
+}
+
 function isDueForHome(chip: HarvestChip, now: number) {
   if (chip.id.startsWith("keep-")) return false;
   if (isGoldOrMastered(chip)) return false;
+  if (!isPlayableChip(chip)) return false;
   if (chipSeat(chip) === "home") return true;
   return chip.dueAt != null && chip.dueAt <= now;
 }
@@ -293,7 +308,6 @@ function hydrate() {
           .map((chip, i) =>
             withSeat(stampKeptAt(chip, Date.now() - (loaded.length - i) * 1000))
           )
-          .slice(-KEEP_CAP)
       );
     }
     if (Array.isArray(parsed.pins)) {
@@ -414,7 +428,7 @@ export function parseKeepCloudPayload(value: unknown): KeepCloudPayload | null {
   }
   return {
     v: 2,
-    chips: loaded.slice(-KEEP_CAP),
+    chips: loaded,
     pins: Array.isArray(raw.pins) ? raw.pins.filter(isPin) : [],
     roundsToday:
       typeof raw.roundsToday === "number" && raw.roundsToday >= 0
@@ -454,7 +468,6 @@ export function applyKeepCloudPayload(payload: KeepCloudPayload, at: number) {
       .map((chip, i) =>
         withSeat(stampKeptAt(chip, Date.now() - (payload.chips.length - i) * 1000))
       )
-      .slice(-KEEP_CAP)
   );
   pinnedAsks = payload.pins;
   roundsToday = payload.roundsToday;
@@ -491,27 +504,139 @@ export function readKeepChips() {
 
 export function writeKeepChips(next: HarvestChip[]) {
   chips = applyDueSeats(
-    next
-      .map((chip, i) =>
-        withSeat(stampKeptAt(chip, Date.now() - (next.length - i) * 1000))
-      )
-      .slice(-KEEP_CAP)
+    next.map((chip, i) =>
+      withSeat(stampKeptAt(chip, Date.now() - (next.length - i) * 1000))
+    )
   );
   persist();
   emit();
 }
 
-/** Harvest lands in Keep (not due). Must not restamp an already-due Home chip. Cap 30. */
-export function addKeepChip(chip: HarvestChip) {
+export function countsTowardKeepCap(chip: HarvestChip) {
+  if (chip.id.startsWith("keep-")) return false;
+  if (isGoldOrMastered(chip)) return false;
+  return true;
+}
+
+export type KeepInspect = {
+  id: string;
+  token: string;
+  prompt: string;
+  answer: string;
+  kind: ChipKind;
+  rank: 0 | 1 | 2 | 3;
+  seat: ChipSeat;
+  recall: "closed" | "open";
+  playable: boolean;
+  dueAt: number | null;
+  keptAt: number | null;
+  clears: number;
+  cluster?: string;
+  askId?: string | null;
+};
+
+function toInspect(chip: HarvestChip): KeepInspect {
+  const rank = keepRank(chip) as 0 | 1 | 2 | 3;
+  const recall =
+    resolveChipRecall({
+      recall: chip.recall,
+      token: chip.token,
+      answer: chip.answer,
+    }) === "open"
+      ? "open"
+      : "closed";
+  return {
+    id: chip.id,
+    token: chip.token,
+    prompt: chip.prompt,
+    answer: chip.answer,
+    kind: chip.kind,
+    rank,
+    seat: chipSeat(chip),
+    recall,
+    playable: isPlayableChip(chip) && rank < 3,
+    dueAt: chip.dueAt ?? null,
+    keptAt: chip.keptAt ?? null,
+    clears: chip.clears ?? 0,
+    cluster: chip.cluster,
+    askId: chip.askId ?? null,
+  };
+}
+
+/** Paper inspect: one head, one body. Never print token/answer twice. */
+export function keepInspectView(chip: {
+  recall?: string | null;
+  token: string;
+  prompt: string;
+  answer: string;
+}): { head: string; prompt: string | null; answer: string | null } {
+  const open = chip.recall === "open";
+  if (open) {
+    return {
+      head: (chip.prompt || chip.token).trim(),
+      prompt: null,
+      answer: chip.answer.trim() || null,
+    };
+  }
+  return {
+    head: chip.token.trim(),
+    prompt: chip.prompt.trim() || null,
+    answer: null,
+  };
+}
+
+export function readKeepInspect(id: string): KeepInspect | null {
   hydrate();
-  if (!chip?.id) return;
+  const chip = chips.find((item) => item.id === id);
+  return chip ? toInspect(chip) : null;
+}
+
+export function readDockBeads() {
+  hydrate();
+  return sortKeepBeads(chips);
+}
+
+export function readKeepOverflow() {
+  hydrate();
+  const dockIds = new Set(sortKeepBeads(chips).map((chip) => chip.id));
+  const extra = chips
+    .filter(isBankedChip)
+    .filter((chip) => !dockIds.has(chip.id))
+    .map(toInspect);
+  return { count: extra.length, chips: extra };
+}
+
+export function readGoldVault() {
+  hydrate();
+  return chips.filter(isGoldOrMastered).map(toInspect);
+}
+
+export type KeepAddResult =
+  | { ok: true; chip: HarvestChip }
+  | { ok: false; reason: "cap" | "dup-due" | "invalid" };
+
+/** Harvest lands in Keep (not due). Must not restamp an already-due Home chip. Cap 30 in-progress. */
+export function tryAddKeepChip(chip: HarvestChip): KeepAddResult {
+  hydrate();
+  if (!chip?.id || !chip.token || !chip.prompt || !chip.answer) {
+    return { ok: false, reason: "invalid" };
+  }
+  if (existingDueHarvest(chips, chip)) {
+    return { ok: false, reason: "dup-due" };
+  }
   const now = Date.now();
   let next = stampKeptAt(withSeat(chip, chip.seat ?? "keep"), now);
   const index = chips.findIndex((item) => item.id === next.id);
-  if (index < 0 && chips.length >= KEEP_CAP) return;
+  if (
+    index < 0 &&
+    countsTowardKeepCap(next) &&
+    chips.filter(countsTowardKeepCap).length >= KEEP_CAP
+  ) {
+    return { ok: false, reason: "cap" };
+  }
   if (index >= 0) {
     next = mergeHarvest(chips[index], next);
-  } else if (!isGoldOrMastered(next) && next.dueAt == null) {
+  } else if (!isGoldOrMastered(next) && next.dueAt == null && isPlayableChip(next)) {
     next = { ...next, dueAt: nextDueAt(0, now) };
   }
   const updated =
@@ -519,6 +644,11 @@ export function addKeepChip(chip: HarvestChip) {
       ? [...chips.filter((item) => item.id !== next.id), next]
       : [...chips, next];
   writeKeepChips(bankClusters(updated));
+  return { ok: true, chip: next };
+}
+
+export function addKeepChip(chip: HarvestChip) {
+  tryAddKeepChip(chip);
 }
 
 export function clearKeepChips() {
@@ -777,7 +907,7 @@ export function dropKeepDue() {
   const now = Date.now();
   writeKeepChips(
     chips.map((chip) => {
-      if (isGoldOrMastered(chip)) return chip;
+      if (isGoldOrMastered(chip) || !isPlayableChip(chip)) return chip;
       return { ...chip, dueAt: now, seat: "home" as const, heat: wakeHeat(chip) };
     })
   );

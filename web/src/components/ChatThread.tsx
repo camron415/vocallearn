@@ -1,6 +1,13 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import {
+  FormEvent,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { useRouter } from "next/navigation";
 import { AnswerBody } from "@/components/AnswerBody";
 import { AttachButton, AttachList } from "@/components/AttachButton";
@@ -8,11 +15,13 @@ import { ComposeField } from "@/components/ComposeField";
 import { DictateButton } from "@/components/DictateButton";
 import { HaloHeader } from "@/components/HaloHeader";
 import { HarvestFlights } from "@/components/HarvestFlights";
+import { HarvestLock } from "@/components/HarvestLock";
 import { CollectFlights } from "@/components/CollectFlights";
 import { type HistoryItem } from "@/components/HistoryMenu";
-import { MessageCopy } from "@/components/MessageCopy";
+import { MessageActions } from "@/components/MessageActions";
 import { WorkTrace, type WorkStep } from "@/components/WorkTrace";
-import { useEffectiveMotion } from "@/components/MotionProvider";
+import { useAskShell } from "@/components/AskShell";
+import { useEffectiveMotion, useMotionSettings } from "@/components/MotionProvider";
 import {
   SpringStage,
   COMPOSE_TRAVEL_MS,
@@ -34,6 +43,22 @@ import {
 import { readKeepChips } from "@/lib/keep-memory";
 import { readHaloStream, type HaloStreamEvent } from "@/lib/halo-stream";
 import { PREVIEW_RECIPE_ASK, PREVIEW_RECIPE_REPLY } from "@/lib/save-offer";
+import {
+  FIRST_HARVEST_LINE,
+  revealFirstHarvestLine,
+} from "@/lib/first-harvest-line";
+import {
+  lockChipLog,
+  type HarvestLockChipLog,
+  type HarvestLockLive,
+} from "@/lib/harvest-lock";
+import { reportHarvestLock } from "@/lib/harvest-lock-track";
+import {
+  LOCK_IN_DELAY_MS,
+  clearPendingLock,
+  readPendingLock,
+  writePendingLock,
+} from "@/lib/lock-pending";
 import { isLabPreviewPath, labPreviewChatHref, labPreviewHomeHref } from "@/lib/lab-preview";
 import { stripMarkdownForDisplay } from "@/lib/markdown-plain";
 import { readAttachments } from "@/lib/read-files";
@@ -84,13 +109,25 @@ export function ChatThread({
   profile?: HaloProfile;
 }) {
   const router = useRouter();
+  const shell = useAskShell();
   const soft = useEffectiveMotion() === "reduced";
+  const harvestReduced = useMotionSettings().prefersReduced;
   const [messages, setMessages] = useState(initialMessages);
-  const [draft, setDraft] = useState("");
-  const [files, setFiles] = useState<File[]>([]);
-  const [sending, setSending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [listening, setListening] = useState(false);
+  const [localDraft, setLocalDraft] = useState("");
+  const [localFiles, setLocalFiles] = useState<File[]>([]);
+  const [localSending, setLocalSending] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [localListening, setLocalListening] = useState(false);
+  const draft = shell?.active ? shell.draft : localDraft;
+  const setDraft = shell?.active ? shell.setDraft : setLocalDraft;
+  const files = shell?.active ? shell.files : localFiles;
+  const setFiles = shell?.active ? shell.setFiles : setLocalFiles;
+  const sending = shell?.active ? shell.sending : localSending;
+  const setSending = shell?.active ? shell.setSending : setLocalSending;
+  const error = shell?.active ? shell.error : localError;
+  const setError = shell?.active ? shell.setError : setLocalError;
+  const listening = shell?.active ? shell.listening : localListening;
+  const setListening = shell?.active ? shell.setListening : setLocalListening;
   const [freshIds, setFreshIds] = useState<Set<string>>(() => new Set());
   const [streamText, setStreamText] = useState("");
   const [workSteps, setWorkSteps] = useState<WorkStep[]>([]);
@@ -99,6 +136,15 @@ export function ChatThread({
   const [chats, setChats] = useState(conversations);
   const [harvest, setHarvest] = useState<HarvestChip[]>([]);
   const [flying, setFlying] = useState<HarvestChip[]>([]);
+  const [lockChips, setLockChips] = useState<HarvestChip[]>([]);
+  const lockChipsRef = useRef<HarvestChip[]>([]);
+  const lockLive = useRef<HarvestLockLive>({
+    claimedIds: [],
+    droppedIds: [],
+    remainingIds: [],
+  });
+  const lockTimer = useRef<number | null>(null);
+  const [keptLine, setKeptLine] = useState(false);
   const [saveOffers, setSaveOffers] = useState<Record<string, SaveOfferState>>(
     {}
   );
@@ -113,6 +159,7 @@ export function ChatThread({
   const abortRef = useRef<AbortController | null>(null);
   const bufferRef = useRef("");
   const flushTimer = useRef<number | null>(null);
+  const pendingLand = useRef(0);
   const demoHarvested = useRef(false);
   const runTurnRef = useRef<(
     opts: {
@@ -123,9 +170,14 @@ export function ChatThread({
   ) => Promise<"ok" | "blocked" | "fail">>(async () => "fail");
 
   const landChip = useCallback((chip: HarvestChip) => {
-    if (existingDueHarvest(readKeepChips(), chip)) return;
-    window.dispatchEvent(new CustomEvent("halo-keep-add", { detail: chip }));
-  }, []);
+    if (!existingDueHarvest(readKeepChips(), chip)) {
+      window.dispatchEvent(new CustomEvent("halo-keep-add", { detail: chip }));
+    }
+    pendingLand.current = Math.max(0, pendingLand.current - 1);
+    if (pendingLand.current > 0) return;
+    if (demo || saveDemo) return;
+    if (revealFirstHarvestLine()) setKeptLine(true);
+  }, [demo, saveDemo]);
 
   const landCollect = useCallback((token: string) => {
     setSaveOffers((prev) => ({
@@ -166,23 +218,113 @@ export function ChatThread({
         detail: { count: toFly.length },
       })
     );
+    lockLive.current = {
+      claimedIds: [],
+      droppedIds: [],
+      remainingIds: toFly.map((chip) => chip.id),
+    };
+    if (!demo && !saveDemo) writePendingLock(conversationId, toFly);
+    if (lockTimer.current) window.clearTimeout(lockTimer.current);
+    lockTimer.current = window.setTimeout(() => {
+      lockTimer.current = null;
+      lockChipsRef.current = toFly;
+      setLockChips(toFly);
+    }, LOCK_IN_DELAY_MS);
+  }
+
+  function settleLock(
+    keep: HarvestChip[],
+    opts: {
+      fly: boolean;
+      walkAway?: boolean;
+      outcomes: HarvestLockChipLog[];
+    }
+  ) {
+    if (lockTimer.current) {
+      window.clearTimeout(lockTimer.current);
+      lockTimer.current = null;
+    }
+    lockChipsRef.current = [];
+    lockLive.current = { claimedIds: [], droppedIds: [], remainingIds: [] };
+    setLockChips([]);
+    clearPendingLock();
+    if (!demo && !saveDemo) {
+      reportHarvestLock({
+        conversationId,
+        walkAway: opts.walkAway,
+        chips: opts.outcomes,
+      });
+    }
+    if (!keep.length) return;
+    if (!opts.fly) {
+      for (const chip of keep) {
+        if (!existingDueHarvest(readKeepChips(), chip)) {
+          window.dispatchEvent(new CustomEvent("halo-keep-add", { detail: chip }));
+        }
+      }
+      return;
+    }
+    pendingLand.current = keep.length;
     window.setTimeout(() => {
       setFlying((prev) => {
         const known = new Set(prev.map((item) => item.id));
-        return [...prev, ...toFly.filter((chip) => !known.has(chip.id))];
+        return [...prev, ...keep.filter((chip) => !known.has(chip.id))];
       });
-    }, 360);
+    }, 120);
   }
 
-  useComposeMorph(dockRef, !soft);
+  function walkAwayKeep() {
+    const live = lockLive.current;
+    const chips = lockChipsRef.current.length
+      ? lockChipsRef.current
+      : readPendingLock(conversationId);
+    if (!chips.length) return;
+    const dropped = new Set(live.droppedIds);
+    const claimed = new Set(live.claimedIds);
+    const keep = chips.filter((chip) => !dropped.has(chip.id));
+    const outcomes = chips.map((chip) => {
+      if (dropped.has(chip.id)) return lockChipLog(chip, "drop");
+      if (claimed.has(chip.id)) return lockChipLog(chip, "claimed");
+      return lockChipLog(chip, "skip");
+    });
+    settleLock(keep, { fly: false, walkAway: true, outcomes });
+  }
+
+  useComposeMorph(dockRef, !soft && !shell?.active);
+
+  useLayoutEffect(() => {
+    const dock = dockRef.current;
+    if (!dock) return;
+    const stage = dock.closest(".chat-stage") as HTMLElement | null;
+    const sync = () => {
+      stage?.style.setProperty("--chat-dock-h", `${dock.offsetHeight}px`);
+    };
+    sync();
+    const ro = new ResizeObserver(sync);
+    ro.observe(dock);
+    return () => {
+      ro.disconnect();
+      stage?.style.removeProperty("--chat-dock-h");
+    };
+  }, [draft, files.length, sending, shell?.active]);
 
   function goHome() {
     if (leaving.current) return;
+    walkAwayKeep();
     turnAborts.get(conversationId)?.abort();
     const dest = demo || isLabPreviewPath() ? labPreviewHomeHref() : homeHref;
     if (soft) {
       clearComposeHandoff();
       router.replace(dest);
+      return;
+    }
+    if (shell?.active) {
+      leaving.current = true;
+      setExit(true);
+      shell.leaveToHome(() => {
+        router.replace(dest);
+        leaving.current = false;
+      });
       return;
     }
     leaving.current = true;
@@ -200,6 +342,20 @@ export function ChatThread({
   }, [initialMessages]);
 
   useEffect(() => {
+    if (demo || saveDemo) return;
+    const pending = readPendingLock(conversationId);
+    if (!pending.length) return;
+    lockChipsRef.current = pending;
+    setLockChips(pending);
+  }, [conversationId, demo, saveDemo]);
+
+  useEffect(() => {
+    return () => {
+      if (lockTimer.current) window.clearTimeout(lockTimer.current);
+    };
+  }, []);
+
+  useEffect(() => {
     const fromKeep = readKeepChips().filter((chip) => chip.askId === conversationId);
     if (fromKeep.length) setHarvest(fromKeep);
   }, [conversationId]);
@@ -209,8 +365,15 @@ export function ChatThread({
   }, [conversations]);
 
   function replayHarvest() {
+    if (lockTimer.current) {
+      window.clearTimeout(lockTimer.current);
+      lockTimer.current = null;
+    }
+    lockChipsRef.current = [];
+    lockLive.current = { claimedIds: [], droppedIds: [], remainingIds: [] };
     setHarvest([]);
     setFlying([]);
+    setLockChips([]);
     setMoreOpen(false);
     window.dispatchEvent(new Event("halo-keep-reset"));
     window.setTimeout(() => beginHarvest(PREVIEW_HARVEST_CHIPS), 80);
@@ -246,6 +409,7 @@ export function ChatThread({
     function onClear() {
       setHarvest([]);
       setFlying([]);
+      setLockChips([]);
       setSaveOffers({});
       setCollectToken(null);
       setMoreOpen(false);
@@ -282,6 +446,7 @@ export function ChatThread({
       const replyId = "save-demo-assistant";
       setHarvest([]);
       setFlying([]);
+      setLockChips([]);
       setSaveOffers({});
       setCollectToken(null);
       setMoreOpen(false);
@@ -671,6 +836,12 @@ export function ChatThread({
     }
   }
 
+  useEffect(() => {
+    if (!shell?.active) return;
+    shell.setSubmitHandler((event) => onSubmit(event));
+    return () => shell.setSubmitHandler(null);
+  }, [shell, conversationId, draft, files, sending]);
+
   const lastUserId = [...messages].reverse().find((row) => row.role === "user")?.id;
   const lastAssistantId = [...messages]
     .reverse()
@@ -738,7 +909,7 @@ export function ChatThread({
             router.replace(labPreviewChatHref(id));
             return;
           }
-          captureComposeMorph(dockRef.current);
+          if (!shell?.active) captureComposeMorph(dockRef.current);
           router.push(`/ask/${id}`);
         }}
         onDeleted={(id) => {
@@ -765,7 +936,10 @@ export function ChatThread({
                   freshIds.has(m.id) ? " msg-wrap--fresh" : ""
                 }`}
                 {...(m.role === "assistant" && !sending && m.id === lastAssistantId
-                  ? { "data-harvest-origin": "true" }
+                  ? {
+                      "data-harvest-origin": "true",
+                      ...(lockChips.length ? { "data-harvest-lock": "true" } : {}),
+                    }
                   : {})}
               >
                 <div
@@ -782,32 +956,46 @@ export function ChatThread({
                   ) : (
                     <p>{stripMarkdownForDisplay(m.content)}</p>
                   )}
-                  <MessageCopy content={m.content} />
                 </div>
-                {m.role === "assistant" && saveOffers[m.id] ? (
-                  <div className="chat-action-row">
-                    <button
-                      type="button"
-                      data-save-origin={m.id}
-                      className={`stone-btn save-offer${
-                        saveOffers[m.id].status === "saved" ? " is-saved" : ""
-                      }`}
-                      disabled={
-                        saveOffers[m.id].status === "saving" ||
-                        saveOffers[m.id].status === "saved"
-                      }
-                      onClick={() => void saveOfferedRecipe(m.id)}
-                    >
-                      {saveOffers[m.id].status === "saved"
-                        ? "Saved ✓"
-                        : saveOffers[m.id].status === "saving"
-                          ? "Saving…"
-                          : "Save this recipe"}
-                    </button>
-                    {saveOffers[m.id].status === "error" ? (
-                      <p className="save-offer-error">{saveOffers[m.id].error}</p>
-                    ) : null}
-                  </div>
+                {m.role !== "system" ? (
+                <MessageActions
+                  role={m.role}
+                  content={m.content}
+                  save={saveOffers[m.id]}
+                  saveOrigin={m.id}
+                  onSave={
+                    saveOffers[m.id]
+                      ? () => void saveOfferedRecipe(m.id)
+                      : undefined
+                  }
+                  onEdit={
+                    m.role === "user"
+                      ? () => {
+                          setDraft(stripMarkdownForDisplay(m.content));
+                          window.requestAnimationFrame(() => {
+                            document.getElementById("followup")?.focus();
+                          });
+                        }
+                      : undefined
+                  }
+                />
+                ) : null}
+                {m.role === "assistant" &&
+                m.id === lastAssistantId &&
+                lockChips.length &&
+                !sending ? (
+                  <HarvestLock
+                    chips={lockChips}
+                    onLive={(live) => {
+                      lockLive.current = live;
+                    }}
+                    onFinish={(result) =>
+                      settleLock(result.keep, {
+                        fly: true,
+                        outcomes: result.outcomes,
+                      })
+                    }
+                  />
                 ) : null}
               </div>
             );
@@ -824,6 +1012,9 @@ export function ChatThread({
             >
               Want a little more on this?
             </button>
+          ) : null}
+          {keptLine ? (
+            <p className="harvest-kept-line">{FIRST_HARVEST_LINE}</p>
           ) : null}
           {sending ? (
             <div className="msg-wrap msg-wrap--assistant" data-harvest-origin="true">
@@ -846,7 +1037,6 @@ export function ChatThread({
                 {streamText ? (
                   <AnswerBody content={streamText} streaming />
                 ) : null}
-                {streamText ? <MessageCopy content={streamText} /> : null}
               </div>
             </div>
           ) : null}
@@ -854,6 +1044,7 @@ export function ChatThread({
         </div>
       </SpringStage>
 
+      {!shell?.active ? (
       <ComposeStadium className="compose compose-dock" elementRef={dockRef} listening={listening}>
         <form onSubmit={onSubmit} className="compose-form">
           {error ? <p className="form-error">{error}</p> : null}
@@ -899,7 +1090,8 @@ export function ChatThread({
           </div>
         </form>
       </ComposeStadium>
-      <HarvestFlights chips={flying} reduced={soft} onLanded={landChip} />
+      ) : null}
+      <HarvestFlights chips={flying} reduced={harvestReduced} onLanded={landChip} />
       <CollectFlights
         token={collectToken}
         reduced={soft}

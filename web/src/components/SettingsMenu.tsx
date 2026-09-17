@@ -40,13 +40,24 @@ type Usage = {
 export function SettingsMenu({
   profile,
   demo = false,
+  hideTrigger = false,
+  open: openProp,
+  onOpenChange,
 }: {
   profile?: HaloProfile;
   demo?: boolean;
+  hideTrigger?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const router = useRouter();
   const { theme, setTheme, intensity, setIntensity } = useMotionSettings();
-  const [open, setOpen] = useState(false);
+  const [innerOpen, setInnerOpen] = useState(false);
+  const open = openProp ?? innerOpen;
+  const setOpen = (next: boolean) => {
+    onOpenChange?.(next);
+    if (openProp === undefined) setInnerOpen(next);
+  };
   const coarse = useCoarsePointer();
   const [name, setName] = useState(profile?.displayName ?? "");
   const [nameState, setNameState] = useState<"idle" | "saving" | "saved">(
@@ -166,6 +177,7 @@ export function SettingsMenu({
 
   return (
     <div className="history-wrap">
+      {hideTrigger ? null : (
       <GlassButton title="Open settings" onClick={() => setOpen(true)}>
         <span className="topbar-action-label">Settings</span>
         <svg
@@ -182,6 +194,7 @@ export function SettingsMenu({
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
         </svg>
       </GlassButton>
+      )}
       <Sheet
         open={open}
         onClose={() => setOpen(false)}

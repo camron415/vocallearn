@@ -7,14 +7,30 @@ import { MenuSheet } from "@/components/MenuSheet";
 import { SimpleSheet } from "@/components/SimpleSheet";
 import { useCoarsePointer } from "@/lib/coarse-pointer";
 
-export function LibraryMenu({ demo = false }: { demo?: boolean }) {
+export function LibraryMenu({
+  demo = false,
+  hideTrigger = false,
+  open: openProp,
+  onOpenChange,
+}: {
+  demo?: boolean;
+  hideTrigger?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [innerOpen, setInnerOpen] = useState(false);
+  const open = openProp ?? innerOpen;
+  const setOpen = (next: boolean) => {
+    onOpenChange?.(next);
+    if (openProp === undefined) setInnerOpen(next);
+  };
   const coarse = useCoarsePointer();
   const Sheet = coarse ? SimpleSheet : MenuSheet;
 
   return (
     <div className="history-wrap" data-saves-pocket>
+      {hideTrigger ? null : (
       <GlassButton title="Open library" onClick={() => setOpen(true)}>
         <span className="topbar-action-label">Library</span>
         <svg
@@ -29,6 +45,7 @@ export function LibraryMenu({ demo = false }: { demo?: boolean }) {
           <path d="M4 6h16M4 12h16M4 18h16" />
         </svg>
       </GlassButton>
+      )}
       <Sheet
         open={open}
         onClose={() => setOpen(false)}

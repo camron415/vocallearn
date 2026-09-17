@@ -1,8 +1,12 @@
 export function keepSlotRem(count: number, viewport = 390) {
   const n = Math.max(1, count);
+  const phone = viewport <= 720;
+  if (phone) {
+    return `${n >= 10 ? 1.48 : 1.58}rem`;
+  }
   const dock = Math.min(28 * 16, viewport * 0.56);
   const gap = 0.22 * 16;
-  const cap = n >= 10 ? 0.92 * 16 : 1.05 * 16;
+  const cap = (n >= 10 ? 0.92 : 1.05) * 16;
   const px = Math.min(
     cap,
     Math.max(0.62 * 16, (dock - Math.max(0, n - 1) * gap) / n)

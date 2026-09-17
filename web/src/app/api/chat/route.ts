@@ -1,15 +1,35 @@
 import { NextResponse } from "next/server";
 import { prepareAskTurn, saveAssistantReply } from "@/lib/ask-turn";
-import { attachmentsToGrokParts } from "@/lib/files";
+import { attachmentsToGrokParts, validateAskAttachments } from "@/lib/files";
 import {
-  resolveAskRoute,
   liveLookupContext,
-  harvestAnswerHint,
   answerLengthForRoute,
+  searchRuleLine,
+  priorUserText,
+  priorAssistantText,
+  routeText,
+  threadClip,
 } from "@/lib/ask-route";
+import { pickAnswerProvider, planToRoute } from "@/lib/ask-provider";
+import { ensureAskClassify } from "@/lib/ask-plan-cache";
+import {
+  fallbackAskIntent,
+  intentAnswerGuide,
+  resolveAskIntentForAnswer,
+} from "@/lib/ask-intent";
 import { ASK_SYSTEM_PROMPT } from "@/lib/constants";
-import { streamGrokChat } from "@/lib/grok-stream";
-import { grokCostMicros, estimateAskMicros } from "@/lib/limits";
+import { streamAskAnswer } from "@/lib/ask-stream";
+import {
+  ASK_MAX_BODY_BYTES,
+  askCostMicros,
+  estimateAskMicros,
+} from "@/lib/limits";
+import {
+  claimAskTurn,
+  commitAskTurn,
+  releaseAskTurn,
+} from "@/lib/ask-guard";
+import { loadMemberLane } from "@/lib/usage";
 import { encodeHaloEvent, type HaloStreamEvent } from "@/lib/halo-stream";
 import {
   geoFromProfile,
@@ -29,6 +49,14 @@ export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
+  const contentLength = Number(request.headers.get("content-length") || 0);
+  if (Number.isFinite(contentLength) && contentLength > ASK_MAX_BODY_BYTES) {
+    return NextResponse.json(
+      { error: "That message is too large." },
+      { status: 413 }
+    );
+  }
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -64,7 +92,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const attachments = Array.isArray(body.attachments) ? body.attachments : [];
+  const rawAttachments = Array.isArray(body.attachments) ? body.attachments : [];
+  const checked = validateAskAttachments(rawAttachments);
+  if (!checked.ok) {
+    return NextResponse.json({ error: checked.error }, { status: 400 });
+  }
+  const attachments = checked.files;
 
   const profile = await loadHaloProfile(supabase, user);
   const clientTz =
@@ -90,7 +123,17 @@ export async function POST(request: Request) {
   }
 
   if (body.prepareOnly) {
-    return NextResponse.json({ conversationId: prepared.conversationId });
+    const { conversationId, userText, history } = prepared;
+    const priorText = priorUserText(history);
+    const priorReply = priorAssistantText(history);
+    const clip = threadClip(history);
+    void ensureAskClassify(user.id, conversationId, userText, {
+      hasFiles: attachments.length > 0,
+      priorText,
+      priorReply,
+      threadClip: clip,
+    });
+    return NextResponse.json({ conversationId });
   }
 
   const { conversationId, userText } = prepared;
@@ -169,47 +212,112 @@ export async function POST(request: Request) {
   }
 
   const encoder = new TextEncoder();
-  const route = resolveAskRoute(userText, attachments.length > 0);
-  const answerLength = answerLengthForRoute(route);
+  const priorText = priorUserText(history);
+  const priorReply = priorAssistantText(history);
+  const clip = threadClip(history);
+  const routedText = routeText(userText, priorText);
+  const hasFiles = attachments.length > 0;
+  const lane = await loadMemberLane(supabase, user.id);
+  const claimed = await claimAskTurn(supabase, user.id, lane, {
+    files: attachments.length,
+    provider: "grok",
+    search: true,
+  });
+  if (!claimed.ok) {
+    return NextResponse.json(
+      { error: claimed.error },
+      { status: claimed.status }
+    );
+  }
+  const reservationId = claimed.reservation.id;
 
   const stream = new ReadableStream({
     async start(controller) {
       const send = (event: HaloStreamEvent) => {
         controller.enqueue(encoder.encode(encodeHaloEvent(event)));
       };
+      let settled = false;
 
       try {
         let system: string | undefined;
         let lookupSources: { label: string; url: string }[] = [];
-        const harvestHint = harvestAnswerHint(userText);
-        const useLive = route.kind === "lookup" || route.seedLive;
-        if (useLive) {
-          send({ type: "status", status: "checking" });
-          const live = await liveLookupContext(userText, {
-            allowSearch: Boolean(route.tools),
+        const fallbackIntent = fallbackAskIntent(userText, {
+          hasFiles,
+          priorText,
+          priorReply,
+          threadClip: clip,
+        });
+        const intentPromise = ensureAskClassify(
+          user.id,
+          conversationId,
+          userText,
+          {
+            hasFiles,
+            priorText,
+            priorReply,
+            threadClip: clip,
+          }
+        );
+        send({ type: "status", status: "checking" });
+        const intentForAnswer = await resolveAskIntentForAnswer(
+          intentPromise,
+          fallbackIntent
+        );
+        const liveRoute = planToRoute(intentForAnswer, hasFiles);
+        const useFeeds = intentForAnswer.freshness === "feeds" || liveRoute.seedLive;
+        if (useFeeds) {
+          const live = await liveLookupContext(routedText, {
+            allowSearch:
+              intentForAnswer.freshness === "web" &&
+              pickAnswerProvider(liveRoute, hasFiles) === "grok",
             geo,
           });
           lookupSources = live.sources;
-          system = [ASK_SYSTEM_PROMPT, live.systemExtra, harvestHint]
+          system = [ASK_SYSTEM_PROMPT, live.systemExtra]
             .filter(Boolean)
             .join("\n\n");
           for (const src of lookupSources.slice(0, 4)) {
             send({ type: "status", status: "reading", detail: src.label });
           }
         }
+        const harvestHint = intentAnswerGuide(intentForAnswer);
+        const liveLength =
+          intentForAnswer.saveOffer === "recipe" ||
+          intentForAnswer.answerMode === "teach_light" ||
+          intentForAnswer.answerDepth === "long"
+            ? "medium"
+            : answerLengthForRoute(liveRoute);
+        const liveSearch =
+          Boolean(liveRoute.tools) &&
+          pickAnswerProvider(liveRoute, hasFiles) === "grok";
+        system = [
+          system ??
+            [ASK_SYSTEM_PROMPT, localeLine(geo)].filter(Boolean).join("\n\n"),
+          searchRuleLine(liveSearch),
+          harvestHint,
+        ]
+          .filter(Boolean)
+          .join("\n\n");
 
-        for await (const live of streamGrokChat(history, {
-          effort: route.effort,
-          answerLength,
-          tools: route.tools,
-          maxToolCalls: route.maxToolCalls,
+        let answerProvider: "luna" | "grok" = pickAnswerProvider(
+          liveRoute,
+          hasFiles
+        );
+
+        for await (const live of streamAskAnswer(history, {
+          route: liveRoute,
+          hasAttachments: hasFiles,
+          effort: liveRoute.effort,
+          answerLength: liveLength,
+          tools: liveSearch,
+          maxToolCalls: liveRoute.maxToolCalls,
           timeZone: geo.timeZone,
-          system:
-            system ??
-            [ASK_SYSTEM_PROMPT, localeLine(geo), harvestHint]
-              .filter(Boolean)
-              .join("\n\n"),
+          system,
         })) {
+          if (live.type === "meta") {
+            answerProvider = live.provider;
+            continue;
+          }
           if (live.type === "done") {
             const finalText = lookupSources.length
               ? attachSources(live.text, lookupSources)
@@ -222,20 +330,23 @@ export async function POST(request: Request) {
               finalText
             );
             const costMicros = live.usage
-              ? grokCostMicros(
+              ? askCostMicros(
+                  answerProvider,
                   live.usage.inputTokens,
                   live.usage.outputTokens,
                   live.usage.cachedTokens
                 )
-              : estimateAskMicros();
-            await trackHaloEvent(supabase, user.id, "ask", {
+              : estimateAskMicros(answerProvider);
+            await commitAskTurn(supabase, user.id, reservationId, {
               files: attachments.length,
-              search: route.tools,
-              route: route.kind,
+              search: liveSearch && answerProvider === "grok",
+              route: liveRoute.kind,
+              provider: answerProvider,
               costMicros,
               inputTokens: live.usage?.inputTokens ?? 0,
               outputTokens: live.usage?.outputTokens ?? 0,
             });
+            settled = true;
             let replyId = "";
             if (assistantError || !assistantRow) {
               const fallback: AskMessage = {
@@ -255,27 +366,42 @@ export async function POST(request: Request) {
                 reply: assistantRow as AskMessage,
               });
             }
-            const harvested = await import("@/lib/learn-mine").then(
-              ({ mineLearnFromTurn }) =>
-                mineLearnFromTurn(
-                  supabase,
-                  user.id,
-                  conversationId,
-                  userText,
-                  live.text
-                )
-            );
+            const harvestIntent = intentForAnswer;
+            const harvested =
+              harvestIntent.harvest
+                ? await import("@/lib/learn-mine").then(({ mineLearnFromTurn }) =>
+                    mineLearnFromTurn(
+                      supabase,
+                      user.id,
+                      conversationId,
+                      userText,
+                      live.text,
+                      harvestIntent,
+                      priorText
+                    )
+                  )
+                : [];
             void trackHaloEvent(supabase, user.id, "harvest", {
               conversationId,
               skipped: harvested.length === 0,
               cardCount: harvested.length,
               kinds: [...new Set(harvested.map((chip) => chip.kind))].join(","),
+              job: harvestIntent.job,
+              freshness: harvestIntent.freshness,
+              classify_source: harvestIntent.planSource,
+              plan_json: JSON.stringify({
+                job: harvestIntent.job,
+                freshness: harvestIntent.freshness,
+                feedDomain: harvestIntent.feedDomain,
+                harvest: harvestIntent.harvest,
+                planSource: harvestIntent.planSource,
+              }),
             });
             if (harvested.length) {
               send({ type: "harvest", chips: harvested });
             }
-            const { detectSaveOffer } = await import("@/lib/save-offer");
-            const saveKind = detectSaveOffer(userText, live.text);
+            const { resolveSaveOffer } = await import("@/lib/save-offer");
+            const saveKind = resolveSaveOffer(userText, live.text, harvestIntent);
             if (saveKind && replyId) {
               send({
                 type: "saveOffer",
@@ -293,6 +419,9 @@ export async function POST(request: Request) {
           error: "Something went wrong. Try again.",
         });
       } finally {
+        if (!settled) {
+          await releaseAskTurn(supabase, reservationId);
+        }
         controller.close();
       }
     },

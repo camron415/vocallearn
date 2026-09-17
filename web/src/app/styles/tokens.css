@@ -319,7 +319,7 @@ html[data-halo-theme="dark"] .field--plain:focus {
 
 html[data-halo-theme="dark"] .msg--assistant,
 html[data-halo-theme="dark"] .msg--live {
-  background: var(--paper-card, #2c2c2e);
+  background: transparent;
   color: var(--halo-ink);
   box-shadow: none;
 }
@@ -328,15 +328,6 @@ html[data-halo-theme="dark"] .chat-scroll .msg.msg--user {
   background: var(--paper-inset, var(--halo-stone));
   background-color: var(--paper-inset, var(--halo-stone));
   box-shadow: none;
-}
-
-html[data-halo-theme="dark"] .msg--user .msg-copy {
-  background: rgba(28, 36, 46, 0.92);
-}
-
-html[data-halo-theme="dark"] .msg--user .msg-copy:hover,
-html[data-halo-theme="dark"] .msg--user .msg-copy:focus-visible {
-  background: #2c333c;
 }
 
 html[data-halo-theme="dark"] .history-overlay {

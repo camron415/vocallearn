@@ -1,7 +1,7 @@
 # Cove — Keep vision (facts, Home, mastery)
 
-**Updated:** 2026-08-31  
-**Track:** Shipped in Halo v1.1 on production `/ask`; `/preview` remains the Lab mixer.  
+**Updated:** 2026-09-16  
+**Track:** Halo **v1.2.0** on production `/ask` (early access + Family). `/preview` is the Lab mixer on the same tree.  
 **Audience:** Product + engineering reference. VocalLearn native is a side project, not this product.
 
 Cove is a placeholder name. Paper is the current Lab look. This file is the product loop for harvested facts — not a request to reskin as a video game.
@@ -13,13 +13,15 @@ Cove is a placeholder name. Paper is the current Lab look. This file is the prod
 Sit **Duolingo-side of Quizlet**, not a full game.
 
 - **Ask is the front door.** Search/chat stays first. Keep/Learn is optional juice on top of real answers.
+- **Two doors.** Instant answers for lookups and throwaway asks. **Opt-in** Teach-me / learning clicks for depth — not Socratic intercept on every send. See [`docs/PRODUCT_ROADMAP.md`](./PRODUCT_ROADMAP.md) § Trajectory adjustment.
 - **Quizlet** is too dry (cards in a folder, no journey).
 - **Duolingo** is the analog: habit loop, light scores, collection — still obviously a learning tool.
 - **Full RPG / medieval kingdom / combat** is out. “Keep” is the metaphor. The UI stays Paper Cove. Copy may say Keep, due, mastered. No HP, maps, swords, or genre chrome.
+- **Fun loop (2026-09-07).** Same-visit lock-in and day-1 play are the retention engine, not stacked juice. Auto-harvest stays; human drop/claim on junk. Do not Spark-only, 7-slot dock, or family ticker. [`docs/FUN-LOOP.md`](./FUN-LOOP.md).
 
-Games convert and retain; they also pick a player tribe. We have no audience yet. Do not pick “students” vs “curious AI people” vs “gamers” until family actually uses Ask + a due drop. Until then: Ask-first for everyone, daily tidy for people who tap chips.
+Games convert and retain; they also pick a player tribe. We have no audience yet. Do not pick “students” vs “curious AI people” vs “gamers” until family actually uses Ask + a due drop. Until then: Ask-first for everyone, daily tidy for people who tap chips. **User curiosity is the content library** — no Duolingo-scale pre-built curriculum.
 
-**Fine-tune / Fable-5 brute-force overhaul:** not the plan. Frozen spec + Lab slices + Camron taste. **Dev:** Composer 2.5 for lanes/planning; Grok 4.6 only for hard blocks (thin brief). **Ask (post-V2):** Luna default, Grok 4.3 + search when needed — see `web/V2-CHIEF-HANDOFF.md`.
+**Fine-tune / Fable-5 brute-force overhaul:** not the plan. Frozen spec + Lab slices + Camron taste. **Dev:** Composer 2.5 for lanes/planning; Grok 4.6 only for hard blocks (thin brief). **Ask (post-V2):** Luna default, Grok 4.3 + search when needed — see `web/V2-CHIEF-HANDOFF.md`. **Mobile:** iOS shell **1.4** after mobile web QA; mobile is a selling point but not a new medium before the loop works on Safari.
 
 ---
 
@@ -42,7 +44,7 @@ Existing four. Do not add a fifth rainbow.
 Paper Home. Composer, Cove, header buttons. No beads, no seats, no demo Nile on a real account. Ask is the only job.
 
 **2. Ask → harvest**  
-In the answer, spans light up by kind. Chips **fly up** into the Keep row. Header is **not** a pond: no ripple, no glass body, no water hit. Short travel + optional land glow. Full-width Keep row (not the old ~60% bar) so beads can accumulate.
+In the answer, spans light up by kind. Chips **fly up** into the Keep row. Header is **not** a pond: no ripple, no glass body, no water hit. Short travel + optional land glow. Full-width Keep row (not the old ~60% bar) so beads can accumulate. **A fact is a question cue + answer, not a unique word.** Same answer under different questions (largest planet vs first gas giant, both Jupiter) is two Keep chips. Restated questions are one. Closed one-word names Keep. Lab lock 2026-09-16, rides 1.2 promote: [`web/INTENT-HARVEST-1.2.md`](../web/INTENT-HARVEST-1.2.md) § Cue uniqueness.
 
 **3. Chat header = the Keep**  
 Beads in **discovery order**. New bead docks on one consistent side; older beads shift toward the Cove wordmark. Target ~30 visible. Overflow later (`+N` or a Keep sheet) — do not fake infinite dots. Same visit: beads **stay in the Keep**. Going Home mid-session does **not** drop them.

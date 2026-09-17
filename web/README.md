@@ -10,24 +10,19 @@ Parent README: [`../README.md`](../README.md)
 
 | Surface | URL | Who |
 | --- | --- | --- |
-| **Production (v1.1)** | https://halo-gules-three.vercel.app | Early access + Family (invited users) |
+| **Production (v1.2.0)** | https://halo-gules-three.vercel.app | Early access + Family (invited users) |
 | **Real Ask** | https://halo-gules-three.vercel.app/ask | Login required — Paper UI + Cove/Keep loop |
-| **Lab preview** | https://halo-gules-three.vercel.app/preview | Anyone — mixer + dummy data |
+| **Lab preview** | https://halo-gules-three.vercel.app/demo | Anyone — `/demo` redirects to `/preview` (no API cost) |
 
 Three rollout rings: **Lab** (Camron) → **Early access** (wife, parents) → **Family** (everyone else). Early access and Family share the live URL; the invite button is what differs.
 
 ---
 
-## Version 1.1 — live (Early access)
+## Version 1.2.0 — live (Early access + Family)
 
-Signed-in users get Paper UI and the full Cove / Keep loop on `/ask`:
+Production `/ask` is **1.2.0**: Luna on shallow asks, intent harvest / cue uniqueness, chat unbox, lock-in, phone Home seats, H1 line, signed review sheet. Detail: [`HARVEST-OPS.md`](./HARVEST-OPS.md) § 1.2 closeout.
 
-- Everything in V1 Ask, plus harvest → Keep → due Home → play rounds → gold ◎
-- Grok 4.3 with cheap routing (low reasoning default; search only when needed)
-- Keep sync across phone and desktop (`halo_keep_state`)
-- Mobile layout pass (iPhone Safari QA)
-
-`/preview` remains the Lab mixer for Camron only.
+`/preview` remains the Lab mixer.
 
 ## Version 1 — Ask foundation (superseded on `/ask`)
 

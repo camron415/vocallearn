@@ -52,7 +52,7 @@ const DESIGN_H = 900;
 export const PHONE_HOME_MAX_W = 720;
 
 export function isPhoneHomeView(view: { w: number }) {
-  return view.w <= PHONE_HOME_MAX_W;
+  return view.w > 0 && view.w <= PHONE_HOME_MAX_W;
 }
 
 export function keepFieldScale(view: { w: number; h: number }) {
@@ -126,35 +126,86 @@ const PICK: number[][] = [
 ];
 
 /**
- * Phone-only seats. All in the upper band so chips sit above greeting +
- * composer (dice-5: two-one-two). Never fy > 0.40 — those hid behind the dock.
+ * Phone Home shows as many due chips as the field can hold without overlap.
+ * Extras stay due in Keep until a seat opens. Desktop HOME_SEAT_CAP 16 stays.
  */
-const PHONE_MASTER: Spot[] = [
-  { fx: 0.24, fy: 0.08, room: 0.9, band: "top", belt: true },
-  { fx: 0.76, fy: 0.08, room: 0.9, band: "top", belt: true },
-  { fx: 0.5, fy: 0.18, room: 0.85, band: "top", belt: true },
-  { fx: 0.28, fy: 0.3, room: 0.9, band: "top", belt: true },
-  { fx: 0.72, fy: 0.3, room: 0.9, band: "top", belt: true },
-  { fx: 0.12, fy: 0.16, room: 0.75, band: "top", belt: true },
-  { fx: 0.88, fy: 0.16, room: 0.75, band: "top", belt: true },
-  { fx: 0.5, fy: 0.4, room: 0.7, band: "top", belt: false },
-  { fx: 0.18, fy: 0.38, room: 0.7, band: "top", belt: false },
-  { fx: 0.82, fy: 0.38, room: 0.7, band: "top", belt: false },
+export const PHONE_HOME_SEAT_CAP = 8;
+
+type PhoneRail = "left" | "right";
+
+/**
+ * Jumping cluster anchors (desktop PICK energy, portrait geometry).
+ * t = 0 under the header, 1 just above the greeting. No true-center seat.
+ */
+const PHONE_ANCHORS: { t: number; rail: PhoneRail }[] = [
+  { t: 0.16, rail: "left" },
+  { t: 0.78, rail: "right" },
+  { t: 0.46, rail: "left" },
+  { t: 0.06, rail: "right" },
+  { t: 0.94, rail: "left" },
+  { t: 0.32, rail: "right" },
+  { t: 0.62, rail: "left" },
+  { t: 0.22, rail: "right" },
 ];
 
-const PHONE_PICK: number[][] = [
-  [],
-  [2],
-  [0, 1],
-  [0, 1, 2],
-  [0, 1, 3, 4],
-  [0, 1, 2, 3, 4],
-  [0, 1, 2, 3, 4, 5],
-  [0, 1, 2, 3, 4, 5, 6],
-  [0, 1, 2, 3, 4, 5, 6, 7],
-  [0, 1, 2, 3, 4, 5, 6, 7, 8],
-  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-];
+export type PackChip = {
+  id: string;
+  w: number;
+  h: number;
+  hue?: string;
+  heat?: ChipHeat;
+  group?: string;
+  role?: "keep" | "ask";
+};
+
+type PhoneField = { x: number; y: number; w: number; h: number };
+
+const PHONE_PAD = 10;
+const PHONE_GAP = 12;
+
+/** KeepPocket overflow beads — not persist. null = desktop (all due sit on Home). */
+let phoneSeatedDueIds: string[] | null = null;
+const phoneSeatedListeners = new Set<() => void>();
+
+export function getPhoneHomeSeatedIds(): string[] | null {
+  return phoneSeatedDueIds ? [...phoneSeatedDueIds] : null;
+}
+
+export function subscribePhoneHomeSeated(fn: () => void) {
+  phoneSeatedListeners.add(fn);
+  return () => {
+    phoneSeatedListeners.delete(fn);
+  };
+}
+
+export function setPhoneHomeSeatedIds(ids: string[] | null) {
+  const next = ids ? [...ids].sort() : null;
+  const prev = phoneSeatedDueIds ? [...phoneSeatedDueIds].sort() : null;
+  const same =
+    (next === null && prev === null) ||
+    (next !== null &&
+      prev !== null &&
+      next.length === prev.length &&
+      next.every((id, i) => id === prev[i]));
+  if (same) return;
+  phoneSeatedDueIds = next;
+  for (const fn of phoneSeatedListeners) fn();
+}
+
+/** Cluster members stay together; cluster order still mixes kinds. */
+export function clusterKeepOrder<
+  T extends { id: string; kind: string; cluster?: string },
+>(chips: T[]): T[] {
+  const groups = new Map<string, T[]>();
+  for (const chip of chips) {
+    const key = chip.cluster || chip.id;
+    const list = groups.get(key);
+    if (list) list.push(chip);
+    else groups.set(key, [chip]);
+  }
+  const heads = mixKeepOrder([...groups.values()].map((group) => group[0]));
+  return heads.flatMap((head) => groups.get(head.cluster || head.id) ?? [head]);
+}
 
 function hit(a: HomeWall, b: HomeWall, gap: number) {
   return (
@@ -207,10 +258,13 @@ export function keepChipMaxRem(count: number) {
   return 22;
 }
 
+/** Phone Home label cap — CSS `--keep-chip-max` must match. */
+export const PHONE_CHIP_MAX_REM = 18;
+
 /**
  * Home display cap. Miner can store the full token; Home shows a seat-safe line.
  */
-export const CHIP_LABEL_MAX = 28;
+export const CHIP_LABEL_MAX = 40;
 
 export function formatChipLabel(token: string, max = CHIP_LABEL_MAX) {
   const text = token.trim().replace(/\s+/g, " ");
@@ -241,15 +295,303 @@ function heatRank(heat?: ChipHeat) {
   return 0;
 }
 
-function spotsForCount(n: number, phone: boolean): Spot[] {
-  if (phone) {
-    const count = Math.max(0, Math.min(PHONE_MASTER.length, Math.round(n)));
-    const pick = PHONE_PICK[count] ?? PHONE_PICK[PHONE_PICK.length - 1];
-    return pick.map((i) => PHONE_MASTER[i]).filter(Boolean);
+function spotsForCount(n: number): Spot[] {
+  const count = Number.isFinite(n)
+    ? Math.max(0, Math.min(16, Math.round(n)))
+    : 0;
+  const pick = PICK[count] ?? PICK[PICK.length - 1] ?? [];
+  return pick.flatMap((i) => {
+    const spot = MASTER[i];
+    return spot ? [spot] : [];
+  });
+}
+
+function phonePlayableField(
+  view: { w: number; h: number },
+  walls: HomeWall[]
+): PhoneField {
+  let top = PHONE_PAD;
+  let bottom = view.h - PHONE_PAD;
+  const greet = walls[0];
+  const topbar = walls[1];
+  const compose = walls[2] ?? walls[3];
+  if (topbar) top = Math.max(top, topbar.y + topbar.h + 8);
+  else {
+    const bar = walls.find((wall) => wall.y <= 96 && wall.h < 140);
+    if (bar) top = Math.max(top, bar.y + bar.h + 8);
   }
-  const count = Math.max(0, Math.min(16, Math.round(n)));
-  const pick = PICK[count] ?? PICK[16];
-  return pick.map((i) => MASTER[i]).filter(Boolean);
+  if (greet && greet.h < view.h * 0.4) {
+    bottom = Math.min(bottom, greet.y - 12);
+  }
+  if (compose && compose.y > view.h * 0.4) {
+    bottom = Math.min(bottom, compose.y - 12);
+  }
+  if (bottom - top < 72) {
+    bottom = Math.min(view.h - PHONE_PAD, top + Math.max(72, view.h * 0.42));
+  }
+  return {
+    x: PHONE_PAD,
+    y: top,
+    w: Math.max(80, view.w - PHONE_PAD * 2),
+    h: Math.max(72, bottom - top),
+  };
+}
+
+function phoneLaneCount(field: PhoneField, chipH: number) {
+  const stride = Math.max(chipH + 14, 52);
+  return Math.max(1, Math.min(PHONE_HOME_SEAT_CAP, Math.floor(field.h / stride)));
+}
+
+function phoneWide(width: number, fieldW: number) {
+  return width > fieldW * 0.46;
+}
+
+function phoneCanPair(a: number, b: number, fieldW: number) {
+  return a + b + PHONE_GAP <= fieldW - 8;
+}
+
+function phoneSeatBox(
+  chip: PackChip,
+  field: PhoneField,
+  lane: number,
+  rail: PhoneRail,
+  lanes: number
+) {
+  const stride = field.h / lanes;
+  const y = field.y + lane * stride + Math.max(0, (stride - chip.h) / 2);
+  const rag = lane % 2 === 0 ? 0 : 8;
+  const x =
+    rail === "left"
+      ? field.x + rag
+      : field.x + field.w - chip.w - rag;
+  return {
+    x: Math.min(Math.max(field.x, x), field.x + field.w - chip.w),
+    y: Math.min(Math.max(field.y, y), field.y + field.h - chip.h),
+    w: chip.w,
+    h: chip.h,
+  };
+}
+
+function phoneLaneTaken(
+  lanes: Array<{ left: boolean; right: boolean; solo: boolean }>,
+  lane: number,
+  wide: boolean,
+  rail: PhoneRail
+) {
+  const slot = lanes[lane];
+  if (!slot || slot.solo) return true;
+  if (wide) return slot.left || slot.right;
+  return rail === "left" ? slot.left : slot.right;
+}
+
+function markPhoneLane(
+  lanes: Array<{ left: boolean; right: boolean; solo: boolean }>,
+  lane: number,
+  wide: boolean,
+  rail: PhoneRail
+) {
+  const slot = lanes[lane];
+  if (!slot) return;
+  if (wide) {
+    slot.solo = true;
+    slot.left = true;
+    slot.right = true;
+    return;
+  }
+  if (rail === "left") slot.left = true;
+  else slot.right = true;
+  if (slot.left && slot.right) slot.solo = true;
+}
+
+function nextPhoneLane(
+  lanes: Array<{ left: boolean; right: boolean; solo: boolean }>,
+  start: number,
+  wide: boolean,
+  rail: PhoneRail
+) {
+  const n = lanes.length;
+  for (let step = 0; step < n; step += 1) {
+    const down = start + step;
+    if (down < n && !phoneLaneTaken(lanes, down, wide, rail)) return down;
+    const up = start - step;
+    if (step && up >= 0 && !phoneLaneTaken(lanes, up, wide, rail)) return up;
+  }
+  return -1;
+}
+
+function seedPhoneKeep(chips: PackChip[], field: PhoneField): KeepSeat[] {
+  if (!chips.length) return [];
+  const maxH = Math.max(40, ...chips.map((chip) => chip.h));
+  const lanesN = phoneLaneCount(field, maxH);
+  const occupancy = Array.from({ length: lanesN }, () => ({
+    left: false,
+    right: false,
+    solo: false,
+  }));
+  const groups = new Map<string, PackChip[]>();
+  for (const chip of chips) {
+    const key = chip.group || chip.id;
+    const list = groups.get(key);
+    if (list) list.push(chip);
+    else groups.set(key, [chip]);
+  }
+  const groupOrder: PackChip[][] = [];
+  const seen = new Set<string>();
+  for (const chip of chips) {
+    const key = chip.group || chip.id;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    groupOrder.push(groups.get(key) ?? [chip]);
+  }
+
+  const out: Array<KeepSeat & { w: number; h: number }> = [];
+  let anchorAt = 0;
+
+  const clashes = (box: HomeWall) =>
+    out.some((seat) =>
+      hit(box, { x: seat.x, y: seat.y, w: seat.w, h: seat.h }, PHONE_GAP)
+    );
+
+  for (const group of groupOrder) {
+    if (out.length >= PHONE_HOME_SEAT_CAP) break;
+    const first = group[0];
+    if (!first) continue;
+    let placedInGroup = 0;
+    let rail: PhoneRail = "left";
+    let lane = 0;
+
+    for (let i = 0; i < group.length; i += 1) {
+      if (out.length >= PHONE_HOME_SEAT_CAP) break;
+      const chip = group[i];
+      const chipWide = phoneWide(chip.w, field.w);
+      if (placedInGroup === 0) {
+        let found = -1;
+        let foundRail: PhoneRail = "left";
+        while (anchorAt < PHONE_ANCHORS.length && found < 0) {
+          const anchor = PHONE_ANCHORS[anchorAt];
+          anchorAt += 1;
+          const guess = Math.min(
+            lanesN - 1,
+            Math.max(0, Math.round(anchor.t * (lanesN - 1)))
+          );
+          const tryRail = anchor.rail;
+          if (!phoneLaneTaken(occupancy, guess, chipWide, tryRail)) {
+            found = guess;
+            foundRail = tryRail;
+            break;
+          }
+          const nearby = nextPhoneLane(occupancy, guess, chipWide, tryRail);
+          if (nearby >= 0) {
+            found = nearby;
+            foundRail = tryRail;
+          }
+        }
+        if (found < 0) {
+          found = nextPhoneLane(occupancy, 0, chipWide, "left");
+          foundRail = "left";
+          if (found < 0) {
+            found = nextPhoneLane(occupancy, 0, chipWide, "right");
+            foundRail = "right";
+          }
+        }
+        if (found < 0) break;
+        lane = found;
+        rail = foundRail;
+      } else {
+        const prev = group[i - 1];
+        const pairRail: PhoneRail = rail === "left" ? "right" : "left";
+        if (
+          prev &&
+          !chipWide &&
+          !phoneWide(prev.w, field.w) &&
+          phoneCanPair(prev.w, chip.w, field.w) &&
+          !phoneLaneTaken(occupancy, lane, false, pairRail)
+        ) {
+          const box = phoneSeatBox(chip, field, lane, pairRail, lanesN);
+          if (!clashes(box)) {
+            markPhoneLane(occupancy, lane, false, pairRail);
+            out.push({
+              id: chip.id,
+              x: box.x,
+              y: box.y,
+              w: chip.w,
+              h: chip.h,
+              band:
+                lane < lanesN / 3 ? "top" : lane > (lanesN * 2) / 3 ? "low" : "side",
+            });
+            placedInGroup += 1;
+            continue;
+          }
+        }
+        const next = nextPhoneLane(occupancy, lane, chipWide, rail);
+        if (next < 0) {
+          const other: PhoneRail = rail === "left" ? "right" : "left";
+          const swap = nextPhoneLane(occupancy, lane, chipWide, other);
+          if (swap < 0) break;
+          lane = swap;
+          rail = other;
+        } else {
+          lane = next;
+        }
+      }
+
+      const box = phoneSeatBox(chip, field, lane, rail, lanesN);
+      if (clashes(box)) continue;
+      markPhoneLane(occupancy, lane, chipWide, rail);
+      out.push({
+        id: chip.id,
+        x: box.x,
+        y: box.y,
+        w: chip.w,
+        h: chip.h,
+        band: lane < lanesN / 3 ? "top" : lane > (lanesN * 2) / 3 ? "low" : "side",
+      });
+      placedInGroup += 1;
+    }
+  }
+
+  return out.map(({ id, x, y, band }) => ({ id, x, y, band }));
+}
+
+function seedPhoneAsks(
+  asks: PackChip[],
+  field: PhoneField,
+  keep: KeepSeat[]
+): KeepSeat[] {
+  const out: KeepSeat[] = [];
+  const rails: PhoneRail[] = ["left", "right", "right", "left"];
+  for (let i = 0; i < asks.length; i += 1) {
+    const chip = asks[i];
+    const rail = rails[i] ?? "left";
+    const rag = i % 2 === 0 ? 0 : 8;
+    const bump = {
+      x:
+        rail === "left"
+          ? field.x + rag
+          : field.x + field.w - chip.w - rag,
+      y: field.y + (i % 2) * Math.min(56, field.h * 0.12),
+      w: chip.w,
+      h: chip.h,
+    };
+    const blocked = [...keep, ...out].some((seat) =>
+      hit(bump, { x: seat.x, y: seat.y, w: chip.w, h: chip.h }, PHONE_GAP)
+    );
+    if (blocked) continue;
+    out.push({ id: chip.id, x: bump.x, y: bump.y, band: "top" });
+  }
+  return out;
+}
+
+export function seedPhoneHome(
+  chips: PackChip[],
+  view: { w: number; h: number },
+  walls: HomeWall[]
+): KeepSeat[] {
+  const field = phonePlayableField(view, walls);
+  const keep = chips.filter((chip) => chip.role !== "ask");
+  const asks = chips.filter((chip) => chip.role === "ask");
+  const seated = seedPhoneKeep(keep, field);
+  return [...seated, ...seedPhoneAsks(asks, field, seated)];
 }
 
 function clearOfWalls(
@@ -280,28 +622,22 @@ function clearOfWalls(
  * Scatter is ignored (kept in the signature so callers do not break).
  */
 export function seedKeepField(
-  chips: {
-    id: string;
-    w: number;
-    h: number;
-    hue?: string;
-    heat?: ChipHeat;
-  }[],
+  chips: PackChip[],
   view: { w: number; h: number },
   walls: HomeWall[],
   _scatter?: number
 ): KeepSeat[] {
   if (!chips.length) return [];
-  const phone = isPhoneHomeView(view);
+  if (isPhoneHomeView(view)) return seedPhoneHome(chips, view, walls);
   const pad = 10;
-  const inset = phone ? 0.04 : keepPlayableInset(chips.length, view);
-  const spots = spotsForCount(chips.length, phone);
+  const inset = keepPlayableInset(chips.length, view);
+  const spots = spotsForCount(chips.length);
   const centers = spots.map((spot, i) => {
     const fx = inset + spot.fx * (1 - 2 * inset);
     const fy = inset + spot.fy * (1 - 2 * inset);
-    // Tiny jitter only — seats must stay recognizable. Phone dice stays put.
-    const jx = phone ? 0 : (unit(`jx${i}${spot.fx}`) - 0.5) * 0.01;
-    const jy = phone ? 0 : (unit(`jy${i}${spot.fy}`) - 0.5) * 0.008;
+    // Tiny jitter only — seats must stay recognizable.
+    const jx = (unit(`jx${i}${spot.fx}`) - 0.5) * 0.01;
+    const jy = (unit(`jy${i}${spot.fy}`) - 0.5) * 0.008;
     return {
       ...spot,
       cx: (fx + jx) * view.w,
@@ -394,7 +730,7 @@ export function seedKeepField(
 
   for (const chip of unused) {
     const cx = pad + unit(`fx${chip.id}`) * (view.w - pad * 2);
-    const cy = phone ? view.h * 0.22 : view.h * 0.45;
+    const cy = view.h * 0.45;
     const cleared = clearOfWalls(cx, cy, chip.w, chip.h, walls, 12);
     out.push({
       id: chip.id,
@@ -453,10 +789,32 @@ export function packHomeChips(
       }
       clampBody(bodies[i], view, pad);
       if (opts?.shoveLargeWalls) {
+        const greet = walls[0];
+        const cap = greet
+          ? greet.y - (outerGap + 8)
+          : view.h * 0.78;
         bodies[i].y = Math.min(
           bodies[i].y,
-          Math.max(pad, view.h * 0.42 - bodies[i].h)
+          Math.max(pad, cap - bodies[i].h)
         );
+      }
+    }
+  }
+
+  if (opts?.shoveLargeWalls) {
+    const gap = outerGap + 8;
+    for (const body of bodies) {
+      for (const wall of walls) {
+        if (!hit(body, wall, gap)) continue;
+        const acy = body.y + body.h / 2;
+        const bcy = wall.y + wall.h / 2;
+        if (acy <= bcy) body.y = wall.y - gap - body.h;
+        else body.y = wall.y + wall.h + gap;
+      }
+      clampBody(body, view, pad);
+      const greet = walls[0];
+      if (greet) {
+        body.y = Math.min(body.y, Math.max(pad, greet.y - gap - body.h));
       }
     }
   }

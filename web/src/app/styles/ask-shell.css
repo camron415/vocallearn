@@ -1,0 +1,255 @@
+/* Lab Track 1 — persistent composer across /ask routes.
+ *
+ * Play overlay pose (lab `/preview` Home review) — sole owner: THIS FILE.
+ * Cross-check (do not set overlay top/transform/min-height elsewhere):
+ *   LoopSkin.tsx — `.ask-stage.is-playing .compose*` is family in-hero only
+ *     (AskShell compose is NOT under `.ask-stage`). Chat `.ask-shell-compose`
+ *     rules stay chat. `.compose-play-col` / pills / prompt = inner type, OK.
+ *   home.css — `.ask-stage.is-playing .compose*` in-hero only. 640 grown
+ *     layout must stay `.ask-stage .compose.is-play-lesson.is-grown`.
+ *     Unprefixed `.compose-play-*` = inner look (band, dots), not pose.
+ *   motion.css — `html[data-halo-kb] .ask-stage.is-playing .compose*` in-hero.
+ *   chat.css — HarvestLock inner look only.
+ *   overlays.css / skins-paper.css — no play overlay pose.
+ *   AskShell.tsx — `.ask-shell-compose.is-play-grown` marks the grown sheet.
+ * Grown Home play is a FIELD FRAME at all widths (not 640-only): inset below
+ * the header, transform none, flex-center a content-sized card (`flex: 0 0 auto`).
+ * Do not interpolate overlay top/height — that pinned the card under the header
+ * on phone. Inner compose grows max-height over `--travel`. Pose !important
+ * here is allowlisted so LoopSkin cannot restretch it. Do not % translateY.
+ * Do not height:fit-content + min-height:0 on `.compose-play`.
+ */
+
+html[data-halo-ask-shell="1"] .ask-shell {
+  position: relative;
+  min-height: 100dvh;
+}
+
+html[data-halo-ask-shell="1"] .ask-shell-page {
+  min-height: 100dvh;
+}
+
+html[data-halo-ask-shell="1"] .ask-shell-compose {
+  position: fixed;
+  z-index: 25;
+  left: 50%;
+  width: min(calc(var(--halo-chat) + 24px), calc(100% - 2rem));
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+html[data-halo-ask-shell="1"] .ask-shell-compose-inner {
+  position: relative;
+  width: 100%;
+  pointer-events: auto;
+}
+
+html[data-halo-ask-shell="1"] .ask-shell--home .ask-shell-compose {
+  top: 50%;
+  margin-top: 0.35rem;
+  transform: translate(-50%, -10%);
+}
+
+html[data-halo-ask-shell="1"] .ask-shell--chat .ask-shell-compose {
+  bottom: calc(0.95rem - var(--water, 8px));
+  width: min(calc(var(--halo-chat) + 2 * var(--water, 8px)), 100%);
+  margin: 0;
+}
+
+/* Idle overlay pose stays put through gather so family chips merge
+   into the composer. Grown rest pose is the signed field frame (top+
+   bottom, height auto, hug card). Do not interpolate overlay top/height. */
+html[data-halo-ask-shell="1"] .ask-shell--home .ask-shell-compose.is-play:not(.is-play-grown) .compose.is-play-lesson {
+  overflow: hidden;
+  max-height: 3.6rem;
+  transition:
+    max-height var(--travel) var(--ease-travel),
+    padding var(--travel) var(--ease-travel);
+}
+
+html[data-halo-ask-shell="1"] .ask-shell--home .ask-shell-compose.is-play:not(.is-play-grown) .compose-play {
+  min-height: 0;
+  max-height: 3.6rem;
+  overflow: hidden;
+}
+
+html[data-halo-ask-shell="1"] .ask-shell--home .ask-shell-compose.is-play .compose.is-play-lesson .water__layers,
+html[data-halo-ask-shell="1"] .ask-shell--home .ask-shell-compose.is-play .compose.is-play-lesson .capsule__glass,
+html[data-halo-ask-shell="1"] .ask-shell--home .ask-shell-compose.is-play .compose.is-play-lesson .capsule__fill,
+html[data-halo-ask-shell="1"] .ask-shell--home .ask-shell-compose.is-play .compose.is-play-lesson .capsule__shade,
+html[data-halo-ask-shell="1"] .ask-shell--home .ask-shell-compose.is-play .compose.is-play-lesson .capsule__edge {
+  display: none;
+}
+
+/* Grown Home review: field frame + content-sized card, all widths.
+   Allowlisted !important: LoopSkin injects later; without these it can
+   restretch the card to the header. Do not copy this pattern elsewhere. */
+html[data-halo-ask-shell="1"] .ask-shell--home .ask-shell-compose.is-play-grown {
+  top: calc(env(safe-area-inset-top, 0px) + 4.75rem) !important;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 1.1rem) !important;
+  left: 12px !important;
+  right: 12px !important;
+  width: auto !important;
+  height: auto !important;
+  max-height: none !important;
+  margin: 0 !important;
+  transform: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: stretch !important;
+  z-index: 28;
+}
+
+html[data-halo-ask-shell="1"] .ask-shell--home .ask-shell-compose.is-play-grown .ask-shell-compose-inner,
+html[data-halo-ask-shell="1"] .ask-shell--home .ask-shell-compose.is-play-grown .compose.is-play-lesson.is-grown,
+html[data-halo-ask-shell="1"] .ask-shell--home .ask-shell-compose.is-play-grown .compose-play-root,
+html[data-halo-ask-shell="1"] .ask-shell--home .ask-shell-compose.is-play-grown .compose-play {
+  flex: 0 0 auto !important;
+  height: auto !important;
+  max-height: min(100%, 42rem) !important;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+html[data-halo-ask-shell="1"] .ask-shell--home .ask-shell-compose.is-play-grown .ask-shell-compose-inner {
+  overflow: auto;
+  align-self: center;
+}
+
+html[data-halo-ask-shell="1"] .ask-shell--home .ask-shell-compose.is-play-grown .compose.is-play-lesson.is-grown {
+  padding: 0 !important;
+  transition:
+    max-height var(--travel) var(--ease-travel),
+    padding var(--travel) var(--ease-travel);
+}
+
+html[data-halo-ask-shell="1"] .ask-shell--home .ask-shell-compose.is-play-grown .compose-play {
+  min-height: 22rem !important;
+  overflow: auto;
+}
+
+@media (max-width: 720px) {
+  html[data-halo-ask-shell="1"] .ask-shell--chat::after {
+    content: none;
+    display: none;
+  }
+
+  html[data-halo-ask-shell="1"] .ask-shell--chat .ask-shell-compose {
+    left: 12px;
+    right: 12px;
+    width: auto;
+    transform: none;
+    bottom: 0.75rem;
+  }
+
+  html[data-halo-ask-shell="1"] .ask-shell--chat .compose-dock {
+    position: relative;
+    bottom: auto;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    border-radius: 28px;
+  }
+}
+
+html[data-halo-ask-shell="1"] .ask-shell--home .ask-shell-compose .compose {
+  width: 100%;
+  padding: 0.38rem 0.48rem 0.38rem 0.9rem;
+}
+
+html[data-halo-ask-shell="1"] .ask-shell-compose.is-open {
+  margin-top: -1.05rem;
+  transition: margin-top var(--travel) var(--ease-travel);
+}
+
+html[data-halo-ask-shell="1"] .compose-stack--phantom {
+  visibility: hidden;
+  pointer-events: none;
+  min-height: 3.4rem;
+  width: 100%;
+}
+
+html[data-halo-ask-shell="1"] .chat-stage {
+  padding-bottom: 0.35rem;
+}
+
+html[data-halo-ask-shell="1"] .chat-stage .chat-scroll {
+  padding-bottom: 5.5rem;
+}
+
+html[data-halo-ask-shell="1"] .ask-shell.is-content-leaving .ask-shell-page .ask-stage,
+html[data-halo-ask-shell="1"] .ask-shell.is-content-leaving .ask-shell-page .chat-stage {
+  pointer-events: none;
+}
+
+html[data-halo-ask-shell="1"] .ask-shell.is-content-entering .chat-stage .topbar,
+html[data-halo-ask-shell="1"] .ask-shell.is-content-entering .chat-stage .chat-scroll {
+  animation: halo-travel-in var(--travel) var(--ease-travel) both;
+}
+
+html[data-halo-ask-shell="1"] .ask-shell.is-content-entering .ask-stage.is-entering .ask-greeting,
+html[data-halo-ask-shell="1"] .ask-shell.is-content-entering .ask-stage.is-entering .home-bubbles.is-arriving .recent-slot.is-packed {
+  animation: halo-greeting-in var(--travel) var(--ease-travel) both !important;
+  animation-delay: 0ms !important;
+}
+
+html[data-halo-ask-shell="1"] .ask-shell-compose .compose[data-morph="moving"] {
+  transition: transform var(--travel) var(--ease-travel);
+}
+
+html[data-halo-ask-shell="1"] .ask-shell-compose .compose,
+html[data-halo-ask-shell="1"] .ask-shell-compose .compose-dock {
+  animation: none !important;
+  opacity: 1 !important;
+}
+
+html[data-halo-ask-shell="1"] .ask-shell-copy-slot {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+html[data-halo-ask-shell="1"] .ask-shell-copy-slot .field {
+  width: 100%;
+}
+
+html[data-halo-ask-shell="1"] .ask-shell-copy-slot .field.is-copy-hidden,
+html[data-halo-ask-shell="1"] .ask-shell-copy-slot .field.is-copy-hidden::placeholder {
+  color: transparent;
+  caret-color: transparent;
+}
+
+html[data-halo-ask-shell="1"] .ask-shell-copy {
+  position: absolute;
+  left: 0.55rem;
+  right: 0.55rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-size: 1.02rem;
+  line-height: 1.35;
+  color: var(--halo-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
+}
+
+html[data-halo-ask-shell="1"] .ask-shell-copy.is-muted {
+  color: rgba(90, 110, 130, 0.72);
+}
+
+html[data-halo-ask-shell="1"] .ask-shell-copy.is-out {
+  animation: halo-greeting-out var(--travel) var(--ease-travel) both;
+}
+
+html[data-halo-ask-shell="1"] .ask-shell-copy.is-in {
+  animation: halo-greeting-in var(--travel) var(--ease-travel) both;
+}
+
+html[data-halo-ask-shell="1"] .ask-shell.is-content-leaving .ask-shell-page .ask-stage.is-leaving .ask-greeting,
+html[data-halo-ask-shell="1"] .ask-shell.is-content-leaving .ask-shell-page .home-bubbles .recent-slot.is-packed {
+  animation: halo-greeting-out var(--travel) var(--ease-travel) both;
+}

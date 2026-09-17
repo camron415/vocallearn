@@ -10,6 +10,7 @@ import {
 import { createPortal } from "react-dom";
 import { WaterCapsule } from "@/components/WaterCapsule";
 import { isQuietHeat, type ChipHeat } from "@/lib/chip-heat";
+import { closedHit } from "@/lib/closed-grade";
 import {
   parseChipKind,
   KIND_LABEL,
@@ -26,12 +27,17 @@ import {
 } from "@/lib/home-style";
 import {
   formatChipLabel,
+  clusterKeepOrder,
   isPhoneHomeView,
   keepChipMaxRem,
   keepFieldScale,
   mixKeepOrder,
   packHomeChips,
+  PHONE_CHIP_MAX_REM,
+  PHONE_HOME_MAX_W,
+  PHONE_HOME_SEAT_CAP,
   seedKeepField,
+  setPhoneHomeSeatedIds,
   type HomeBox,
 } from "@/lib/home-pack";
 import { LoopFlights, type LoopFlight } from "@/components/LoopFlights";
@@ -55,33 +61,69 @@ import {
   type ChipRoundResult,
 } from "@/lib/keep-memory";
 import { rippleWaterRoot } from "@/lib/water-edge";
+import { isOpenRecall } from "@/lib/chip-recall";
+import { clozeForChip, gradeClozeSaid, CLOZE_BOTH_PLACEHOLDER } from "@/lib/open-cloze";
+import { scoreGistLocal } from "@/lib/open-score";
+import {
+  FIRST_DUE_LINE,
+  revealFirstDueLine,
+} from "@/lib/first-due-line";
 import type { BubbleItem } from "@/components/BubbleField";
 
 const PIN_KINDS = ["who", "where", "meaning", "when"] as const;
 const GATHER_MS = 720;
+
+function isSayFace(face?: "see" | "say" | "say-b") {
+  return face === "say" || face === "say-b";
+}
+
+function isPhonePlay() {
+  return (
+    typeof window !== "undefined" &&
+    window.matchMedia("(max-width: 720px)").matches
+  );
+}
+
+function warmSayKeyboard() {
+  if (typeof document === "undefined" || !isPhonePlay()) return;
+  let el = document.getElementById("halo-say-warm") as HTMLTextAreaElement | null;
+  if (!el) {
+    el = document.createElement("textarea");
+    el.id = "halo-say-warm";
+    el.setAttribute("aria-hidden", "true");
+    el.tabIndex = -1;
+    el.setAttribute("autocomplete", "off");
+    Object.assign(el.style, {
+      position: "fixed",
+      top: "0",
+      left: "0",
+      width: "1px",
+      height: "1px",
+      opacity: "0",
+      border: "0",
+      padding: "0",
+      fontSize: "16px",
+      pointerEvents: "none",
+    });
+    document.body.appendChild(el);
+  }
+  el.focus({ preventScroll: true });
+}
+
+function clearSayWarm() {
+  document.getElementById("halo-say-warm")?.remove();
+}
+
+function homeComposeEl() {
+  return (
+    document.querySelector<HTMLElement>(".ask-shell-compose .compose") ??
+    document.querySelector<HTMLElement>(".ask-hero .compose")
+  );
+}
 const HOLD_OK_MS = 500;
 const HOLD_RETRY_MS = 700;
 const MISS_HOLD_MS = 1600;
-const UNITS = new Set([
-  "miles",
-  "mile",
-  "mi",
-  "km",
-  "kilometers",
-  "kilometres",
-  "kilometer",
-  "kilometre",
-  "m",
-  "meters",
-  "metres",
-  "meter",
-  "metre",
-  "ft",
-  "feet",
-  "foot",
-]);
-const PLACE_PREFIX = /^(mount|mt|lake|the|a|an)\s+/;
-const MIN_NAME_LEN = 3;
+const SAY_FOCUS_MS = 260;
 
 function clusterKey(chip: HarvestChip) {
   return chip.cluster || chip.id;
@@ -145,6 +187,16 @@ function choiceLabel(chip: HarvestChip) {
 }
 
 function choicesFor(chip: HarvestChip): PlayChoice[] {
+  if (isOpenRecall(chip)) {
+    const cloze = clozeForChip(chip, roundOf(chip), "see");
+    if (cloze?.choices.length) {
+      return cloze.choices.map((choice) => ({
+        id: choice.id,
+        label: choice.label,
+        correct: choice.correct,
+      }));
+    }
+  }
   const correct = choiceLabel(chip);
   const seen = new Set<string>([correct.toLowerCase()]);
   const wrong: PlayChoice[] = [];
@@ -200,6 +252,12 @@ function foldPrompt(text: string) {
 
 /** r3 SAY-b is a second standalone question. Never hint. Never reuse prompt. */
 function sayBPrompt(chip: HarvestChip) {
+  if (isOpenRecall(chip)) {
+    const b = (chip.promptB ?? "").trim();
+    const a = chip.prompt.trim();
+    if (b && foldPrompt(b) !== foldPrompt(a)) return b;
+    return a ? `In your own words — ${a}` : "In your own words, what did you just learn?";
+  }
   const a = chip.prompt.trim();
   const b = (chip.promptB ?? "").trim();
   if (b && foldPrompt(b) !== foldPrompt(a)) return b;
@@ -219,149 +277,6 @@ function cuePlaceholder(token: string) {
   const letter = token.trim().charAt(0);
   if (!/[A-Za-z0-9]/.test(letter)) return "";
   return `${letter}—— —— ——`;
-}
-
-/**
- * Closed SAY grading — word-for-word closed recall, not open paraphrase.
- * Normalize: case, punctuation, commas in numbers, unit aliases, leading the.
- * Who: full name or distinctive last name (≥3 chars), never first-only or 1-letter.
- * Where: full place after Mount/Lake/the strip — exact, not prefix.
- * When / numeric meaning: full digit string must match.
- * Meaning text: exact, or 1-edit if both sides are long (≥8).
- */
-function foldClosed(text: string) {
-  return text
-    .toLowerCase()
-    .replace(/,/g, "")
-    .replace(/[^a-z0-9\s]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function stripThe(text: string) {
-  return text.replace(/^(the|a|an)\s+/, "");
-}
-
-function stripUnits(text: string) {
-  let next = text;
-  for (let i = 0; i < 2; i++) {
-    const parts = next.split(" ");
-    if (parts.length < 2) break;
-    const last = parts[parts.length - 1];
-    if (!UNITS.has(last)) break;
-    const head = parts.slice(0, -1).join(" ");
-    if (!/\d/.test(head)) break;
-    next = head;
-  }
-  return next;
-}
-
-function stripPlace(text: string) {
-  return text.replace(PLACE_PREFIX, "").trim();
-}
-
-function digitsOf(text: string) {
-  return text.replace(/\D/g, "");
-}
-
-function edits1(a: string, b: string) {
-  if (a === b) return true;
-  const la = a.length;
-  const lb = b.length;
-  if (Math.abs(la - lb) > 1) return false;
-  let i = 0;
-  let j = 0;
-  let skip = 0;
-  while (i < la && j < lb) {
-    if (a[i] === b[j]) {
-      i += 1;
-      j += 1;
-      continue;
-    }
-    skip += 1;
-    if (skip > 1) return false;
-    if (la > lb) i += 1;
-    else if (lb > la) j += 1;
-    else {
-      i += 1;
-      j += 1;
-    }
-  }
-  return skip + (la - i) + (lb - j) <= 1;
-}
-
-function gradeAgainst(said: string, target: string, kind: HarvestChip["kind"]) {
-  if (!said || !target) return false;
-  if (said === target) return true;
-  if (said.length < 2) return false;
-
-  const saidDigits = digitsOf(said);
-  const targetDigits = digitsOf(target);
-  const numericTarget = /\d/.test(target);
-
-  if (kind === "when" || (numericTarget && saidDigits && targetDigits)) {
-    return saidDigits.length >= 2 && saidDigits === targetDigits;
-  }
-
-  if (kind === "who") {
-    const a = stripPlace(said);
-    const b = stripPlace(target);
-    if (!a || !b) return false;
-    if (a === b) return true;
-    const saidParts = a.split(" ").filter(Boolean);
-    const targetParts = b.split(" ").filter(Boolean);
-    if (saidParts.length === 1 && targetParts.length >= 2) {
-      const last = targetParts[targetParts.length - 1]!;
-      const first = targetParts[0]!;
-      return (
-        saidParts[0]!.length >= MIN_NAME_LEN &&
-        saidParts[0] === last &&
-        saidParts[0] !== first
-      );
-    }
-    return false;
-  }
-
-  if (kind === "where") {
-    const a = stripPlace(said);
-    const b = stripPlace(target);
-    if (!a || !b || a.length < MIN_NAME_LEN) return false;
-    return a === b;
-  }
-
-  if (kind === "meaning" && numericTarget) {
-    return saidDigits.length >= 2 && saidDigits === targetDigits;
-  }
-
-  if (
-    kind === "meaning" &&
-    !saidDigits &&
-    said.length >= 8 &&
-    target.length >= 8 &&
-    edits1(said, target)
-  ) {
-    return true;
-  }
-
-  return false;
-}
-
-function closedHit(said: string, chip: HarvestChip, cue = "") {
-  const variants = [said.trim()];
-  if (cue && !said.trim().toLowerCase().startsWith(cue.toLowerCase())) {
-    variants.push(cue + said.trim());
-  }
-  const targets = [chip.answer, chip.token, chip.span]
-    .map((t) => (t ?? "").trim())
-    .filter(Boolean);
-
-  return variants.some((raw) => {
-    const a = stripUnits(stripThe(foldClosed(raw)));
-    if (!a) return false;
-    return targets.some((target) =>
-      gradeAgainst(a, stripUnits(stripThe(foldClosed(target))), chip.kind)
-    );
-  });
 }
 
 function quoteParts(chip: HarvestChip) {
@@ -433,10 +348,11 @@ export function HomeBubbles({
   const [play, setPlay] = useState<LearnPlay | null>(null);
   const [typed, setTyped] = useState("");
   const [capLine, setCapLine] = useState(false);
+  const [dueLine, setDueLine] = useState(false);
   const [cooled, setCooled] = useState<Record<string, ChipHeat>>({});
   const [arrived, setArrived] = useState(false);
   const fieldRef = useRef<HTMLDivElement>(null);
-  const typeRef = useRef<HTMLInputElement>(null);
+  const typeRef = useRef<HTMLTextAreaElement>(null);
   const answering = useRef(false);
   const holdTimer = useRef(0);
   const pendingBank = useRef<Set<string>>(new Set());
@@ -444,9 +360,20 @@ export function HomeBubbles({
   const pendingGoldPulse = useRef(false);
   const paper = usePaperLook();
   const packedRef = useRef(packed);
+  const boardRef = useRef<HarvestChip[]>([]);
   const keepIdsRef = useRef<Set<string> | null>(null);
+  const phoneHeldRef = useRef<Set<string>>(new Set());
   const [loopFlights, setLoopFlights] = useState<LoopFlight[]>([]);
   const [dropping, setDropping] = useState<Record<string, true>>({});
+  const [phoneView, setPhoneView] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia(`(max-width: ${PHONE_HOME_MAX_W}px)`);
+    const sync = () => setPhoneView(media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
 
   useEffect(() => {
     if (demo) seedKeepDemo();
@@ -470,19 +397,37 @@ export function HomeBubbles({
     });
   }, []);
 
+  useEffect(() => {
+    return () => setPhoneHomeSeatedIds(null);
+  }, []);
+
   const scatter = home.scatter / 100;
   packedRef.current = packed;
-  const dueCap = demo ? home.keepCount : HOME_SEAT_CAP;
-  const board = mixKeepOrder(
-    kept.filter(isDueChip).slice(0, dueCap)
-  );
+  const dueCap = phoneView
+    ? Math.min(demo ? home.keepCount : HOME_SEAT_CAP, PHONE_HOME_SEAT_CAP)
+    : demo
+      ? home.keepCount
+      : HOME_SEAT_CAP;
+  const dueChips = kept.filter(isDueChip).slice(0, dueCap);
+  const board = phoneView ? clusterKeepOrder(dueChips) : mixKeepOrder(dueChips);
+  boardRef.current = board;
+  useEffect(() => {
+    if (demo || !board.length) return;
+    if (!revealFirstDueLine()) return;
+    setDueLine(true);
+    const timer = window.setTimeout(() => setDueLine(false), 3000);
+    return () => window.clearTimeout(timer);
+  }, [demo, board.length]);
   const pale = white.slice(0, 4);
   const packKey = `${board.length}|${board
     .map((chip) => `${chip.id}:${chip.kind}:${chip.token.length}:${heatOf(chip)}`)
     .join(",")}|${pale.map((item) => `${item.id}:${item.title.length}`).join(",")}`;
 
   const packedReady =
-    board.length === 0 || board.every((chip) => packed[chip.id]);
+    board.length === 0 ||
+    board.every(
+      (chip) => packed[chip.id] || phoneHeldRef.current.has(chip.id)
+    );
 
   useEffect(() => {
     if (arrived) return;
@@ -509,12 +454,11 @@ export function HomeBubbles({
       const view = { w: origin.width, h: origin.height };
       const phone = isPhoneHomeView(view);
       const scale = keepFieldScale(view);
-      /* Chip padding/type are CSS constants. Scale only the long-label cap.
-         Phone dice needs a tighter cap so five chips fit above the composer. */
+      /* Chip padding/type are CSS constants. Scale only the long-label cap. */
       stage.style.setProperty(
         "--keep-chip-max",
         phone
-          ? "6.8rem"
+          ? `${PHONE_CHIP_MAX_REM}rem`
           : `${(keepChipMaxRem(board.length) * scale).toFixed(2)}rem`
       );
       void stage.offsetWidth;
@@ -537,13 +481,15 @@ export function HomeBubbles({
                 ? heat
                 : undefined,
             group: slot.dataset.cluster || id,
+            role:
+              slot.dataset.kind === "keep" ? ("keep" as const) : ("ask" as const),
           },
         ];
       });
       // Desktop: greeting/topbar only — compose is a corridor seats avoid.
-      // Phone: also wall off the composer so dice-5 cannot sit behind it.
+      // Phone: wall greeting, header, and the visible Ask composer.
       const wallSels = phone
-        ? [".ask-greeting", ".topbar", ".compose-stack"]
+        ? [".ask-greeting", ".topbar", ".ask-shell-compose", ".compose-stack"]
         : [".ask-greeting", ".topbar"];
       const walls = wallSels.flatMap((sel) => {
         const node = document.querySelector(sel);
@@ -558,13 +504,40 @@ export function HomeBubbles({
           },
         ];
       });
+      const greet = walls[0];
+      if (greet) {
+        stage.style.setProperty(
+          "--day-cap-y",
+          `${Math.max(48, greet.y - 10)}px`
+        );
+      }
       const seeds = seedKeepField(measured, view, walls);
       const byId = new Map(seeds.map((seed) => [seed.id, seed]));
+      const keepIds = new Set(
+        measured.filter((item) => item.role === "keep").map((item) => item.id)
+      );
+      if (phone) {
+        const seated = seeds
+          .filter((seed) => keepIds.has(seed.id))
+          .map((seed) => seed.id);
+        phoneHeldRef.current = new Set(
+          [...keepIds].filter((id) => !seated.includes(id))
+        );
+        setPhoneHomeSeatedIds(seated);
+        const spots: Record<string, { x: number; y: number }> = {};
+        for (const seed of seeds) {
+          spots[seed.id] = { x: seed.x, y: seed.y };
+        }
+        setPacked(spots);
+        return;
+      }
+      phoneHeldRef.current = new Set();
+      setPhoneHomeSeatedIds(null);
       const boxes: HomeBox[] = measured.map((item) => {
         const seed = byId.get(item.id);
         return {
           id: item.id,
-          group: item.group,
+          group: item.group ?? item.id,
           hue: item.hue,
           heat: item.heat,
           w: item.w,
@@ -574,7 +547,7 @@ export function HomeBubbles({
         };
       });
       const next = packHomeChips(boxes, walls, view, {
-        shoveLargeWalls: phone,
+        shoveLargeWalls: false,
       });
       const spots: Record<string, { x: number; y: number }> = {};
       for (const box of next) {
@@ -591,7 +564,7 @@ export function HomeBubbles({
     schedule();
     const watch = new ResizeObserver(schedule);
     watch.observe(stage);
-    const compose = document.querySelector(".compose");
+    const compose = homeComposeEl();
     if (compose) watch.observe(compose);
 
     return () => {
@@ -603,9 +576,7 @@ export function HomeBubbles({
   useLayoutEffect(() => {
     if (!play || play.mode !== "gather" || !play.family.length) return;
     const origin = fieldRef.current?.getBoundingClientRect();
-    const compose = document
-      .querySelector(".ask-hero .compose")
-      ?.getBoundingClientRect();
+    const compose = homeComposeEl()?.getBoundingClientRect();
     if (!origin || !compose) return;
     const next: Record<string, { x: number; y: number }> = {};
     for (const id of play.family) {
@@ -629,7 +600,7 @@ export function HomeBubbles({
       setPlay((prev) => {
         if (!prev) return prev;
         const leadId = prev.beats[0]?.chipId;
-        const lead = board.find((item) => item.id === leadId);
+        const lead = boardRef.current.find((item) => item.id === leadId);
         const face = prev.beats[0]?.face ?? "see";
         return {
           ...prev,
@@ -642,24 +613,25 @@ export function HomeBubbles({
       });
     }, GATHER_MS);
     return () => window.clearTimeout(timer);
-  }, [play?.cluster, play?.mode, board]);
+  }, [play?.cluster, play?.mode]);
 
   useEffect(() => {
-    if (!play || play.mode !== "play") return;
-    if (play.beats[play.index]?.face !== "say") return;
-    if (typeof window !== "undefined" && window.matchMedia("(max-width: 720px)").matches) {
+    if (!play) {
+      clearSayWarm();
       return;
     }
-    const id = window.requestAnimationFrame(() => {
+    if (play.mode !== "play") return;
+    if (!isSayFace(play.beats[play.index]?.face)) return;
+    const id = window.setTimeout(() => {
       typeRef.current?.focus({ preventScroll: true });
-    });
-    return () => window.cancelAnimationFrame(id);
-  }, [play?.mode, play?.index]);
+      clearSayWarm();
+    }, SAY_FOCUS_MS);
+    return () => window.clearTimeout(id);
+  }, [play, play?.mode, play?.index]);
 
   useEffect(() => {
     if (!play) return;
-    function onKey(event: KeyboardEvent) {
-      if (event.key !== "Escape") return;
+    function exitPlay() {
       const currentPlay = play;
       if (!currentPlay) return;
       if (currentPlay.mode === "end") {
@@ -672,8 +644,19 @@ export function HomeBubbles({
       setTyped("");
       setGatherAt({});
     }
+    function onKey(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      exitPlay();
+    }
+    function onCoveHome() {
+      exitPlay();
+    }
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener("halo-cove-home", onCoveHome);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("halo-cove-home", onCoveHome);
+    };
   }, [play]);
 
   function heatOf(chip: HarvestChip): ChipHeat {
@@ -713,6 +696,7 @@ export function HomeBubbles({
   function startLearn(chip: HarvestChip, el: HTMLButtonElement | null) {
     if (play) return;
     if (!isDueChip(chip)) return;
+    setDueLine(false);
     if (!recordRoundOpen(clusterKey(chip))) {
       setCapLine((open) => {
         if (open) return false;
@@ -721,7 +705,10 @@ export function HomeBubbles({
       });
       return;
     }
-    const family = familyOf(chip, board);
+    const family = familyOf(
+      chip,
+      board.filter((item) => packed[item.id])
+    );
     if (!family.some((item) => item.id === chip.id)) return;
     const ordered = [chip, ...family.filter((item) => item.id !== chip.id)];
     const familyIds = ordered.map((item) => item.id);
@@ -908,15 +895,25 @@ export function HomeBubbles({
         hitId: null,
         quote: true,
         retrying: true,
-        missed: play.missed.includes(beat.chipId)
-          ? play.missed
-          : [...play.missed, beat.chipId],
+        missed: play.retrying
+          ? play.missed.includes(beat.chipId)
+            ? play.missed
+            : [...play.missed, beat.chipId]
+          : play.missed,
       });
       window.clearTimeout(holdTimer.current);
       holdTimer.current = window.setTimeout(() => {
         answering.current = false;
       }, MISS_HOLD_MS);
       return;
+    }
+    const next = play.beats[play.index + 1];
+    if (isSayFace(next?.face)) {
+      const wait = play.retrying ? HOLD_RETRY_MS : HOLD_OK_MS;
+      window.setTimeout(() => {
+        warmSayKeyboard();
+        typeRef.current?.focus({ preventScroll: true });
+      }, wait + SAY_FOCUS_MS);
     }
     setPlay({
       ...play,
@@ -932,10 +929,36 @@ export function HomeBubbles({
     if (!beat || beat.face === "see") return;
     const chip = chipById(beat.chipId);
     if (!chip) return;
-    const cue =
-      roundOf(chip) === 1 && beat.face === "say" ? chip.token.trim().charAt(0) : "";
+    let hit = false;
+    if (isOpenRecall(chip)) {
+      const round = roundOf(chip);
+      if (round >= 3 || beat.face === "say-b") {
+        hit = scoreGistLocal({
+          prompt: beat.face === "say-b" ? sayBPrompt(chip) : chip.prompt,
+          expected: chip.answer,
+          said: typed,
+          token: chip.token,
+        }).ok;
+      } else {
+        const cloze = clozeForChip(chip, round, "say");
+        hit = cloze
+          ? gradeClozeSaid(typed, cloze.keys)
+          : scoreGistLocal({
+              prompt: chip.prompt,
+              expected: chip.answer,
+              said: typed,
+              token: chip.token,
+            }).ok;
+      }
+    } else {
+      const cue =
+        roundOf(chip) === 1 && beat.face === "say"
+          ? chip.token.trim().charAt(0)
+          : "";
+      hit = closedHit(typed, chip, /[A-Za-z0-9]/.test(cue) ? cue : "");
+    }
     if (!typed.trim()) return;
-    if (!closedHit(typed, chip, /[A-Za-z0-9]/.test(cue) ? cue : "")) {
+    if (!hit) {
       answering.current = true;
       setPlay({
         ...play,
@@ -960,12 +983,22 @@ export function HomeBubbles({
   const beat = play?.beats[Math.min(play.index, play.beats.length - 1)];
   const current =
     play && play.mode !== "end" && beat ? chipById(beat.chipId) : null;
+  const openCloze =
+    current && beat && isOpenRecall(current) && beat.face !== "say-b"
+      ? clozeForChip(
+          current,
+          roundOf(current),
+          beat.face === "see" ? "see" : "say"
+        )
+      : null;
   const prompt =
     play?.mode === "end"
       ? "You did good."
       : beat?.face === "say-b" && current
         ? sayBPrompt(current)
-        : current?.prompt ?? "";
+        : current && isOpenRecall(current) && roundOf(current) < 3 && openCloze
+          ? openCloze.stem
+          : current?.prompt ?? "";
   const playKind = current?.kind ?? (play?.mode === "end" ? chipById(play.family[0])?.kind : undefined);
   const seeCount = play?.beats.filter((item) => item.face === "see").length ?? 0;
   const sayCount = play?.beats.filter((item) => item.face === "say").length ?? 0;
@@ -981,7 +1014,6 @@ export function HomeBubbles({
       setLessonRoot(null);
       return;
     }
-    if (play?.mode === "gather") return;
     window.dispatchEvent(
       new CustomEvent("halo-home-play", {
         detail: { prompt, miss: play?.missId ?? null, kind: playKind ?? "" },
@@ -1002,7 +1034,7 @@ export function HomeBubbles({
       window.cancelAnimationFrame(frame);
       window.clearTimeout(later);
     };
-  }, [learning, prompt, play?.missId, play?.mode, playKind]);
+  }, [learning, prompt, play?.missId, playKind]);
 
   useEffect(() => {
     const banked = new Set(kept.filter(isBankedChip).map((chip) => chip.id));
@@ -1051,11 +1083,15 @@ export function HomeBubbles({
         <p className="home-day-cap" role="status">
           That&apos;s enough for today. These are waiting for tomorrow.
         </p>
+      ) : dueLine ? (
+        <p className="home-day-cap" role="status">
+          {FIRST_DUE_LINE}
+        </p>
       ) : null}
       {lessonRoot && play
         ? createPortal(
             <div
-              className="compose-play"
+              className={`compose-play${play.mode === "gather" ? " is-gather" : ""}`}
               data-kind={playKind ?? ""}
               data-play-round={String(play.round)}
               style={{ "--play-weight": String(rankWeight) } as CSSProperties}
@@ -1220,44 +1256,69 @@ export function HomeBubbles({
                         ))}
                       </div>
                     ) : play.mode === "play" && current ? (
-                      <input
-                        ref={typeRef}
-                        className={`home-play-say${
-                          play.hitId === "typed" ? " is-ok" : ""
-                        }${play.quote ? " is-miss" : ""}`}
-                        value={typed}
-                        onChange={(event) => setTyped(event.target.value)}
-                        onKeyDown={(event) => {
-                          if (event.key !== "Enter") return;
-                          event.preventDefault();
-                          answerTyped();
-                        }}
-                        placeholder={
-                          roundOf(current) === 1 && beat?.face === "say"
-                            ? cuePlaceholder(current.token)
-                            : ""
-                        }
-                        autoComplete="off"
-                        autoCorrect="off"
-                        spellCheck={false}
-                        enterKeyHint="done"
-                        inputMode="text"
-                        onPointerDown={(event) => {
-                          if (!window.matchMedia("(max-width: 720px)").matches) {
-                            return;
+                      <div className="home-play-say-row">
+                        <textarea
+                          ref={typeRef}
+                          className={`home-play-say${
+                            play.hitId === "typed" ? " is-ok" : ""
+                          }${play.quote ? " is-miss" : ""}`}
+                          value={typed}
+                          rows={1}
+                          onChange={(event) => setTyped(event.target.value)}
+                          onKeyDown={(event) => {
+                            if (event.key !== "Enter" || event.shiftKey) return;
+                            event.preventDefault();
+                            answerTyped();
+                          }}
+                          placeholder={
+                            current &&
+                            isOpenRecall(current) &&
+                            beat?.face === "say" &&
+                            (openCloze?.keys.length ?? 0) >= 2
+                              ? CLOZE_BOTH_PLACEHOLDER
+                              : current &&
+                                  isOpenRecall(current) &&
+                                  roundOf(current) >= 3
+                              ? "In your own words"
+                              : current &&
+                                  isOpenRecall(current) &&
+                                  beat?.face === "say" &&
+                                  openCloze?.keys[0]
+                                ? cuePlaceholder(openCloze.keys[0])
+                                : roundOf(current) === 1 && beat?.face === "say"
+                                  ? cuePlaceholder(current.token)
+                                  : "Type your answer"
                           }
-                          event.preventDefault();
-                          typeRef.current?.focus({ preventScroll: true });
-                        }}
-                        onFocus={() => {
-                          typeRef.current?.scrollIntoView({
-                            block: "nearest",
-                            inline: "nearest",
-                          });
-                        }}
-                        disabled={Boolean(play.hitId)}
-                        aria-label="Type the answer"
-                      />
+                          autoComplete="off"
+                          autoCorrect="off"
+                          spellCheck={false}
+                          enterKeyHint="done"
+                          inputMode="text"
+                          onPointerDown={(event) => {
+                            if (!window.matchMedia("(max-width: 720px)").matches) {
+                              return;
+                            }
+                            event.preventDefault();
+                            typeRef.current?.focus({ preventScroll: true });
+                          }}
+                          onFocus={() => {
+                            typeRef.current?.scrollIntoView({
+                              block: "nearest",
+                              inline: "nearest",
+                            });
+                          }}
+                          disabled={Boolean(play.hitId)}
+                          aria-label="Type the answer"
+                        />
+                        <button
+                          type="button"
+                          className="stone-btn home-play-say-go"
+                          disabled={Boolean(play.hitId) || !typed.trim()}
+                          onClick={() => answerTyped()}
+                        >
+                          Check
+                        </button>
+                      </div>
                     ) : (
                       <div className="home-play-choices home-play-choices--wait" />
                     )}
@@ -1318,7 +1379,7 @@ export function HomeBubbles({
                 ...slotStyle(
                   chip.id,
                   placeSeat(point),
-                  cast && play?.mode === "gather"
+                  Boolean(cast && gatherAt[chip.id])
                 ),
                 "--keep-delay": `${i * 0.12}s`,
                 "--enter-delay": `${Math.min(i, 7) * 40}ms`,

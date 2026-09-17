@@ -255,10 +255,12 @@ export function MenuSheet({
       else onClose();
     }
     window.addEventListener("keydown", onKey);
+    window.addEventListener("halo-cove-home", onClose);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       window.removeEventListener("keydown", onKey);
+      window.removeEventListener("halo-cove-home", onClose);
       document.body.style.overflow = prev;
     };
   }, [live, onClose, onEscape]);

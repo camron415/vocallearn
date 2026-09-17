@@ -58,9 +58,9 @@ export function MessageCopy({ content }: { content: string }) {
   return (
     <button
       type="button"
-      className={`msg-copy${copied ? " is-copied" : ""}`}
-      title={copied ? "Copied" : "Copy text"}
-      aria-label={copied ? "Copied" : "Copy text"}
+      className={`stone-btn msg-action${copied ? " is-copied" : ""}`}
+      title={copied ? "Copied" : "Copy"}
+      aria-label={copied ? "Copied" : "Copy"}
       onClick={() => void copy()}
     >
       {copied ? <CheckIcon /> : <CopyIcon />}

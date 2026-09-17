@@ -2,12 +2,14 @@
 
 import { useLayoutEffect, useRef, type TextareaHTMLAttributes } from "react";
 import { handleComposeKeyDown } from "@/lib/compose-keys";
+import { ASK_MESSAGE_MAX_CHARS } from "@/lib/limits";
 
 const MAX_PX = 280;
 
 export function ComposeField({
   value,
   onValueChange,
+  maxLength = ASK_MESSAGE_MAX_CHARS,
   ...props
 }: {
   value: string;
@@ -18,6 +20,10 @@ export function ComposeField({
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
+    if (!value) {
+      el.style.height = "";
+      return;
+    }
     el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, MAX_PX)}px`;
   }, [value]);
@@ -33,7 +39,8 @@ export function ComposeField({
       autoCapitalize={props.autoCapitalize ?? "off"}
       autoComplete={props.autoComplete ?? "off"}
       value={value}
-      onChange={(e) => onValueChange(e.target.value)}
+      maxLength={maxLength}
+      onChange={(e) => onValueChange(e.target.value.slice(0, maxLength))}
       onKeyDown={(e) => {
         props.onKeyDown?.(e);
         if (!e.defaultPrevented) handleComposeKeyDown(e);

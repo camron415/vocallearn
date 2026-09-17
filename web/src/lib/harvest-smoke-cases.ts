@@ -1,6 +1,8 @@
 import { harvestFactKey, PREVIEW_HARVEST_REPLY } from "@/lib/harvest";
 import type { HarvestChipDraft } from "@/lib/learn-mine";
-import { mineLearnFromReply, shouldSkipHarvest } from "@/lib/learn-mine";
+import { mineLearnFromReply } from "@/lib/learn-mine";
+import { fallbackAskIntent } from "@/lib/ask-intent";
+import { skipHarvestTurn } from "@/lib/harvest-policy";
 
 export type SmokeExpect = {
   skip?: boolean;
@@ -100,6 +102,33 @@ export const HARVEST_SMOKE_CASES: SmokeCase[] = [
     userText: "What is the capital of Maine?",
     reply: "The capital of Maine is Augusta.",
     expect: { skip: false },
+  },
+  {
+    id: "gate-recipe",
+    label: "Recipe ask",
+    mode: "gate",
+    userText: "recipe for homemade ravioli",
+    reply:
+      "**Ingredients**\n- 2 cups flour\n\n**Steps**\n1. Mix the dough.\n2. Fill and boil.",
+    expect: { skip: true },
+  },
+  {
+    id: "gate-event",
+    label: "Event time ask",
+    mode: "gate",
+    userText: "What time is the Tesla cyber cab event tonight?",
+    reply: "The event is scheduled for 7pm Pacific.",
+    expect: { skip: true },
+  },
+  {
+    id: "gate-sentiment",
+    label: "Fan sentiment ask",
+    mode: "gate",
+    userText:
+      "What is the overall sentiment of the players and fans towards the game?",
+    reply:
+      "Fans sound optimistic about Saturday, though some worry about the offensive line.",
+    expect: { skip: true },
   },
   {
     id: "miner-nile",
@@ -225,7 +254,8 @@ export async function runSmokeCase(
   options?: { liveMiner?: boolean }
 ): Promise<SmokeCaseResult> {
   const started = Date.now();
-  const skipped = shouldSkipHarvest(row.userText, row.reply);
+  const intent = fallbackAskIntent(row.userText);
+  const skipped = skipHarvestTurn(row.userText, row.reply, intent).skip;
   const failures: string[] = [];
   let chips: HarvestChipDraft[] = [];
 
@@ -244,6 +274,7 @@ export async function runSmokeCase(
           conversationId: row.id,
           knownPrompts: row.knownPrompts,
           knownRows: row.knownRows,
+          intent,
         })).chips;
       } catch (error) {
         failures.push(`miner error: ${String(error)}`);

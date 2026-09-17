@@ -355,6 +355,7 @@ export function PreviewSwitcher() {
         className="preview-switcher__toggle"
         onClick={() => setMin((prev) => !prev)}
         title={min ? "Show mixer" : "Hide mixer"}
+        suppressHydrationWarning
       >
         {min ? "Mix" : "Hide"}
       </button>

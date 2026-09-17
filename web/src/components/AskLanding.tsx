@@ -20,6 +20,7 @@ import {
   useComposeMorph,
   clearComposeHandoff,
 } from "@/components/SpringStage";
+import { abortAskShellTravel, useAskShell } from "@/components/AskShell";
 import { ComposeStadium, WaterAction } from "@/components/WaterSurface";
 import { matchPrompts, topIdlePrompts } from "@/lib/prompt-trie";
 import { suggestChips, type SuggestChip } from "@/lib/suggest-chips";
@@ -63,13 +64,24 @@ export function AskLanding({
   initialChips?: SuggestChip[];
 }) {
   const router = useRouter();
+  const shell = useAskShell();
   const soft = useEffectiveMotion() === "reduced";
   const coarse = useCoarsePointer();
-  const [draft, setDraft] = useState("");
-  const [files, setFiles] = useState<File[]>([]);
-  const [sending, setSending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [listening, setListening] = useState(false);
+  const [localDraft, setLocalDraft] = useState("");
+  const [localFiles, setLocalFiles] = useState<File[]>([]);
+  const [localSending, setLocalSending] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [localListening, setLocalListening] = useState(false);
+  const draft = shell?.active ? shell.draft : localDraft;
+  const setDraft = shell?.active ? shell.setDraft : setLocalDraft;
+  const files = shell?.active ? shell.files : localFiles;
+  const setFiles = shell?.active ? shell.setFiles : setLocalFiles;
+  const sending = shell?.active ? shell.sending : localSending;
+  const setSending = shell?.active ? shell.setSending : setLocalSending;
+  const error = shell?.active ? shell.error : localError;
+  const setError = shell?.active ? shell.setError : setLocalError;
+  const listening = shell?.active ? shell.listening : localListening;
+  const setListening = shell?.active ? shell.setListening : setLocalListening;
   const [composeOpen, setComposeOpen] = useState(false);
   const [idleReady, setIdleReady] = useState(false);
   const [activeHint, setActiveHint] = useState(0);
@@ -79,7 +91,8 @@ export function AskLanding({
   const composeRef = useRef<HTMLDivElement | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const leaving = useRef(false);
-  const [entering, setEntering] = useState(!soft);
+  const [localEntering, setLocalEntering] = useState(!soft);
+  const entering = shell?.active ? shell.contentEntering : localEntering;
   const [dueCount, setDueCount] = useState<number | null>(null);
   const [keptCount, setKeptCount] = useState(0);
   const [justCleared, setJustCleared] = useState(false);
@@ -90,7 +103,7 @@ export function AskLanding({
   const [playKind, setPlayKind] = useState<ChipKind | "">("");
   const prevDue = useRef<number | null>(null);
 
-  useComposeMorph(composeRef, !soft);
+  useComposeMorph(composeRef, !soft && !shell?.active);
 
   useEffect(() => {
     function on(event: Event) {
@@ -120,14 +133,10 @@ export function AskLanding({
       return;
     }
     setGrown(false);
-    let inner = 0;
-    const outer = window.requestAnimationFrame(() => {
-      inner = window.requestAnimationFrame(() => setGrown(true));
-    });
-    return () => {
-      window.cancelAnimationFrame(outer);
-      window.cancelAnimationFrame(inner);
-    };
+    /* Match HomeBubbles GATHER_MS so family chips merge into the 3.6rem
+       composer, then the sheet grows from that center. */
+    const grow = window.setTimeout(() => setGrown(true), 720);
+    return () => window.clearTimeout(grow);
   }, [playing, soft]);
 
   useEffect(() => {
@@ -185,13 +194,13 @@ export function AskLanding({
   }, []);
 
   useEffect(() => {
-    if (soft) {
-      setEntering(false);
+    if (shell?.active || soft) {
+      if (soft) setLocalEntering(false);
       return;
     }
-    const id = window.setTimeout(() => setEntering(false), COMPOSE_TRAVEL_MS);
+    const id = window.setTimeout(() => setLocalEntering(false), COMPOSE_TRAVEL_MS);
     return () => window.clearTimeout(id);
-  }, [soft]);
+  }, [shell?.active, soft]);
 
   useEffect(() => {
     setChats(conversations);
@@ -294,11 +303,15 @@ export function AskLanding({
     setActiveHint(0);
   }, [hints]);
 
+  function composeEl() {
+    return shell?.active ? shell.composeRef.current : composeRef.current;
+  }
+
   function focusComposeField() {
     window.clearTimeout(composeFocus.current);
     setComposeOpen(true);
     window.requestAnimationFrame(() => {
-      composeRef.current?.querySelector("textarea")?.focus({ preventScroll: true });
+      composeEl()?.querySelector("textarea")?.focus({ preventScroll: true });
     });
   }
 
@@ -308,7 +321,7 @@ export function AskLanding({
     setComposeOpen(true);
     setActiveHint(0);
     window.requestAnimationFrame(() => {
-      composeRef.current?.querySelector("textarea")?.focus({ preventScroll: true });
+      composeEl()?.querySelector("textarea")?.focus({ preventScroll: true });
     });
   }
 
@@ -328,6 +341,16 @@ export function AskLanding({
       void run();
       return;
     }
+    if (shell?.active) {
+      leaving.current = true;
+      stageRef.current?.classList.add("is-leaving");
+      shell.leaveToChat(async () => {
+        await run();
+        leaving.current = false;
+        stageRef.current?.classList.remove("is-leaving");
+      });
+      return;
+    }
     leaving.current = true;
     stageRef.current?.classList.add("is-leaving");
     rememberHeroCompose(composeRef.current);
@@ -342,7 +365,11 @@ export function AskLanding({
   function abortLeave(message: string) {
     leaving.current = false;
     stageRef.current?.classList.remove("is-leaving");
-    resetComposeTravel(composeRef.current);
+    if (shell?.active) {
+      abortAskShellTravel();
+    } else {
+      resetComposeTravel(composeRef.current);
+    }
     abortPendingTurn();
     setSending(false);
     setError(message);
@@ -409,6 +436,68 @@ export function AskLanding({
     await startAsk(draft);
   }
 
+  useEffect(() => {
+    if (!shell?.active) return;
+    shell.setHomeUi({
+      hints,
+      activeHint,
+      setActiveHint,
+      onPickHint: fillDraft,
+      onFillDraft: fillDraft,
+      composeOpen,
+      onFocusField: focusComposeField,
+      onBlurField: () => {
+        composeFocus.current = window.setTimeout(() => setComposeOpen(false), 180);
+      },
+      onKeyDown: (event) => {
+        if (!hints.length) return;
+        if (event.key === "Tab" && !event.shiftKey) {
+          event.preventDefault();
+          fillDraft(hints[activeHint]?.title ?? hints[0].title);
+          return;
+        }
+        if (event.key === "ArrowDown") {
+          event.preventDefault();
+          setActiveHint((n) => (n + 1) % hints.length);
+          return;
+        }
+        if (event.key === "ArrowUp") {
+          event.preventDefault();
+          setActiveHint((n) => (n - 1 + hints.length) % hints.length);
+          return;
+        }
+        if (event.key === "Escape") {
+          event.preventDefault();
+          setComposeOpen(false);
+        }
+      },
+      playing,
+      playKind,
+      grown,
+      playSlot: playing ? (
+        <div className="compose-play-root" data-halo-play-root />
+      ) : undefined,
+      suggestOpen: hints.length > 0 && !playing,
+    });
+    return () => shell.setHomeUi(null);
+  }, [
+    shell,
+    hints,
+    activeHint,
+    composeOpen,
+    playing,
+    playKind,
+    grown,
+    fillDraft,
+    focusComposeField,
+  ]);
+
+  useEffect(() => {
+    if (!shell?.active) return;
+    shell.setSubmitHandler((event) => onSubmit(event));
+    return () => shell.setSubmitHandler(null);
+  }, [shell, onSubmit]);
+
   function openChat(id: string) {
     if (demo || isLabPreviewPath()) {
       window.dispatchEvent(new Event("halo-home-play-end"));
@@ -474,9 +563,11 @@ export function AskLanding({
               : "\u00a0"}
           </p>
           <div
-            className={`compose-stack${hints.length && !playing ? " is-open" : ""}`}
+            className={`compose-stack${hints.length && !playing ? " is-open" : ""}${
+              shell?.active ? " compose-stack--phantom" : ""
+            }`}
             onPointerDown={(event) => {
-              if (playing) return;
+              if (shell?.active || playing) return;
               const target = event.target as HTMLElement;
               if (
                 target.closest(".compose-actions") ||
@@ -488,6 +579,8 @@ export function AskLanding({
               focusComposeField();
             }}
           >
+          {shell?.active ? null : (
+          <>
           <ComposeStadium
             className={`compose${playing ? " is-play-lesson" : ""}${
               playing && grown ? " is-grown" : ""
@@ -588,6 +681,8 @@ export function AskLanding({
             onPick={fillDraft}
             onActive={setActiveHint}
           />
+          )}
+          </>
           )}
           </div>
         </SpringStage>

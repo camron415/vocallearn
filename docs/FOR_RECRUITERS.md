@@ -7,7 +7,7 @@
 ## Open these (in order)
 
 1. [README](../README.md) — full product overview
-2. **Live site:** https://halo-gules-three.vercel.app/preview — no login; walk the learning loop in ~2 minutes (screenshots in README)
+2. **Live site:** https://halo-gules-three.vercel.app/demo — short URL; no login; walk the learning loop in ~2 minutes (screenshots in README)
 3. **Production:** https://halo-gules-three.vercel.app/ask — invite-only; same product family uses this daily
 4. **Code:** `web/` (Halo) then `app/` (VocalLearn iOS)
 
@@ -23,7 +23,7 @@ I built and operate **Halo**, a TypeScript/React/Next.js product that invited fa
 
 | | |
 | --- | --- |
-| **No-login demo** | `/preview` → Mix → **Loop** → walk Ask → Harvest → Keep → Due → Clear → Mastered |
+| **No-login demo** | `/demo` or `/preview` → Mix → **Loop** → walk Ask → Harvest → Keep → Due → Clear → Mastered |
 | **Production** | `/ask` if you have an account; otherwise `/preview` is the intended recruiter path |
 | **The hook** | AI chat that turns answers into facts you bank, review when due, and graduate |
 | **Engineering** | `web/src/lib/keep-memory.ts` (loop state + cloud sync), `web/src/lib/learn-mine.ts` (harvest miner), `web/src/components/HarvestFlights.tsx` (animation), `web/src/app/api/chat/route.ts` (server chat) |

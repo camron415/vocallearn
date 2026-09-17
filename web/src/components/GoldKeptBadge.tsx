@@ -8,6 +8,7 @@ import {
   keepRank,
   readLoopStats,
 } from "@/lib/keep-memory";
+import { HALO_BEAD_INSPECT, HALO_GOLD_INSPECT } from "@/lib/keep-inspect";
 
 function isGoldChip(chip: HarvestChip) {
   return isMasteredChip(chip) || keepRank(chip) >= 3;
@@ -19,28 +20,45 @@ export function GoldKeptBadge({ chips }: { chips: HarvestChip[] }) {
   const inProgress = chips.filter(
     (chip) => isBankedChip(chip) && keepRank(chip) < 3
   ).length;
-  const stats = readLoopStats() as ReturnType<typeof readLoopStats> & {
-    roundsLifetime?: number;
-  };
-  const rounds = stats.roundsLifetime ?? 0;
+  const [rounds, setRounds] = useState(0);
   const [open, setOpen] = useState(false);
   const [pulse, setPulse] = useState(false);
   const [panelTop, setPanelTop] = useState(72);
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (!open) return;
+    setRounds(readLoopStats().roundsLifetime ?? 0);
+  }, [open]);
+
+  useEffect(() => {
     function onPulse() {
       setPulse(true);
       window.setTimeout(() => setPulse(false), 520);
     }
+    function onBeadInspect() {
+      setOpen(false);
+    }
     window.addEventListener("halo-gold-pulse", onPulse);
-    return () => window.removeEventListener("halo-gold-pulse", onPulse);
+    window.addEventListener(HALO_BEAD_INSPECT, onBeadInspect);
+    return () => {
+      window.removeEventListener("halo-gold-pulse", onPulse);
+      window.removeEventListener(HALO_BEAD_INSPECT, onBeadInspect);
+    };
   }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    window.dispatchEvent(new Event(HALO_GOLD_INSPECT));
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") setOpen(false);
+    }
+    function onCoveHome() {
+      setOpen(false);
     }
     function onPointer(event: PointerEvent) {
       if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
@@ -49,9 +67,11 @@ export function GoldKeptBadge({ chips }: { chips: HarvestChip[] }) {
       window.addEventListener("pointerdown", onPointer);
     }, 400);
     window.addEventListener("keydown", onKey);
+    window.addEventListener("halo-cove-home", onCoveHome);
     return () => {
       window.clearTimeout(listen);
       window.removeEventListener("keydown", onKey);
+      window.removeEventListener("halo-cove-home", onCoveHome);
       window.removeEventListener("pointerdown", onPointer);
     };
   }, [open]);

@@ -40,6 +40,14 @@ yarn-error.log*
 # harvest filmstrips written by the local capture sink
 /captures/
 
+# lab bucket-smoke credentials (never Camron's account)
+.smoke-user.json
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# macOS Finder duplicate copies
+* 2.ts
+* 2.mjs
+* 2.tsx

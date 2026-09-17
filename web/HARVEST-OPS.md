@@ -7,7 +7,7 @@ Spec: [`HALO-V2-SUNDAY.md`](./HALO-V2-SUNDAY.md) · Board: [`KEPT-BOARD.md`](./K
 
 ## Telemetry (Supabase)
 
-**Migration:** `supabase/migrations/014_halo_harvest_turns.sql` (run once in SQL editor).
+**Migrations:** `014_halo_harvest_turns.sql` (telemetry). `017_halo_events_hold_update.sql` (users can UPDATE own `halo_events` so `ask_hold` actually releases). Run 017 in SQL editor before promoting cost-guard packets.
 
 Every Ask turn runs `mineLearnFromTurn` → logs to **`halo_harvest_turns`**:
 
@@ -41,6 +41,21 @@ WHERE skipped
 ORDER BY created_at DESC
 LIMIT 30;
 
+-- Remembered ask, miner returned nothing (auto flag)
+SELECT created_at, meta->>'userText' AS ask, meta->>'job', meta->>'askKind', meta->>'skipReason'
+FROM halo_events
+WHERE kind = 'harvest_miss'
+ORDER BY created_at DESC
+LIMIT 30;
+
+-- User tapped Don't keep this
+SELECT created_at, meta->>'conversationId', meta->'dropped', meta->>'chips'
+FROM halo_events
+WHERE kind = 'harvest_lock'
+  AND coalesce((meta->>'reject')::boolean, false)
+ORDER BY created_at DESC
+LIMIT 30;
+
 -- Kind mix over time
 SELECT unnest(kinds) AS kind, count(*) 
 FROM halo_harvest_turns 
@@ -71,11 +86,75 @@ DELETE FROM halo_harvest_turns WHERE user_id = '<your-uuid>';
 
 | Command | What |
 | --- | --- |
-| `npm run test:harvest` | Unit: policy gates, miner validation, dedup, open-score |
+| `npm run test:harvest` | Unit: policy gates, miner validation, cue uniqueness, open-score |
+| `npm run test:ask:claims` | Dry discovery A/B (24 cases): remember vs skip, short asks, Jupiter family |
 | `npm run test:harvest:live:dry` | Gate smoke only (no API spend) |
 | `npm run test:harvest:live` | Gate + live Grok miner (needs `GROK_API_KEY`) |
 
-**Before promote, run all three.** Dry should be 9/9; live should pass Nile + Rome miner cases.
+**Before promote, run `test:harvest` (includes claims) + build.** Cue uniqueness must stay: do not restore token/answer `knownFactKeys` blocking. Camron lab 2026-09-16: “largest planet” harvests Jupiter. Spec: [`INTENT-HARVEST-1.2.md`](./INTENT-HARVEST-1.2.md) § Cue uniqueness.
+
+### 1.2 closeout (2026-09-17)
+
+Live `/ask` is **1.2.0** (promoted 2026-09-17). Early access and Family share https://halo-gules-three.vercel.app.
+
+**Camron signed the confirm list 2026-09-17** (login, recipes bookmark-fill, Settings, harvest, skip, unbox, morph, seats, Luna/Grok). Save-recipe flyer not required — filled bookmark + Library is enough. Composer ghost blip and thinking-stream UX parked (not 1.2).
+
+**Review sheet signed 2026-09-17** (Camron, light + dark, Safari iPhone + Chrome desktop). Play leftovers closed. Camron said **promote** the same afternoon — `deploy:early` + Luna env flip.
+
+Signed look (do not reopen unless he files a Replay):
+
+- Keyboard left as-is (no auto-activate).
+- Mobile SAY: `--paper-inset` bar, Check below the field.
+- Desktop SAY: stadium pill (`appearance: none`, no resize grip). Check stays on the right (≥641). Idle Check is ghost (card/transparent); hover darkens like Library/History/Settings.
+- Light dots, SAY line, and caret use `--play-ink` (`color-mix` kind 58% + `#111` 42%). Dark uses candy `--play-kind`.
+- Recap **Done**: stone fill, `--halo-ink` text (not kind-matched).
+- Miss “Not quite” hit (`em`): same as the dots — darker `--play-ink` on light (desktop light was washing in candy `--play-kind`); candy `--play-kind` on dark.
+- Overlay pose, morph `--travel` 1080ms, harvest z-index 120, Home seating frozen.
+
+Parked post-1.2 (not a promote blocker): miss reveal sometimes the term, sometimes the full sentence (`quoteParts` wraps `span`/`token` inside `answer`); composer ghost; thinking-stream UX.
+
+Sliced packets from earlier in the sprint (harvest, H1, inspect, lock-in, hamburger, cost guards, Luna) shipped together as **1.2.0**.
+
+**Vercel env on 1.2 (production + preview):**
+
+| Var | Set to |
+| --- | --- |
+| `HALO_USE_LUNA` | `1`. **Unset + `OPENAI_API_KEY` also turns Luna on** — do not leave it blank; `0` is the kill switch. |
+| `OPENAI_API_KEY` | Present |
+| `GPT_LUNA_MODEL` | `gpt-4.1-mini` unless Camron picks another |
+| `GROK_*` | Unchanged |
+
+Migration **017** (hold UPDATE) already ran. `web/package.json` is **1.2.0**.
+
+**Camron visual confirm** (Safari iPhone, default Text Size + Standard zoom, **and** Chrome desktop). Signed, then promoted. Historical list:
+
+1. **Login / invite** — Paper card, keyboard doesn’t crush it, submit works. (No 1.2 restyle; 60-second glance.)
+2. **Recipes / Library** — open a saved recipe, scroll, back. Same Paper as 1.1.2.
+3. **Settings** — Light / Dark / Full / Soft still apply. History sheet scrolls.
+4. **Empty Home** — greeting + Ask only.
+5. **Remember ask** — `what is the largest planet` → Jupiter marks + lock-in + fly to Keep. Line: `Kept — these come back tomorrow.`
+6. **Skip Keep** — `hi`, weather, “best ice cream in SLC” (answer + maybe search, **no** Keep).
+7. **Recipe ask** — carbonara → **Save** pill, not Keep beads. Library shows it.
+8. **Unbox** — Copy / Listen / Save icons; user Copy / Edit. Phone Follow-up: idle one full-width row; type → buttons drop to row 2.
+9. **Morph** — Home Ask → chat in 1080ms; Cove back.
+10. **Bead inspect** — tap a Keep bead; gold ◎ inspect doesn’t stack with it.
+11. **Phone Home seats** — due field is scattered, not piled. Mix 12 shows ~8 + extras in Keep.
+12. **Desktop Home** — 16-seat constellation still looks like before (not the phone map).
+13. **Luna vs Grok** — small fact ask feels fast (Luna). “current Nintendo news” / attach a file uses Grok. Sources when search ran.
+14. **Don't keep this** — drops junk; no extra why-form.
+
+**Not 1.2 — don’t fail the release if missing:** Learn-more chips, Teach-me, tour slides, same-day due drop, TestFlight, Save flyer, thinking-stream rewrite, composer ghost, miss reveal term vs full sentence.
+
+### Older sliced packets (already in lab)
+
+Each originally needed its own promote. They are now one 1.2 tree:
+
+1. Intent harvest + H1
+2. Bead inspect
+3. Thin lock-in
+4. ChromeMenu + fly-trust + mic
+5. Cost guards (017 applied)
+6. Luna (env flip on promote)
 
 ### Manual QA checklist (real `/ask` account)
 
@@ -107,6 +186,8 @@ After chip testing: **Clear Keep** + **Clear all chats** for a clean slate befor
 ---
 
 ## Mobile debugging (iPhone Safari)
+
+**Canonical visual settings** (2026-09-14): default **Text Size**, **Standard** Display Zoom, Bold Text off, Safari Aa 100%, portrait. Larger Text made headers clip and stages scroll; agents assumed default. Detail: [`docs/IOS-FIT-AND-1.3.md`](../docs/IOS-FIT-AND-1.3.md). Do not shrink beads or Home seats. Keep `-webkit-text-size-adjust: 100%`.
 
 iPhone cannot open `localhost`. Use **http** only — not https.
 
@@ -176,8 +257,12 @@ This is the path for **wife smoke test** before `deploy:early`.
 
 | File | What |
 | --- | --- |
+| `src/lib/ask-intent.ts` | Classify harvest yes/no + answer guide (Grok none) |
+| `src/lib/ask-provider.ts` | Luna vs Grok answer routing |
+| `src/lib/openai.ts` | Luna chat (max output tokens, no tools) |
 | `src/lib/harvest-policy.ts` | `minReplyLength`, lookup exemptions, ephemeral skip |
-| `src/lib/learn-mine.ts` | Miner prompt, `mineLearnFromTurn` |
+| `src/lib/learn-mine.ts` | Miner prompt, INTENT block, `mineLearnFromTurn` |
+| `src/lib/ask-route.ts` | Tools/effort routing; answer shape is now `intentAnswerGuide` |
 | `src/lib/ask-route.ts` | `harvestAnswerHint` on depth asks |
 | `src/lib/harvest-log.ts` | Turn logging |
 

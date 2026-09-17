@@ -22,7 +22,52 @@ html[data-home-skin="paper"] {
   --keep-where: #a3d9ff;
   --keep-who: #fbcfe8;
   --keep-meaning: #c5f3d4;
+  --bead-when: 255 217 120;
+  --bead-where: 163 217 255;
+  --bead-who: 251 207 232;
+  --bead-meaning: 197 243 212;
   --home-chip-ink: #111111;
+  background: var(--paper-field, #fafaf9);
+  background-color: var(--paper-field, #fafaf9);
+}
+
+html[data-home-skin="paper"][data-halo-theme="dark"] {
+  background: var(--paper-field, #0e0e10);
+  background-color: var(--paper-field, #0e0e10);
+}
+
+html[data-home-skin="paper"] .harvest-span--when {
+  background: color-mix(in srgb, var(--keep-when) 72%, transparent);
+}
+html[data-home-skin="paper"] .harvest-span--where {
+  background: color-mix(in srgb, var(--keep-where) 72%, transparent);
+}
+html[data-home-skin="paper"] .harvest-span--who {
+  background: color-mix(in srgb, var(--keep-who) 72%, transparent);
+}
+html[data-home-skin="paper"] .harvest-span--meaning {
+  background: color-mix(in srgb, var(--keep-meaning) 72%, transparent);
+}
+html[data-home-skin="paper"] [data-harvest-lock] .harvest-span--when,
+html[data-home-skin="paper"] [data-harvest-lock] .harvest-span--when.is-lock-current {
+  background: color-mix(in srgb, var(--keep-when) 86%, transparent);
+}
+html[data-home-skin="paper"] [data-harvest-lock] .harvest-span--where,
+html[data-home-skin="paper"] [data-harvest-lock] .harvest-span--where.is-lock-current {
+  background: color-mix(in srgb, var(--keep-where) 86%, transparent);
+}
+html[data-home-skin="paper"] [data-harvest-lock] .harvest-span--who,
+html[data-home-skin="paper"] [data-harvest-lock] .harvest-span--who.is-lock-current {
+  background: color-mix(in srgb, var(--keep-who) 86%, transparent);
+}
+html[data-home-skin="paper"] [data-harvest-lock] .harvest-span--meaning,
+html[data-home-skin="paper"] [data-harvest-lock] .harvest-span--meaning.is-lock-current {
+  background: color-mix(in srgb, var(--keep-meaning) 86%, transparent);
+}
+html[data-home-skin="paper"] .harvest-span .harvest-span,
+html[data-home-skin="paper"] [data-harvest-lock] .harvest-span .harvest-span {
+  background: transparent;
+  padding: 0;
 }
 
 html[data-home-skin="paper"] .ask-stage .keep-bead--rank-0,
@@ -466,6 +511,7 @@ html[data-home-skin="paper"] .capsule--choice.capsule--picked:active {
 }
 html[data-home-skin="paper"] .capsule--choice .capsule__label {
   color: inherit;
+  text-shadow: none;
 }
 
 html[data-home-skin="paper"][data-halo-theme="dark"] .settings-page .settings-name-pane {

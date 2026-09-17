@@ -7,6 +7,8 @@ import {
   sameShapeAsAnswer,
   shouldSkipHarvest,
 } from "@/lib/learn-mine";
+import { skipHarvestTurn } from "@/lib/harvest-policy";
+import { fallbackAskIntent } from "@/lib/ask-intent";
 
 const NILE_JSON = `{
   "cards": [
@@ -124,6 +126,42 @@ export function runLearnMineFixtures(): { ok: boolean; failures: string[] } {
     fail(failures, "short ask should skip");
   }
   if (
+    !shouldSkipHarvest(
+      "Jupiter",
+      "Jupiter is the largest planet in the solar system."
+    )
+  ) {
+    fail(failures, "one-word ask without classify should still skip");
+  }
+  const planetIntent = fallbackAskIntent(
+    "What is the largest planet in the solar system?"
+  );
+  if (
+    skipHarvestTurn(
+      "Jupiter",
+      "Jupiter is the largest planet in the solar system.",
+      { ...planetIntent, harvest: true }
+    ).skip
+  ) {
+    fail(failures, "classified remember should harvest a short follow-up");
+  }
+  if (
+    !shouldSkipHarvest(
+      "asdfghjklqwertyuiopzxcvbnm",
+      "It looks like you have a typo in your message."
+    )
+  ) {
+    fail(failures, "keyboard smash should skip harvest");
+  }
+  if (
+    !shouldSkipHarvest(
+      "Oh I said sweet, it was a typo",
+      "Okay, cool — you were saying sweet. Nice to know."
+    )
+  ) {
+    fail(failures, "typo acknowledgement should skip harvest");
+  }
+  if (
     shouldSkipHarvest(
       "Why is the Nile usually named as the longest river in the world?",
       PREVIEW_HARVEST_REPLY
@@ -154,6 +192,22 @@ export function runLearnMineFixtures(): { ok: boolean; failures: string[] } {
     )
   ) {
     fail(failures, "ephemeral reply should skip even on history ask");
+  }
+  if (
+    !shouldSkipHarvest(
+      "recipe for homemade ravioli",
+      "Here's ravioli. 1. Mix. 2. Boil."
+    )
+  ) {
+    fail(failures, "recipe ask should skip harvest");
+  }
+  if (
+    !shouldSkipHarvest(
+      "what is this",
+      "That looks like a cotton-poly sock with a reinforced heel for walking."
+    )
+  ) {
+    fail(failures, "photo what-is-this should skip harvest");
   }
 
   const nile = cardsFromMinerJson(
@@ -201,10 +255,98 @@ export function runLearnMineFixtures(): { ok: boolean; failures: string[] } {
     PREVIEW_HARVEST_REPLY,
     [],
     "nile",
-    { knownRows: [{ token: "Nile", answer: "The Nile" }] }
+    {
+      knownRows: [
+        {
+          prompt: "What is usually named as the longest river in the world?",
+          token: "Nile",
+          answer: "The Nile",
+        },
+      ],
+    }
   );
   if (dupFact.length !== 1) {
-    fail(failures, `duplicate fact filter ${dupFact.length}`);
+    fail(failures, `duplicate cue filter ${dupFact.length}`);
+  }
+  if (dupFact[0]?.token === "Nile") {
+    fail(failures, "restated Nile cue should not re-harvest");
+  }
+
+  const tokenOnly = cardsFromMinerJson(
+    parseMinerJson(NILE_JSON),
+    PREVIEW_HARVEST_REPLY,
+    [],
+    "nile",
+    { knownRows: [{ token: "Nile", answer: "The Nile" }] }
+  );
+  if (tokenOnly.length !== 2) {
+    fail(failures, `token-only known row should not block ${tokenOnly.length}`);
+  }
+
+  const jupiterReply =
+    "Jupiter is the largest planet. It is also the first gas giant past the asteroid belt.";
+  const jupiterFamily = `{
+  "cards": [
+    {
+      "prompt": "Which is the first gas giant past the asteroid belt?",
+      "answer": "Jupiter",
+      "token": "Jupiter",
+      "span": "Jupiter",
+      "kind": "meaning",
+      "recall": "closed",
+      "distractors": ["Saturn", "Uranus", "Neptune"]
+    }
+  ]
+}`;
+  const parallel = cardsFromMinerJson(
+    parseMinerJson(jupiterFamily),
+    jupiterReply,
+    [],
+    "jup",
+    {
+      knownRows: [
+        {
+          prompt: "What is the largest planet in the solar system?",
+          token: "Jupiter",
+          answer: "Jupiter",
+        },
+      ],
+    }
+  );
+  if (parallel.length !== 1 || parallel[0]?.token !== "Jupiter") {
+    fail(failures, `parallel Jupiter cue should Keep, got ${parallel[0]?.token ?? "none"}`);
+  }
+  const restated = cardsFromMinerJson(
+    parseMinerJson(
+      `{
+  "cards": [
+    {
+      "prompt": "What is the largest planet?",
+      "answer": "Jupiter",
+      "token": "Jupiter",
+      "span": "Jupiter",
+      "kind": "meaning",
+      "recall": "closed",
+      "distractors": ["Saturn", "Uranus", "Neptune"]
+    }
+  ]
+}`
+    ),
+    jupiterReply,
+    [],
+    "jup",
+    {
+      knownRows: [
+        {
+          prompt: "What is the largest planet in the solar system?",
+          token: "Jupiter",
+          answer: "Jupiter",
+        },
+      ],
+    }
+  );
+  if (restated.length !== 0) {
+    fail(failures, `restated Jupiter cue should skip, got ${restated.length}`);
   }
 
   const openV2 = cardsFromMinerJson(parseMinerJson(OPEN_JSON), PHOTO_REPLY, []);
@@ -213,7 +355,7 @@ export function runLearnMineFixtures(): { ok: boolean; failures: string[] } {
   }
 
   const openLab = cardsFromMinerJson(parseMinerJson(OPEN_JSON), PHOTO_REPLY, [], undefined, {
-    policy: { ...V2_HARVEST_POLICY, closedOnly: false, minDistractors: 0 },
+    policy: { ...V2_HARVEST_POLICY, closedOnly: false, maxOpen: 1, minDistractors: 0 },
   });
   if (openLab.length !== 1) fail(failures, `open count ${openLab.length}`);
   if (openLab[0]?.recall !== "open") fail(failures, "photosynthesis should be open");

@@ -120,7 +120,27 @@ export function DictateButton({
       const next = [baseRef.current, interim.trim()].filter(Boolean).join(" ");
       onValueChange(next);
     };
-    rec.onerror = () => stop();
+    rec.onerror = (event) => {
+      stop();
+      const code = event.error ?? "";
+      if (code === "not-allowed" || code === "service-not-allowed") {
+        onBlocked?.(
+          "Microphone is blocked. Allow it for this site, or type instead."
+        );
+        return;
+      }
+      if (code === "no-speech") {
+        onBlocked?.("Didn’t catch that. Try again, or type.");
+        return;
+      }
+      if (code === "network") {
+        onBlocked?.("Dictation lost the connection. Type instead.");
+        return;
+      }
+      if (code && code !== "aborted") {
+        onBlocked?.("Dictation stopped. Type instead, or try again.");
+      }
+    };
     rec.onend = () => {
       if (listeningRef.current) onListeningChange(false);
       recRef.current = null;

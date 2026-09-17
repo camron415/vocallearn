@@ -1,11 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
-  eventCostMicros,
   householdMonthlyMicros,
   isHaloLane,
+  userBudgetMicros,
+  userBudgetPeriod,
   weeklyBudgetMicros,
   type HaloLane,
 } from "@/lib/limits";
+import { spendSince as spendSinceGuarded } from "@/lib/ask-guard";
 
 export async function loadMemberLane(
   supabase: SupabaseClient,
@@ -31,18 +33,8 @@ export async function spendSince(
   since: Date,
   userId?: string
 ): Promise<number> {
-  let query = supabase
-    .from("halo_events")
-    .select("meta")
-    .eq("kind", "ask")
-    .gte("created_at", since.toISOString());
-  if (userId) query = query.eq("user_id", userId);
-  const { data, error } = await query;
-  if (error) return 0;
-  return (data ?? []).reduce(
-    (sum, row) => sum + eventCostMicros(row.meta),
-    0
-  );
+  const micros = await spendSinceGuarded(supabase, since, userId);
+  return micros ?? 0;
 }
 
 export async function usageSnapshot(
@@ -50,15 +42,19 @@ export async function usageSnapshot(
   userId: string
 ) {
   const lane = await loadMemberLane(supabase, userId);
-  const [spentWeek, householdMonth] = await Promise.all([
-    spendSince(supabase, daysAgo(7), userId),
-    spendSince(supabase, daysAgo(30)),
+  const budgetDays = userBudgetPeriod() === "month" ? 30 : 7;
+  const [spentUser, householdMonth] = await Promise.all([
+    spendSinceGuarded(supabase, daysAgo(budgetDays), userId),
+    spendSinceGuarded(supabase, daysAgo(30)),
   ]);
+  const spentWeek = spentUser ?? 0;
   return {
     lane,
     spentWeek,
-    weekCap: weeklyBudgetMicros(lane),
-    householdMonth,
+    weekCap: userBudgetMicros(lane),
+    householdMonth: householdMonth ?? 0,
     householdCap: householdMonthlyMicros(),
+    period: userBudgetPeriod(),
+    weekCapLegacy: weeklyBudgetMicros(lane),
   };
 }

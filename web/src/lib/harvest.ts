@@ -31,7 +31,7 @@ export type HarvestChip = {
   keptAt?: number;
   /** Same-kind wrong answers for recognize. Color cannot leak the pick. */
   distractors?: string[];
-  /** Closed token vs open gist. V2 harvest keeps closed only. */
+  /** Closed token vs open gist. Open plays as cloze, then full gist on r3. */
   recall?: ChipRecall;
   /** Source Ask this fact was harvested from. Hold-to-open on Home. */
   askId?: string;
@@ -435,12 +435,10 @@ function findByDigits(haystack: string, needle: string): HarvestNeedleHit | null
   return null;
 }
 
-/** Closest on-screen span for a chip — exact, case-fold, markdown-stripped, then fact key. */
-export function findHarvestNeedle(
+function findLiteralNeedle(
   haystack: string,
   chip: Pick<HarvestChip, "span" | "token" | "answer">
 ): HarvestNeedleHit | null {
-  if (!haystack) return null;
   const needles = harvestNeedles(chip);
   if (!needles.length) return null;
 
@@ -473,8 +471,31 @@ export function findHarvestNeedle(
       text: haystack.slice(start, endIndex + 1),
     };
   }
+  return null;
+}
 
-  for (const needle of needles) {
+/**
+ * Miner / chip filter: span must actually appear in the reply.
+ * Paper highlights may still use findHarvestNeedle (fact-key / digit fuzz).
+ */
+export function findHarvestSpanVerbatim(
+  haystack: string,
+  chip: Pick<HarvestChip, "span" | "token" | "answer">
+): HarvestNeedleHit | null {
+  if (!haystack) return null;
+  return findLiteralNeedle(haystack, chip);
+}
+
+/** Closest on-screen span for a chip — exact, case-fold, markdown-stripped, then fact key. */
+export function findHarvestNeedle(
+  haystack: string,
+  chip: Pick<HarvestChip, "span" | "token" | "answer">
+): HarvestNeedleHit | null {
+  if (!haystack) return null;
+  const literal = findLiteralNeedle(haystack, chip);
+  if (literal) return literal;
+
+  for (const needle of harvestNeedles(chip)) {
     const hit = findByFactKey(haystack, needle) ?? findByDigits(haystack, needle);
     if (hit) return hit;
   }
@@ -541,14 +562,79 @@ export function harvestFactKey(text: string) {
     .trim();
 }
 
-export function sameHarvestFact(
-  a: Pick<HarvestChip, "token" | "answer">,
-  b: Pick<HarvestChip, "token" | "answer">
+const CUE_STOP = new Set([
+  "a",
+  "an",
+  "the",
+  "is",
+  "are",
+  "was",
+  "were",
+  "be",
+  "been",
+  "being",
+  "do",
+  "does",
+  "did",
+  "of",
+  "in",
+  "on",
+  "at",
+  "to",
+  "for",
+  "with",
+  "from",
+  "by",
+  "as",
+  "our",
+  "your",
+  "their",
+  "this",
+  "that",
+  "these",
+  "those",
+  "usually",
+  "named",
+  "please",
+  "tell",
+  "me",
+  "give",
+]);
+
+/** Cue identity: drop question-words so restatements collapse. */
+export function harvestCueKey(prompt: string) {
+  return harvestFactKey(prompt)
+    .split(/\s+/)
+    .filter((word) => word && !CUE_STOP.has(word))
+    .join(" ");
+}
+
+/** Same ask, including a longer restatement. One-word cues must match exactly. */
+export function cueRestates(a: string, b: string) {
+  if (!a || !b) return false;
+  if (a === b) return true;
+  const [short, long] = a.length <= b.length ? [a, b] : [b, a];
+  if (short.split(" ").filter(Boolean).length < 2) return false;
+  return ` ${long} `.includes(` ${short} `);
+}
+
+/**
+ * A Keep claim is the cue, not the answer word.
+ * Same answer + different cues (largest planet vs first gas giant) are two facts.
+ * Restated cues are one fact, even if the answer wording drifted.
+ */
+export function sameHarvestClaim(
+  a: Pick<HarvestChip, "prompt" | "token" | "answer">,
+  b: Pick<HarvestChip, "prompt" | "token" | "answer">
 ) {
-  const keys = (chip: Pick<HarvestChip, "token" | "answer">) =>
-    [harvestFactKey(chip.token), harvestFactKey(chip.answer)].filter(Boolean);
-  const have = new Set(keys(a));
-  return keys(b).some((key) => have.has(key));
+  return cueRestates(harvestCueKey(a.prompt), harvestCueKey(b.prompt));
+}
+
+export function sameHarvestFact(
+  a: Pick<HarvestChip, "prompt" | "token" | "answer">,
+  b: Pick<HarvestChip, "prompt" | "token" | "answer">
+) {
+  return sameHarvestClaim(a, b);
 }
 
 function harvestSeatLooksDue(chip: HarvestChip) {

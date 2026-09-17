@@ -15,16 +15,27 @@ export function HistoryMenu({
   items,
   currentId,
   demo = false,
+  hideTrigger = false,
+  open: openProp,
+  onOpenChange,
   onSelect,
   onDeleted,
 }: {
   items: HistoryItem[];
   currentId?: string;
   demo?: boolean;
+  hideTrigger?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   onSelect: (id: string) => void;
   onDeleted?: (id: string) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [innerOpen, setInnerOpen] = useState(false);
+  const open = openProp ?? innerOpen;
+  const setOpen = (next: boolean) => {
+    onOpenChange?.(next);
+    if (openProp === undefined) setInnerOpen(next);
+  };
   const [rows, setRows] = useState(items);
   const [editing, setEditing] = useState(false);
   const [picked, setPicked] = useState<string[]>([]);
@@ -167,6 +178,7 @@ export function HistoryMenu({
 
   return (
     <div className="history-wrap">
+      {hideTrigger ? null : (
       <GlassButton
         title="Open chat history"
         onClick={() => setOpen(true)}
@@ -186,6 +198,7 @@ export function HistoryMenu({
           <path d="M12 7.5V12l3.25 3.25" />
         </svg>
       </GlassButton>
+      )}
       {coarse ? (
         <SimpleSheet {...sheetProps}>{body}</SimpleSheet>
       ) : (

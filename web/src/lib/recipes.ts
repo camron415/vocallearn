@@ -51,9 +51,11 @@ type Extracted = {
 };
 
 const HEAD_ING =
-  /^\*{0,2}ingredients?\*{0,2}\s*:?\s*$|^#{1,3}\s*ingredients?\b/i;
+  /^(?:\*{0,2}ingredients?\*{0,2}|#{1,3}\s*ingredients?)\b\s*:?\s*/i;
+const HEAD_NEED =
+  /^(?:you(?:'|’)ll need|what you(?:'|’)ll need|what you need)\b\s*:?\s*/i;
 const HEAD_STEPS =
-  /^\*{0,2}(steps|instructions|directions|method)\*{0,2}\s*:?\s*$|^#{1,3}\s*(steps|instructions|directions|method)\b/i;
+  /^(?:\*{0,2}(steps|instructions|directions|method)\*{0,2}|#{1,3}\s*(steps|instructions|directions|method))\b\s*:?\s*/i;
 const BULLET = /^[-*•]\s+(.+)$/;
 const NUMBERED = /^\d+[\.)]\s+(.+)$/;
 
@@ -88,12 +90,23 @@ export function parseRecipeMarkdown(md: string): Extracted | null {
   for (const raw of cleaned.split(/\r?\n/)) {
     const trimmed = raw.trim();
     if (!trimmed) continue;
-    if (HEAD_ING.test(trimmed)) {
+    const ingHead =
+      trimmed.match(HEAD_ING) ||
+      (mode === "intro" ? trimmed.match(HEAD_NEED) : null);
+    if (ingHead) {
       mode = "ingredients";
+      const rest = trimmed.slice(ingHead[0].length).replace(/^[-*•]\s+/, "").trim();
+      if (rest) ingredients.push(rest);
       continue;
     }
-    if (HEAD_STEPS.test(trimmed)) {
+    const stepHead = trimmed.match(HEAD_STEPS);
+    if (stepHead) {
       mode = "steps";
+      const rest = trimmed.slice(stepHead[0].length).replace(/^[-*•]\s+/, "").trim();
+      if (rest) {
+        const numbered = rest.match(NUMBERED);
+        steps.push(`${steps.length + 1}. ${(numbered?.[1] ?? rest).trim()}`);
+      }
       continue;
     }
     if (mode === "ingredients") {

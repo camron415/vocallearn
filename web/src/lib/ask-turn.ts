@@ -1,13 +1,14 @@
 import { clipAtWord, titleFromFirstMessage } from "@/lib/constants";
 import { summarizeChatTitle } from "@/lib/grok";
-import { householdMonthlyMicros, weeklyBudgetMicros } from "@/lib/limits";
+import { ASK_MESSAGE_MAX_CHARS } from "@/lib/limits";
 import { sanitizeModelText, splitMessageSources } from "@/lib/markdown-plain";
 import { attachmentNote } from "@/lib/files";
+import { estimateTurnMicros, gateAskTurn } from "@/lib/ask-guard";
 import type { GrokMessage } from "@/lib/grok";
 import type { ChatAttachment } from "@/lib/types";
 import type { User } from "@supabase/supabase-js";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { loadMemberLane, spendSince } from "@/lib/usage";
+import { loadMemberLane } from "@/lib/usage";
 
 export type AskTurn =
   | {
@@ -17,12 +18,6 @@ export type AskTurn =
       userText: string;
     }
   | { ok: false; status: number; error: string };
-
-function daysAgo(days: number) {
-  const since = new Date();
-  since.setDate(since.getDate() - days);
-  return since;
-}
 
 /** Trim history before sending to the model — full text stays in the DB for the UI. */
 function prepareHistoryForApi(messages: GrokMessage[]): GrokMessage[] {
@@ -89,28 +84,25 @@ export async function prepareAskTurn(
   if (!resume && !text) {
     return { ok: false, status: 400, error: "Message required" };
   }
-  if (text.length > 4000) {
-    return { ok: false, status: 400, error: "Message too long" };
+  if (text.length > ASK_MESSAGE_MAX_CHARS) {
+    return {
+      ok: false,
+      status: 400,
+      error: `Message too long (max ${ASK_MESSAGE_MAX_CHARS} characters).`,
+    };
   }
 
   const lane = await loadMemberLane(supabase, user.id);
-  const [spentWeek, householdMonth] = await Promise.all([
-    spendSince(supabase, daysAgo(7), user.id),
-    spendSince(supabase, daysAgo(30)),
-  ]);
-  if (spentWeek >= weeklyBudgetMicros(lane)) {
-    return {
-      ok: false,
-      status: 429,
-      error: "This week’s limit is reached. Try again next week.",
-    };
-  }
-  if (householdMonth >= householdMonthlyMicros()) {
-    return {
-      ok: false,
-      status: 429,
-      error: "Household monthly limit reached. Ask Camron if you need more.",
-    };
+  const gated = await gateAskTurn(supabase, user.id, lane, {
+    files: attachments.length,
+    estimateMicros: estimateTurnMicros({
+      provider: attachments.length ? "grok" : "luna",
+      files: attachments.length,
+      search: false,
+    }),
+  });
+  if (!gated.ok) {
+    return { ok: false, status: gated.status, error: gated.error };
   }
 
   let conversationId = body.conversationId ?? null;
