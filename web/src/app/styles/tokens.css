@@ -75,6 +75,13 @@
   inherits: true;
   initial-value: 0;
 }
+/* Phone keyboard inset. Registered so Ask can ease instead of jumping when
+   JS writes --kb-inset (plain custom props do not interpolate). */
+@property --kb-inset {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0px;
+}
 
 :root {
   color-scheme: light;
@@ -103,6 +110,7 @@
   --ease-gel: cubic-bezier(0.22, 0.61, 0.36, 1);
   --ease-travel: cubic-bezier(0.33, 0.04, 0.2, 1);
   --travel: 1080ms;
+  --kb-travel: 480ms;
 
   --background: transparent;
   --foreground: var(--halo-ink);
@@ -221,6 +229,10 @@ html[data-halo-bg="sky"] {
 html[data-halo-bg="sky"][data-halo-motion="soft"],
 html[data-halo-bg="sky"][data-halo-perf="soft"] {
   --glass-sat: 150%;
+}
+
+html:not([data-halo-theme="dark"]) {
+  color-scheme: light;
 }
 
 html[data-halo-theme="dark"] {
@@ -354,6 +366,12 @@ body {
   min-height: 100dvh;
   overflow-x: hidden;
   -webkit-text-size-adjust: 100%;
+}
+
+/* Capacitor is edge-to-edge. Safari's 100dvh already sits above the home
+   indicator; the app webview does not. */
+html[data-halo-native] {
+  --halo-native-bottom: max(34px, env(safe-area-inset-bottom, 0px));
 }
 
 /* --------------------------------------------------------------------------

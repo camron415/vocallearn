@@ -9,6 +9,7 @@ import {
   readLoopStats,
 } from "@/lib/keep-memory";
 import { HALO_BEAD_INSPECT, HALO_GOLD_INSPECT } from "@/lib/keep-inspect";
+import { haloJuice } from "@/lib/halo-juice";
 
 function isGoldChip(chip: HarvestChip) {
   return isMasteredChip(chip) || keepRank(chip) >= 3;
@@ -33,6 +34,7 @@ export function GoldKeptBadge({ chips }: { chips: HarvestChip[] }) {
 
   useEffect(() => {
     function onPulse() {
+      haloJuice("gold");
       setPulse(true);
       window.setTimeout(() => setPulse(false), 520);
     }
@@ -92,6 +94,7 @@ export function GoldKeptBadge({ chips }: { chips: HarvestChip[] }) {
         aria-label={n ? `Kept, ${n} mastered` : "Kept, none mastered yet"}
         onClick={(event) => {
           event.stopPropagation();
+          haloJuice("chrome");
           setOpen((value) => !value);
         }}
         onPointerDown={(event) => event.stopPropagation()}

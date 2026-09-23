@@ -4,20 +4,16 @@ import { toJpeg } from "html-to-image";
 import { useEffect, useRef, useState } from "react";
 import { homeStyleFromDom } from "@/lib/home-style";
 import type { CaptureSink } from "@/components/HarvestCapture";
+import { filmSnapOpts, filmStillEveryMs, parseAgentTake } from "@/lib/film-rate";
 
 const SINK = "http://127.0.0.1:8791/harvest-capture";
 const RECORD_MAX_MS = 180000;
-const STILL_EVERY_MS = 2000;
 const POSE_EVERY_MS = 80;
 const MAX_STILLS = 90;
 
 async function snapStage() {
   return toJpeg(document.body, {
-    quality: 0.55,
-    pixelRatio: 1,
-    cacheBust: false,
-    skipFonts: true,
-    canvasWidth: 960,
+    ...filmSnapOpts(window.location.search, window.innerWidth),
     filter: (el) => {
       if (!(el instanceof HTMLElement)) return true;
       return (
@@ -191,6 +187,7 @@ export function HomeCapture({
         );
       }
       grab("start");
+      const stillEvery = filmStillEveryMs(window.location.search);
 
       await new Promise<void>((resolve) => {
         let lastUi = 0;
@@ -213,7 +210,7 @@ export function HomeCapture({
             lastUi = now;
             setLive((prev) => ({ ...prev, t }));
           }
-          if (wantFilm && t - lastStill >= STILL_EVERY_MS) {
+          if (wantFilm && t - lastStill >= stillEvery) {
             lastStill = t;
             grab("tick");
           }
@@ -255,6 +252,7 @@ export function HomeCapture({
       const fps = Math.round(rafCount / Math.max(1, elapsed / 1000));
       const overlaps = overlapCount();
       const chips = document.querySelectorAll(".home-bubbles .capsule").length;
+      const take = parseAgentTake(window.location.search);
       const meta = {
         surface: "home",
         at: new Date().toISOString(),
@@ -264,6 +262,10 @@ export function HomeCapture({
         sampleCount: samples.current.length,
         fps,
         film: wantFilm,
+        stillEveryMs: stillEvery,
+        take: take.take,
+        q: take.q,
+        viewport: { w: window.innerWidth, h: window.innerHeight },
         overlaps,
         chips,
       };

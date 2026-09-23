@@ -91,6 +91,8 @@ export async function updateSession(request: NextRequest) {
     path === "/preview" ||
     path.startsWith("/preview/") ||
     path === "/demo" ||
+    path === "/privacy" ||
+    path === "/terms" ||
     path.startsWith("/invite/") ||
     path.startsWith("/api/invite/reserve") ||
     path.startsWith("/api/invite/join") ||

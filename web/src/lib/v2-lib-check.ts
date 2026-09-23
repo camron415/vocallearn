@@ -20,6 +20,9 @@ import { runAskHarnessDryFixtures } from "./ask-harness-run";
 import { runAskClaimHarnessFixtures } from "./ask-claim-harness-check";
 import { runChipInvariantFixtures } from "./chip-invariants-check";
 import { runAskAnswerShapeFixtures } from "./ask-answer-shape";
+import { runPendingTurnFixtures } from "./pending-turn-check";
+import { runFilmRateFixtures } from "./film-rate-check";
+import { runHaloJuiceFixtures } from "./halo-juice-check";
 
 function runFamilyReviewFixtures(): SuiteResult {
   const failures: string[] = [];
@@ -54,6 +57,7 @@ function report(name: string, result: SuiteResult) {
 const suites: Array<[string, () => SuiteResult | Promise<SuiteResult>]> = [
   ["ask-intent (classify fallback + capital)", runAskIntentFixtures],
   ["ask-intent (classify budget / peek)", runAskIntentAsyncFixtures],
+  ["pending-turn (home stream replay)", runPendingTurnFixtures],
   ["ask-provider (Luna vs Grok routing)", runAskProviderFixtures],
   ["ask-harness (TurnPlan routing dry)", runAskHarnessDryFixtures],
   ["ask-claim (short / open-closed / cue uniq)", runAskClaimHarnessFixtures],
@@ -74,6 +78,8 @@ const suites: Array<[string, () => SuiteResult | Promise<SuiteResult>]> = [
   ["harvest-lock (play mode + kickers)", runHarvestLockFixtures],
   ["keep-land (phone vs desktop bead slot)", runKeepLandFixtures],
   ["home-pack (phone seats vs desktop 16)", runHomePackFixtures],
+  ["film-rate (agent burst + take)", runFilmRateFixtures],
+  ["halo-juice (quiet + listen atom)", runHaloJuiceFixtures],
 ];
 
 async function main() {

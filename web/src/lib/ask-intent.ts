@@ -1,11 +1,13 @@
 import {
   feedHints,
   isLookupAsk,
+  isLivePriceAsk,
   wantsDeeperAsk,
   isShortFollowUp,
   type FeedDomain,
 } from "@/lib/ask-route";
 import { callGrokChat } from "@/lib/grok";
+import { callOpenAIChat, lunaEnabled } from "@/lib/openai";
 import { isEphemeralAsk, looksLikeGibberish, looksLikeChitChat } from "@/lib/harvest-policy";
 
 export type AnswerMode = "direct" | "teach_light" | "practical";
@@ -63,8 +65,9 @@ const ASK_JOBS: ReadonlySet<string> = new Set([
   "other",
 ]);
 
-const CLASSIFY_MS = 2500;
-/** Wait this long for classify before streaming with the timeout fallback guide. */
+/** Hang cap only — classify should finish well under this on Luna. Not a sleep. */
+export const CLASSIFY_MS = 1200;
+/** Kept for tests / docs. Stream still awaits the real plan; Luna should beat this. */
 export const CLASSIFY_ANSWER_MS = 900;
 
 const FRESHNESS_SET: ReadonlySet<string> = new Set(["weights", "feeds", "web"]);
@@ -551,6 +554,7 @@ function looksLikeRememberAsk(text: string) {
   const t = text.trim();
   if (!t || looksLikeChitChat(t)) return false;
   if (feedHints(t)) return false;
+  if (isLivePriceAsk(t)) return false;
   if (BEST_IN_PLACE.test(t)) return false;
   if (wantsDeeperAsk(t)) return true;
   if (CAPITAL_ASK.test(t) || CLOSED_LOOKUP.test(t)) return true;
@@ -629,7 +633,8 @@ export function fallbackAskIntent(
     wantsDeeperAsk(current) ||
     /\bhow (does|do|is|are|can|would)\b/i.test(resolved);
   const feed = feedHints(resolved) || feedHints(current);
-  const ephemeral = isEphemeralAsk(current) || Boolean(feed);
+  const livePrice = isLivePriceAsk(resolved) || isLivePriceAsk(current);
+  const ephemeral = isEphemeralAsk(current) || Boolean(feed) || livePrice;
   const recipeAsk = RECIPE_ASK.test(current);
   if (GREETING_ASK.test(current)) {
     return blankIntent(false, "greeting", "practical", current.slice(0, 240), 0, 0, null, "chat", {
@@ -934,6 +939,47 @@ function timeoutIntent(userText: string, options?: ClassifyOptions) {
   });
 }
 
+export function classifyProvider(): "luna" | "grok" {
+  return lunaEnabled() ? "luna" : "grok";
+}
+
+function intentFromClassifyRaw(
+  raw: string,
+  text: string,
+  options: ClassifyOptions | undefined,
+  fallback: AskIntent
+): AskIntent {
+  const parsed = parseAskIntent(raw, text, options);
+  if (!parsed) return { ...fallback, planSource: "timeout" };
+  return { ...parsed, planSource: "model" };
+}
+
+async function classifyModelRaw(userBlock: string): Promise<string> {
+  if (lunaEnabled()) {
+    const { text } = await callOpenAIChat(
+      [{ role: "user", content: userBlock }],
+      {
+        temperature: 0,
+        maxTokens: 220,
+        system: CLASSIFIER,
+        bareSystem: true,
+      }
+    );
+    return text;
+  }
+  return callGrokChat(
+    [{ role: "user", content: userBlock }],
+    {
+      tools: false,
+      effort: "none",
+      maxTokens: 220,
+      temperature: 0,
+      system: CLASSIFIER,
+      bareSystem: true,
+    }
+  );
+}
+
 export async function classifyAskIntent(
   userText: string,
   options?: ClassifyOptions
@@ -960,31 +1006,11 @@ export async function classifyAskIntent(
     .join("\n");
 
   try {
-    const grok = callGrokChat(
-      [
-        {
-          role: "user",
-          content: userBlock,
-        },
-      ],
-      {
-        tools: false,
-        effort: "none",
-        maxTokens: 220,
-        temperature: 0,
-        answerLength: "short",
-        system: CLASSIFIER,
-      }
-    )
-      .then((raw) => {
-        const parsed = parseAskIntent(raw, text, options);
-        if (!parsed) return { ...fallback, planSource: "timeout" as const };
-        return { ...parsed, planSource: "model" as const };
-      })
+    const model = classifyModelRaw(userBlock)
+      .then((raw) => intentFromClassifyRaw(raw, text, options, fallback))
       .catch(() => fallback);
 
-    const raw = await Promise.race([grok, timeoutIntent(userText, options)]);
-    return raw;
+    return await Promise.race([model, timeoutIntent(userText, options)]);
   } catch {
     return fallback;
   }

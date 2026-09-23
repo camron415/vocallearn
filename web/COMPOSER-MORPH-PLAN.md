@@ -208,6 +208,100 @@ Camron: “leave a note, we will come back for it later — it did not work.” 
 
 ---
 
+## 1.3 prompt — composer lane (2026-09-17)
+
+**Status:** Plan. Lane claimed on `KEPT-BOARD.md`. No src until Camron says go.  
+**Owner:** Composer chat (this lane). **Out:** harness, classify, miner, discovery loop, Keep math.  
+**Frozen:** `--travel` 1080ms, harvest z-index 120, Home seating, phone Follow-up dock, play sheet 832 / inner ~440.
+
+Family `/ask` is **1.2.0 live**. This work is **1.3 craft** (also listed in `docs/IOS-FIT-AND-1.3.md` as morph-ghost polish). Lab `/preview` first. Do not promote.
+
+### What Camron asked
+
+The Home→Chat send feels like a **5–6s page load** (ghost blink, then chat, then tokens). After the screen finally appears, the answer is fast. That dead wait is why people say Halo is not a real chatbot. Target: **~3s total** for a basic ask, with the wait feeling like thinking, not a route swap. In an already-open chat, do not sit idle for 2s unless the question actually needs it.
+
+Also own: Home↔Chat and Chat↔Home continuity, follow-up in a thread, dictate feel, thinking-stream craft (Grok-like sentence replace, not a growing essay). Transfer the same contract to the Capacitor app another agent is building.
+
+### Why it is 5–6s today (not “the model is slow”)
+
+Live `/ask` still uses **two pages** and a **blank ghost**. The answer model is also **blocked on classify**.
+
+| t | What happens | Feels like |
+| --- | --- | --- |
+| 0 | Enter. Home fades. Composer FLIP toward the dock (`--travel` **1080ms**, frozen). `prepareOnly` starts in parallel (auth, create chat, save user row, fire classify). | Motion. OK if the field stays real. |
+| ~1.1s | Travel ends. `pinComposeGhost` paints a **blank stadium**. `router.push` waits on `prepareOnly` if it is still going. Next unmounts Home / mounts Chat. | Ghost blink. Dead. |
+| +0.2–1.5s | RSC + ChatThread mount. 80ms resume delay. `takePendingResume` or a new `/api/chat` resume. | “Is it loading?” |
+| 0–**2.5s** | Stream **awaits the full classify promise**. `CLASSIFY_ANSWER_MS` (900) is unused. Classify itself races 2500ms. Cache is a **process-local Map** — Vercel can miss and classify again. Search/feeds add `liveLookupContext` before tokens. | Blank or “Working…” |
+| +0.5–1.5s | Luna/Grok time-to-first-token. WorkTrace may wait **450ms** before showing. Thinking appends as a growing paragraph. | Then the answer “suddenly” appears. |
+
+That matches the film: **depends on the question** (classify + search) **and** the instance (cache miss), then tokens are prompt once the screen is up.
+
+In-chat follow-up skips the morph, but still hits classify-await + TTFT. A 2s sit with no user bubble / no thinking is the same product bug, smaller.
+
+### What ChatGPT / Grok actually do
+
+People do not get a 200ms first token. They get:
+
+1. **User bubble instantly** (optimistic, before the network).
+2. **Thinking / shimmer within ~200–400ms.**
+3. First token in **~1–3s** on a basic ask; search/reasoning longer, but the UI is already “alive.”
+4. Thinking as **short replacing sentences**, not a dumped essay.
+5. Dictate words landing **~0.5–1s behind speech** (native STT). Halo today is **Web Speech** — free, fine on desktop Chrome, weak on Safari iPhone.
+
+The bar is not “faster than Grok’s model.” It is **never a blank page**. 3s of visible thinking is legit. 5s of ghost + route swap is not.
+
+### Doable without touching harness
+
+- Persistent composer (AskShell redo on `/preview`). One DOM node. No `pinComposeGhost`. This is the ghost fix. Last pass failed QA — resume with a screen record, do not copy-paste the old proof.
+- Optimistic paint: user message on screen at Enter; Follow-up clears; thinking visible immediately (drop the 450ms hide).
+- Overlap: stream already arms during travel (`armPendingResume`). Chat must consume it; never look empty while that fetch is live.
+- Thinking craft: last-sentence replace-in-place, not a growing paragraph.
+- Dictate: keep the same button API; interim results already exist. Native lane later swaps in SFSpeech / a cheap Whisper path behind that API. Do not buy a cloud STT for web 1.3 unless Safari is a ship blocker.
+
+### Handshake (composer proposes, harness owns)
+
+Composer cannot promise a 3s **first token** while the stream awaits classify up to 2.5s on a cold instance. Options for the harness chat later (not this lane):
+
+- Start the answer after `CLASSIFY_ANSWER_MS` (900) and let classify finish in the background for the miner, **or**
+- Persist classify on the turn so resume never re-calls Grok, **or**
+- Keep full await only when freshness is `web` / `feeds`.
+
+Until that lands, composer still kills the **dead** seconds and makes the remaining wait look like Grok thinking.
+
+### Waves (when Camron says go)
+
+| Wave | Where | What |
+| --- | --- | --- |
+| **1** | Lab `/preview`, then family only if signed | Perceived speed. Instant user bubble. Thinking at 0–200ms. No blank sit after travel. Do not retune 1080. |
+| **2** | Lab `/preview` only | AskShell redo. Screen-record Home→Ask→Home. Ghost gone. Family `/ask` stays two-page until signed. |
+| **3** | Lab | Thinking sentence-replace + dictate interim feel. |
+| **4** | Note only | Harness handshake if in-chat TTFT is still >2s on basic asks. |
+
+### Transfer to the iOS app
+
+Capacitor is this CSS in a WKWebView. **Do not build a second composer.**
+
+| Web contract | Native |
+| --- | --- |
+| One `ComposeStadium` (AskShell / single view) | Same component. Native has **no** Next page swap — Wave 2 is the app for free. |
+| `--travel` 1080 / harvest z 120 | Same tokens until a Replay. |
+| `DictateButton` props (`value`, `onValueChange`, listening) | Native agent replaces Web Speech with SFSpeech or Whisper. Same UI. |
+| Optimistic user row + WorkTrace | Same. |
+| Follow-up dock (signed 2026-09-12) | Same CSS. Keyboard inset already `--kb-inset`. |
+
+If Wave 2 ships as view-state (`?view=chat`) instead of `/ask` → `/ask/[id]` unmount, the app never inherits the ghost.
+
+### Acceptance (film, not CSS)
+
+- Home→Chat: composer visible **every frame**. Ask text rides down. No blank stadium.
+- Chat is on screen when travel ends (~1080ms). User bubble already there. Thinking visible. First token by ~2–2.5s on a basic weights ask when classify is warm; no 5s dead gap.
+- In-chat follow-up: bubble + thinking immediately. No second “loading page.”
+- Chat→Home: travel restored; greeting + chips fade together after the field lands.
+- Dictate: words appear as you speak (interim), not one dump at stop — where the engine supports it.
+- Frozen craft unchanged. Lab only until Camron says promote.
+
+---
+
 ## References (concepts, not dependencies)
 
 - **FLIP:** First, Last, Invert, Play — Paul Lewis / Google (2016). Halo uses this in `flipCompose`.
@@ -224,3 +318,5 @@ Camron: “leave a note, we will come back for it later — it did not work.” 
 | 2026-09-03 | Initial plan. 1.1.2 live on early access. AskShell lab built, not promoted. User asked for deep analysis + simple answer; no code tonight. |
 | 2026-09-03 | Lab proof on `/preview` only: persistent composer + chip-style copy fade. Family `/ask` layout restored (frozen). |
 | 2026-09-03 | **PARKED.** Camron tested localhost `/preview` — did not work. Note left in KEPT-BOARD + § Parked above. Resume later. |
+| 2026-09-17 | **1.3 prompt.** Camron assigned this chat as composer owner post-1.2. Diagnosis + waves + native transfer written above. No src. Waiting go. |
+| 2026-09-17 | **Send path.** Classify is Luna (was Grok) + bare JSON prompt. Hang cap 1200ms. Home starts the real SSE during travel; Chat attaches. No second classify. Morph 1080 / ghost / AskShell untouched. |

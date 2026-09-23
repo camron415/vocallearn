@@ -1,12 +1,16 @@
 ---
-description: Cursor Visual QA Contract — film first, iterate until verified. Use for Halo UI, CSS, color, animation, Replay, or any visual change.
+description: Lab Look (Halo visual QA) — film first, iterate until verified. Use for Halo UI, CSS, color, animation, keyboard, Replay, or any visual change.
 alwaysApply: false
 globs: web/src/**/*.css,web/src/components/**/*.tsx,web/captures/**/*
 ---
 
-# Cursor Visual QA Contract
+# Lab Look — Cursor Visual QA Contract
 
-Persistent design oracle for Halo frontend. On any visual, color, animation, or UI change, follow steps 1–7. Start the work by stating: "Following Cursor Visual QA Contract steps 1-7."
+Named **Lab Look**. Full agent instructions: `.cursor/skills/lab-look/SKILL.md`.
+The live inspector is the **cursor-ide-browser MCP**; Lab Film is `/preview?burst=1`.
+Not a separate MCP server.
+
+Persistent design oracle for Halo frontend. On any visual, color, animation, or UI change, follow steps 1–7. Start the work by stating: "Following Lab Look steps 1-7."
 
 Do not hand work back with unfixed glitches. Do not stop after one attempt. Judge from film and frames, not from CSS you just wrote.
 
@@ -22,5 +26,20 @@ Do not hand work back with unfixed glitches. Do not stop after one attempt. Judg
 
 If the visual outcome is still uncertain: "Syncing with Atlas for visual QA confirmation before finalizing."
 
-Home film: `/preview` Home tab, Mix Start then Stop (not a timed take), `npm run capture:sink`, then `web/captures/home/latest/`. Harvest film: `/preview?view=chat`, `web/captures/harvest/latest/`. Do not freeze Home water with `still`. Harvest Shape/Flight/Wake/Dock stay locked unless Camron asks.
----
+## Agent film (Camron out of the inner loop)
+
+Camron signs the real phone. The agent runs Mix.
+
+- Sink: `cd web && npm run capture:sink`
+- Phone viewport: 393×852 (iPhone 15 Pro CSS). CDP `Emulation.setDeviceMetricsOverride`.
+- Default take: `/preview?look=paper&burst=1&take=roundtrip` — Home→Chat→Home, no Mix click.
+- One-way: `take=morph` or `take=return`. Idle: `take=home`.
+- Frames: `web/captures/home/latest/`. Harvest: `/preview?view=chat`, `web/captures/harvest/latest/`.
+
+**Review protocol:** read `meta.json`, then only named stills (`start`, `travel`, `mid`, `late`, `land`, `end`). Open `-tick` frames only if a blink sits between keyframes. Do not dump every still into context.
+
+**Done gate:** two or three clean takes in a row on the same defect. Then stop and ask Camron to watch the real phone. One lucky take is not done.
+
+**Sitting limit:** about 4–8 film loops in one chat. After that, quality drops as context fills. Open a fresh chat: read this rule + `web/KEPT-BOARD.md` + `web/captures/home/latest/meta.json`. Do not claim an overnight unattended run. Do not retune morph 1080 or harvest z 120 unless Camron files a Replay.
+
+Do not freeze Home water with `still`. Harvest Shape/Flight/Wake/Dock stay locked unless Camron asks.

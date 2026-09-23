@@ -13,7 +13,7 @@ Cove is a placeholder name. Paper is the current Lab look. This file is the prod
 Sit **Duolingo-side of Quizlet**, not a full game.
 
 - **Ask is the front door.** Search/chat stays first. Keep/Learn is optional juice on top of real answers.
-- **Two doors.** Instant answers for lookups and throwaway asks. **Opt-in** Teach-me / learning clicks for depth — not Socratic intercept on every send. See [`docs/PRODUCT_ROADMAP.md`](./PRODUCT_ROADMAP.md) § Trajectory adjustment.
+- **Two doors.** Instant answers for lookups and throwaway asks. **Opt-in** Teach-me / learning clicks for depth — not Socratic intercept on every send. See [`docs/PRODUCT_ROADMAP.md`](./PRODUCT_ROADMAP.md) § Trajectory adjustment. Keith 2026 (university AI-learning guide) confirms the science and still does **not** change this door. [`docs/KEITH-AI-LEARNING-GUIDE.md`](./KEITH-AI-LEARNING-GUIDE.md).
 - **Quizlet** is too dry (cards in a folder, no journey).
 - **Duolingo** is the analog: habit loop, light scores, collection — still obviously a learning tool.
 - **Full RPG / medieval kingdom / combat** is out. “Keep” is the metaphor. The UI stays Paper Cove. Copy may say Keep, due, mastered. No HP, maps, swords, or genre chrome.

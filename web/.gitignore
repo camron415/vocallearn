@@ -40,6 +40,10 @@ yarn-error.log*
 # harvest filmstrips written by the local capture sink
 /captures/
 
+# harvest Q&A dumps (full asks) — local tuning only
+/reports/harvest-turns-*.json
+/reports/harvest-turns-latest.md
+
 # lab bucket-smoke credentials (never Camron's account)
 .smoke-user.json
 

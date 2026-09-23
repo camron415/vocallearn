@@ -26,7 +26,8 @@ import { matchPrompts, topIdlePrompts } from "@/lib/prompt-trie";
 import { suggestChips, type SuggestChip } from "@/lib/suggest-chips";
 import { readAttachments } from "@/lib/read-files";
 import { stashAskAttachments } from "@/lib/pending-attach";
-import { abortPendingTurn, armPendingResume } from "@/lib/pending-turn";
+import { abortPendingTurn, armPendingStream } from "@/lib/pending-turn";
+import { HALO_CONVERSATION_HEADER } from "@/lib/ask-stream-headers";
 import {
   isBankedChip,
   isDueChip,
@@ -92,7 +93,9 @@ export function AskLanding({
   const stageRef = useRef<HTMLDivElement | null>(null);
   const leaving = useRef(false);
   const [localEntering, setLocalEntering] = useState(!soft);
-  const entering = shell?.active ? shell.contentEntering : localEntering;
+  const entering = shell?.active
+    ? Boolean(shell.contentEntering && shell.mode === "home")
+    : localEntering;
   const [dueCount, setDueCount] = useState<number | null>(null);
   const [keptCount, setKeptCount] = useState(0);
   const [justCleared, setJustCleared] = useState(false);
@@ -205,6 +208,12 @@ export function AskLanding({
   useEffect(() => {
     setChats(conversations);
   }, [conversations]);
+
+  useEffect(() => {
+    void import("@/components/ChatThread");
+    const latest = conversations[0]?.id;
+    if (latest) router.prefetch(`/ask/${latest}`);
+  }, [router, conversations]);
 
   useEffect(() => {
     const tz = resolveUserTimeZone(profile?.timeZone);
@@ -343,11 +352,9 @@ export function AskLanding({
     }
     if (shell?.active) {
       leaving.current = true;
-      stageRef.current?.classList.add("is-leaving");
       shell.leaveToChat(async () => {
         await run();
         leaving.current = false;
-        stageRef.current?.classList.remove("is-leaving");
       });
       return;
     }
@@ -392,34 +399,49 @@ export function AskLanding({
       setPlayKind("");
       goAfterLeave(() => {
         router.replace(labPreviewChatHref());
+        setSending(false);
       });
       return;
     }
 
-    // Runs alongside the 1080ms travel. Prefetch as soon as the id exists so
-    // the route is warm before the morph lands — otherwise Home sits blank
-    // while the chat RSC payload is still in flight.
+    // One stream during the 1080ms travel: create the chat, classify, and
+    // start tokens. Chat only attaches — it does not classify again.
     const prepWork = (async () => {
       const attachments = files.length ? await readAttachments(files) : [];
+      const abort = new AbortController();
       const res = await fetch("/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "text/event-stream",
+        },
         body: JSON.stringify({
           message: message || undefined,
           attachments,
-          prepareOnly: true,
           timeZone: resolveUserTimeZone(profile?.timeZone),
         }),
+        signal: abort.signal,
       });
-      const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || "Failed to send");
+        const data = await res.json().catch(() => ({}));
+        throw new Error(
+          (data as { error?: string }).error || "Failed to send"
+        );
       }
-      stashAskAttachments(data.conversationId, attachments);
-      sessionStorage.setItem(`halo-ask-live:${data.conversationId}`, "1");
-      router.prefetch(`/ask/${data.conversationId}`);
-      armPendingResume(data.conversationId, attachments);
-      return data.conversationId as string;
+      const conversationId = res.headers.get(HALO_CONVERSATION_HEADER);
+      if (!conversationId) {
+        throw new Error("Failed to send");
+      }
+      stashAskAttachments(conversationId, attachments);
+      sessionStorage.setItem(`halo-ask-live:${conversationId}`, "1");
+      router.prefetch(`/ask/${conversationId}`);
+      const contentType = res.headers.get("content-type") || "";
+      if (contentType.includes("text/event-stream")) {
+        armPendingStream(conversationId, res, abort);
+      } else {
+        abort.abort();
+      }
+      return conversationId;
     })();
 
     goAfterLeave(async () => {

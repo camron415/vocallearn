@@ -14,6 +14,7 @@ import {
 import { useLiquidEnabled } from "@/components/MotionProvider";
 import { kindGlow, harvestStyleFromDom } from "@/lib/harvest-style";
 import { applyHaloBoot } from "@/lib/halo-boot";
+import { haloJuice } from "@/lib/halo-juice";
 import {
   createWaterSurface,
   dropPebble,
@@ -426,7 +427,11 @@ export function WaterAction({
       }}
       type={type}
       disabled={disabled}
-      onClick={onClick}
+      onClick={() => {
+        if (disabled) return;
+        if (type === "button") haloJuice("mic");
+        onClick?.();
+      }}
       onPointerDown={wet ? splash : undefined}
       className={
         wet

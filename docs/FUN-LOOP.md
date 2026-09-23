@@ -112,6 +112,9 @@ Leverage order:
 
 | Date | Change |
 | --- | --- |
+| 2026-09-20 | Bells lane 16: lock/gold juice; play sheet stays silent. One-workshop still required on 1.3 close. |
+| 2026-09-20 | 1.3 craft/voice agent order: [`web/lane-plans/13-1.3-priority.md`](../web/lane-plans/13-1.3-priority.md). Juice still a multiplier. |
+| 2026-09-20 | Later: exhibit trophies [`ACHIEVEMENT-EXHIBITS.md`](./ACHIEVEMENT-EXHIBITS.md); motion/haptics/sound order [`CRAFT-JUICE.md`](./CRAFT-JUICE.md). Juice still a multiplier. |
 | 2026-09-07 | File created from Camron fun/addiction chat + four-model synthesis |
 | 2026-09-07 | Beat 1 collect in lab. Due-drop on Home (no force-nav). Safari iPhone still 1.2 sprint close. |
 | 2026-09-07 | Lock-in uses Home play UI; flyer after claim; Drop + harvest_lock telemetry. |

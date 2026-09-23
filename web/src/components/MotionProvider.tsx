@@ -11,11 +11,17 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from "react";
-import { applyHaloBoot, writeHaloThemeCookie } from "@/lib/halo-boot";
+import { applyHaloBoot } from "@/lib/halo-boot";
+import {
+  paintHaloTheme,
+  readThemePref,
+  THEME_KEY,
+  type HaloThemePref,
+} from "@/lib/halo-theme";
 
+export type { HaloTheme, HaloThemePref } from "@/lib/halo-theme";
 export type MotionIntensity = "reduced" | "full";
 export type HaloWallpaper = "mist" | "sky";
-export type HaloTheme = "light" | "dark";
 export type HaloEngine = "chromium" | "webkit" | "other";
 
 type MotionContextValue = {
@@ -23,8 +29,8 @@ type MotionContextValue = {
   setIntensity: (value: MotionIntensity) => void;
   wallpaper: HaloWallpaper;
   setWallpaper: (value: HaloWallpaper) => void;
-  theme: HaloTheme;
-  setTheme: (value: HaloTheme) => void;
+  theme: HaloThemePref;
+  setTheme: (value: HaloThemePref) => void;
   prefersReduced: boolean;
   autoSoft: boolean;
   finePointer: boolean;
@@ -35,7 +41,6 @@ const MotionContext = createContext<MotionContextValue | null>(null);
 
 const STORAGE_KEY = "halo-motion-intensity";
 const WALLPAPER_KEY = "halo-wallpaper";
-const THEME_KEY = "halo-theme";
 
 function detectWeakHardware(): boolean {
   if (typeof navigator === "undefined") return false;
@@ -80,7 +85,7 @@ export function MotionProvider({ children }: { children: ReactNode }) {
   const [finePointer, setFinePointer] = useState(true);
   const [intensity, setIntensityState] = useState<MotionIntensity>("full");
   const [wallpaper, setWallpaperState] = useState<HaloWallpaper>("mist");
-  const [theme, setThemeState] = useState<HaloTheme>("light");
+  const [theme, setThemeState] = useState<HaloThemePref>("auto");
   const [engine, setEngine] = useState<HaloEngine>("other");
 
   useLayoutEffect(() => {
@@ -90,15 +95,13 @@ export function MotionProvider({ children }: { children: ReactNode }) {
     document.documentElement.dataset.haloEngine = next;
     try {
       const urlTheme = new URLSearchParams(window.location.search).get("theme");
-      if (urlTheme === "light" || urlTheme === "dark") {
+      if (urlTheme === "light" || urlTheme === "dark" || urlTheme === "auto") {
         setThemeState(urlTheme);
-        document.documentElement.dataset.haloTheme = urlTheme;
+        paintHaloTheme(urlTheme);
       } else {
-        const savedTheme = window.localStorage.getItem(THEME_KEY);
-        if (savedTheme === "light" || savedTheme === "dark") {
-          setThemeState(savedTheme);
-          document.documentElement.dataset.haloTheme = savedTheme;
-        }
+        const savedTheme = readThemePref();
+        setThemeState(savedTheme);
+        paintHaloTheme(savedTheme);
       }
     } catch {
       /* private browsing */
@@ -128,13 +131,10 @@ export function MotionProvider({ children }: { children: ReactNode }) {
       }
 
       const urlTheme = new URLSearchParams(window.location.search).get("theme");
-      if (urlTheme === "light" || urlTheme === "dark") {
+      if (urlTheme === "light" || urlTheme === "dark" || urlTheme === "auto") {
         setThemeState(urlTheme);
       } else {
-        const savedTheme = window.localStorage.getItem(THEME_KEY);
-        if (savedTheme === "light" || savedTheme === "dark") {
-          setThemeState(savedTheme);
-        }
+        setThemeState(readThemePref());
       }
     } catch {
       if (reduceQuery.matches || weak) setIntensityState("reduced");
@@ -159,36 +159,69 @@ export function MotionProvider({ children }: { children: ReactNode }) {
 
     const phone = window.matchMedia("(max-width: 720px)");
     const vv = window.visualViewport;
+    let restingH = window.innerHeight;
+    let kbHide = 0;
+    const composeFocused = () =>
+      Boolean(
+        document.activeElement?.closest?.(
+          ".compose, .ask-shell-compose, .compose-dock"
+        )
+      );
+    const releaseKb = () => {
+      root.style.setProperty("--kb-inset", "0px");
+      kbHide = window.setTimeout(() => {
+        if (!composeFocused()) delete root.dataset.haloKb;
+      }, 480);
+    };
     const syncHeight = () => {
-      if (!phone.matches || !vv) {
+      if (!phone.matches) {
         root.style.removeProperty("--kb-inset");
-        root.style.removeProperty("--app-height");
-        root.style.removeProperty("--app-top");
         delete root.dataset.haloKb;
+        restingH = window.innerHeight;
+        window.clearTimeout(kbHide);
         return;
       }
-      // Keyboard inset only. Do not pin stages to visualViewport height/offset —
-      // iOS already shrinks the visual viewport; using both double-shifts.
-      const kb = Math.max(
-        0,
-        Math.round(window.innerHeight - vv.height - vv.offsetTop)
-      );
+      const focused = composeFocused();
+      const native = root.dataset.haloNative === "1";
+      if (!focused) restingH = window.innerHeight;
+      const visual = vv?.height ?? window.innerHeight;
+      const offset = vv?.offsetTop ?? 0;
+      const kbMeasured = Math.max(0, Math.round(restingH - visual - offset));
+      window.clearTimeout(kbHide);
+      /* scrollTo while the keyboard is up tears WKWebView white and drops the keys. Never guess a lift once Ask has blurred, or Home stays faded until the viewport catches up. */
+      if (native && !focused) {
+        releaseKb();
+        return;
+      }
+      const kb =
+        native && focused && kbMeasured < 80
+          ? Math.round(Math.min(400, Math.max(240, window.innerHeight * 0.4)))
+          : kbMeasured;
       root.style.setProperty("--kb-inset", `${kb}px`);
-      if (kb > 120) root.dataset.haloKb = "1";
-      else delete root.dataset.haloKb;
+      if (kb > 80 || (focused && (kb > 24 || native))) {
+        root.dataset.haloKb = "1";
+      } else {
+        releaseKb();
+      }
     };
     syncHeight();
     vv?.addEventListener("resize", syncHeight);
     vv?.addEventListener("scroll", syncHeight);
     phone.addEventListener("change", syncHeight);
+    document.addEventListener("focusin", syncHeight);
+    const blurKb = () => window.setTimeout(syncHeight, 40);
+    document.addEventListener("focusout", blurKb);
 
     return () => {
       cancelled = true;
+      window.clearTimeout(kbHide);
       reduceQuery.removeEventListener("change", sync);
       pointerQuery.removeEventListener("change", sync);
       vv?.removeEventListener("resize", syncHeight);
       vv?.removeEventListener("scroll", syncHeight);
       phone.removeEventListener("change", syncHeight);
+      document.removeEventListener("focusin", syncHeight);
+      document.removeEventListener("focusout", blurKb);
     };
   }, []);
 
@@ -204,7 +237,12 @@ export function MotionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    document.documentElement.dataset.haloTheme = theme;
+    paintHaloTheme(theme);
+    if (theme !== "auto") return;
+    const q = window.matchMedia("(prefers-color-scheme: dark)");
+    const onChange = () => paintHaloTheme("auto");
+    q.addEventListener("change", onChange);
+    return () => q.removeEventListener("change", onChange);
   }, [theme]);
 
   const setIntensity = useCallback((value: MotionIntensity) => {
@@ -225,13 +263,13 @@ export function MotionProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const setTheme = useCallback((value: HaloTheme) => {
+  const setTheme = useCallback((value: HaloThemePref) => {
     setThemeState(value);
     try {
       window.localStorage.setItem(THEME_KEY, value);
-      writeHaloThemeCookie(value);
+      paintHaloTheme(value);
     } catch {
-      /* private browsing */
+      paintHaloTheme(value);
     }
   }, []);
 

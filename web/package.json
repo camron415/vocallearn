@@ -20,8 +20,8 @@
     "test:ask:buckets": "tsx --env-file=.env.local src/lib/ask-bucket-smoke.ts",
     "test:ask:harness:live": "tsx --env-file=.env.local src/lib/ask-bucket-smoke.ts",
     "harvest:export": "tsx --env-file=.env.local scripts/harvest-export.mjs",
-    "deploy:lab": "vercel deploy --yes",
-    "deploy:early": "vercel deploy --prod --yes",
+    "deploy:lab": "npx vercel deploy --yes",
+    "deploy:early": "npx vercel deploy --prod --yes",
     "capture:sink": "node scripts/harvest-sink.mjs"
   },
   "dependencies": {

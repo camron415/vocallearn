@@ -14,6 +14,7 @@ import {
 import { scoreLockIn } from "@/lib/open-score";
 import { isOpenRecall } from "@/lib/chip-recall";
 import { clozeForChip } from "@/lib/open-cloze";
+import { haloJuice } from "@/lib/halo-juice";
 
 export { LOCK_IN_KICKER, LOCK_IN_SEE_KICKER, LOCK_IN_SAY_KICKER } from "@/lib/harvest-lock";
 
@@ -119,6 +120,7 @@ export function HarvestLock({
   }
 
   function passOne() {
+    haloJuice("lock");
     claimedRef.current = [...claimedRef.current, current];
     logsRef.current = [
       ...logsRef.current,

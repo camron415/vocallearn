@@ -15,6 +15,7 @@ import { addKeepChip, clearKeepChips, readKeepChips, subscribeKeep } from "@/lib
 import { startKeepCloudSync } from "@/lib/keep-cloud";
 import { isLabPreviewPath } from "@/lib/lab-preview";
 import { useCoarsePointer } from "@/lib/coarse-pointer";
+import { haloJuice } from "@/lib/halo-juice";
 import type { HaloProfile } from "@/lib/types";
 
 export function HaloHeader({
@@ -68,6 +69,7 @@ export function HaloHeader({
   }, []);
 
   function goHome(event: MouseEvent<HTMLAnchorElement>) {
+    haloJuice("chrome");
     window.dispatchEvent(new Event("halo-cove-home"));
     if (onGoHome) {
       event.preventDefault();

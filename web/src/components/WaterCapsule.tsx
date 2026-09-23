@@ -23,6 +23,13 @@ import {
   waterPresetForHeat,
   type WaterSurface,
 } from "@/lib/water-edge";
+import { haloJuice } from "@/lib/halo-juice";
+
+function isObjectChip(className: string) {
+  if (className.includes("capsule--choice")) return false;
+  if (className.includes("capsule--harvest")) return false;
+  return true;
+}
 
 export function WaterCapsule({
   children,
@@ -74,6 +81,7 @@ export function WaterCapsule({
   const surfaceRef = useRef<WaterSurface | null>(null);
   const holdTimer = useRef(0);
   const held = useRef(false);
+  const [pressing, setPressing] = useState(false);
   const [landed, setLanded] = useState(false);
   const settledRef = useRef(false);
   const uid = useId().replace(/[^a-zA-Z0-9]/g, "");
@@ -159,6 +167,15 @@ export function WaterCapsule({
     window.clearTimeout(holdTimer.current);
   }
 
+  function nativeShell() {
+    return document.documentElement.dataset.haloNative === "1";
+  }
+
+  function releaseHold() {
+    setPressing(false);
+    clearHold();
+  }
+
   return (
     <button
       ref={rootRef}
@@ -167,29 +184,43 @@ export function WaterCapsule({
       aria-pressed={selected}
       onPointerDown={(event) => {
         held.current = false;
+        const native = nativeShell();
+        if (native) setPressing(true);
         wake(event.clientX, event.clientY);
         if (!onHold) return;
         clearHold();
         holdTimer.current = window.setTimeout(() => {
           held.current = true;
+          setPressing(false);
           markSettled();
+          if (isObjectChip(className)) haloJuice("hold");
           onHold(rootRef.current);
         }, 520);
       }}
-      onPointerUp={clearHold}
-      onPointerCancel={clearHold}
-      onPointerLeave={clearHold}
+      onPointerUp={releaseHold}
+      onPointerCancel={() => {
+        if (nativeShell() && onHold) return;
+        releaseHold();
+      }}
+      onPointerLeave={() => {
+        if (nativeShell() && onHold) return;
+        releaseHold();
+      }}
+      onContextMenu={(event) => {
+        if (nativeShell()) event.preventDefault();
+      }}
       onClick={(event) => {
         if (held.current) {
           event.preventDefault();
           held.current = false;
           return;
         }
+        if (isObjectChip(className)) haloJuice("object");
         onClick?.(rootRef.current);
       }}
       className={`capsule ${liquid || paperChip ? "" : "capsule--still"} ${
         selected ? "capsule--picked" : ""
-      } ${kind ? `capsule--kind-${kind}` : ""} ${
+      } ${pressing ? "is-pressing" : ""} ${kind ? `capsule--kind-${kind}` : ""} ${
         settledRef.current || landed ? "is-settled" : ""
       } ${className}`}
       data-heat={heat}

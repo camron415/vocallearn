@@ -32,10 +32,11 @@ Paper highlights may still fuzzy-match. The miner **filter** requires a verbatim
 
 ## Classify timing
 
-1. `prepareOnly` starts classify on Enter (during 1080ms morph).
-2. Cache key: user + conversation + **this turn's text**. On Vercel, prepare and resume can hit **different isolates** → classify may run twice (cheap).
-3. Stream **awaits** classify. Regex fallback only after classify returns (~2.5s timeout / parse fail / &lt;8 char fast-path).
-4. Live `test:ask:buckets` POSTs `/api/chat` **directly** — it does **not** prove the Home morph path.
+1. Home Ask starts the **real** `/api/chat` stream on Enter (not `prepareOnly`). Classify + first tokens run during the 1080ms morph. Chat attaches to that stream.
+2. Classify is **Luna** when `HALO_USE_LUNA` is on (tiny JSON, no Ask length/clock junk). Grok none is the fallback if Luna is off.
+3. Cache key: user + conversation + **this turn's text**. One call per turn on that isolate. Home no longer fires a second classify on Chat mount.
+4. Stream **awaits** classify. Hang cap is **1200ms** (`CLASSIFY_MS`). Regex fallback only on timeout / parse fail / &lt;8 char fast-path. Do not restore a 900ms regex race.
+5. Live `test:ask:buckets` POSTs `/api/chat` **directly** — it does **not** prove the Home morph path. Re-run buckets before promote after classifier model changes.
 
 ## Tomorrow (2026-09-14) — finish harness quality
 

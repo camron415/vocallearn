@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChoicePicks } from "@/components/ChoicePicks";
 import { GlassButton } from "@/components/Glass";
@@ -245,11 +246,16 @@ export function SettingsMenu({
             onChange={setTheme}
             options={
               [
+                ["auto", "Auto"],
                 ["light", "Light"],
                 ["dark", "Dark"],
               ] as const
             }
           />
+          <p className="login-sub">
+            Auto follows the phone. Light or Dark locks Halo and the status
+            bar to that look.
+          </p>
         </section>
 
         <section className="settings-block">
@@ -293,8 +299,9 @@ export function SettingsMenu({
           <section className="settings-block">
             <p className="field-label">Invite someone</p>
             <p className="login-sub">
-              One-time link. They need a new email — not an existing VocalLearn
-              login. Early access for a test account, Family for everyone else.
+              One-time link. They need a new email — not one that already has
+              an account. Early access for a test account, Family for everyone
+              else.
             </p>
             <div className="settings-row">
               <GlassButton onClick={() => void makeInvite("family")}>
@@ -369,6 +376,35 @@ export function SettingsMenu({
             {qaNote ? <p className="login-sub">{qaNote}</p> : null}
           </section>
         ) : null}
+
+        <section className="settings-block">
+          <p className="field-label">You</p>
+          <p className="login-sub">
+            Invite-only beta. Privacy and Terms are drafts — public name and
+            company are not final.
+          </p>
+          <div className="settings-row">
+            <Link
+              href="/privacy"
+              className="stone-btn"
+              onClick={() => setOpen(false)}
+            >
+              Privacy
+            </Link>
+            <Link
+              href="/terms"
+              className="stone-btn"
+              onClick={() => setOpen(false)}
+            >
+              Terms
+            </Link>
+          </div>
+          <p className="login-sub">
+            To delete your account and stored data, email the person who
+            invited you. An in-app delete control will be here before TestFlight
+            to other people.
+          </p>
+        </section>
 
         {demo ? null : (
           <section className="settings-block settings-block--end">

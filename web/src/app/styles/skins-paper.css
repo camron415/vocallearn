@@ -235,9 +235,9 @@ html[data-home-skin="paper"][data-home-lamp="on"] .ask-stage .capsule.is-ask-kee
   background: #c5f3d4 !important;
 }
 
-html[data-home-skin="paper"] .ask-hero .compose .water__edge,
-html[data-home-skin="paper"] .ask-hero .compose .water__ambient,
-html[data-home-skin="paper"] .ask-hero .compose .water__shade,
+html[data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose .water__edge,
+html[data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose .water__ambient,
+html[data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose .water__shade,
 html[data-home-skin="paper"] .compose-dock .water__edge,
 html[data-home-skin="paper"] .compose-dock .water__ambient,
 html[data-home-skin="paper"] .compose-dock .water__shade {
@@ -246,7 +246,7 @@ html[data-home-skin="paper"] .compose-dock .water__shade {
 html[data-home-skin="paper"] .ask-hero {
   grid-template-columns: minmax(0, var(--halo-chat));
 }
-html[data-home-skin="paper"] .ask-hero .compose,
+html[data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose,
 html[data-home-skin="paper"] .compose-dock {
   --water: 0;
   border-radius: 28px;
@@ -265,7 +265,7 @@ html[data-home-skin="paper"] .compose-dock {
   margin-right: auto;
   justify-self: center;
 }
-html[data-home-skin="paper"] .ask-hero .compose .water__skin,
+html[data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose .water__skin,
 html[data-home-skin="paper"] .compose-dock .water__skin {
   clip-path: none !important;
   -webkit-clip-path: none !important;
@@ -276,7 +276,7 @@ html[data-home-skin="paper"] .compose-dock .water__skin {
   background: #e8e8ed !important;
   box-shadow: none;
 }
-html[data-home-skin="paper"] .ask-hero .compose .action-btn:not(.action-btn--icon),
+html[data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose .action-btn:not(.action-btn--icon),
 html[data-home-skin="paper"] .compose-dock .action-btn:not(.action-btn--icon) {
   color: #ffffff;
   background: #636366;
@@ -287,24 +287,24 @@ html[data-home-skin="paper"] .compose-dock .action-btn:not(.action-btn--icon) {
   padding: 0.52rem 1.05rem;
   transition: background 180ms var(--ease-gel);
 }
-html[data-home-skin="paper"] .ask-hero .compose .action-btn:not(.action-btn--icon) .water__skin,
+html[data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose .action-btn:not(.action-btn--icon) .water__skin,
 html[data-home-skin="paper"] .compose-dock .action-btn:not(.action-btn--icon) .water__skin {
   background: #636366 !important;
   box-shadow: none !important;
 }
-html[data-home-skin="paper"] .ask-hero .compose .action-btn:not(.action-btn--icon):hover:not(:disabled),
-html[data-home-skin="paper"] .ask-hero .compose .action-btn:not(.action-btn--icon):focus-visible,
+html[data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose .action-btn:not(.action-btn--icon):hover:not(:disabled),
+html[data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose .action-btn:not(.action-btn--icon):focus-visible,
 html[data-home-skin="paper"] .compose-dock .action-btn:not(.action-btn--icon):hover:not(:disabled),
 html[data-home-skin="paper"] .compose-dock .action-btn:not(.action-btn--icon):focus-visible {
   background: #48484a;
 }
-html[data-home-skin="paper"] .ask-hero .compose .action-btn:not(.action-btn--icon):hover:not(:disabled) .water__skin,
-html[data-home-skin="paper"] .ask-hero .compose .action-btn:not(.action-btn--icon):focus-visible .water__skin,
+html[data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose .action-btn:not(.action-btn--icon):hover:not(:disabled) .water__skin,
+html[data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose .action-btn:not(.action-btn--icon):focus-visible .water__skin,
 html[data-home-skin="paper"] .compose-dock .action-btn:not(.action-btn--icon):hover:not(:disabled) .water__skin,
 html[data-home-skin="paper"] .compose-dock .action-btn:not(.action-btn--icon):focus-visible .water__skin {
   background: #48484a !important;
 }
-html[data-home-skin="paper"] .ask-hero .compose .action-btn--icon,
+html[data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose .action-btn--icon,
 html[data-home-skin="paper"] .compose-dock .action-btn--icon {
   width: 2.35rem;
   height: 2.35rem;
@@ -322,13 +322,13 @@ html[data-home-skin="paper"] .compose-dock .action-btn--icon {
   place-items: center;
   transition: background 180ms var(--ease-gel);
 }
-html[data-home-skin="paper"] .ask-hero .compose .action-btn--icon .water__skin,
+html[data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose .action-btn--icon .water__skin,
 html[data-home-skin="paper"] .compose-dock .action-btn--icon .water__skin {
   background: transparent !important;
   box-shadow: none !important;
 }
-html[data-home-skin="paper"] .ask-hero .compose .action-btn--icon:hover:not(:disabled),
-html[data-home-skin="paper"] .ask-hero .compose .action-btn--icon:focus-visible,
+html[data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose .action-btn--icon:hover:not(:disabled),
+html[data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose .action-btn--icon:focus-visible,
 html[data-home-skin="paper"] .compose-dock .action-btn--icon:hover:not(:disabled),
 html[data-home-skin="paper"] .compose-dock .action-btn--icon:focus-visible {
   background: rgba(0, 0, 0, 0.05);
@@ -337,22 +337,22 @@ html[data-home-skin="paper"] .compose-stack.is-open .compose,
 html[data-home-skin="paper"] .compose-stack.is-open .compose-dock {
   border-radius: 28px;
 }
-html[data-home-skin="paper"] .ask-hero .compose-suggest,
+html[data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose-suggest,
 html[data-home-skin="paper"] .compose-dock .compose-suggest {
   top: calc(100% + 0.75rem);
   border-radius: 1.15rem;
   background: #e8e8ed;
   overflow: hidden;
 }
-html[data-home-skin="paper"] .ask-hero .compose-suggest-item,
+html[data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose-suggest-item,
 html[data-home-skin="paper"] .compose-dock .compose-suggest-item {
   background: transparent;
   box-shadow: none;
   color: #111111;
 }
-html[data-home-skin="paper"] .ask-hero .compose-suggest-item:hover,
-html[data-home-skin="paper"] .ask-hero .compose-suggest-item:focus-visible,
-html[data-home-skin="paper"] .ask-hero .compose-suggest-item.is-active,
+html[data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose-suggest-item:hover,
+html[data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose-suggest-item:focus-visible,
+html[data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose-suggest-item.is-active,
 html[data-home-skin="paper"] .compose-dock .compose-suggest-item:hover,
 html[data-home-skin="paper"] .compose-dock .compose-suggest-item:focus-visible,
 html[data-home-skin="paper"] .compose-dock .compose-suggest-item.is-active {
@@ -382,54 +382,54 @@ html[data-home-skin="paper"][data-halo-theme="dark"] .home-bubbles .capsule:not(
 html[data-home-skin="paper"][data-halo-theme="dark"] .home-bubbles .capsule:not(.is-ask-keep):not(.capsule--keep-album):not(.is-kept) .capsule__glass {
   background: #2c2c2e !important;
 }
-html[data-home-skin="paper"][data-halo-theme="dark"] .ask-hero .compose,
+html[data-home-skin="paper"][data-halo-theme="dark"] :is(.ask-hero, .ask-shell-compose) .compose,
 html[data-home-skin="paper"][data-halo-theme="dark"] .compose-dock,
-html[data-home-skin="paper"][data-halo-theme="dark"] .ask-hero .compose .water__skin,
+html[data-home-skin="paper"][data-halo-theme="dark"] :is(.ask-hero, .ask-shell-compose) .compose .water__skin,
 html[data-home-skin="paper"][data-halo-theme="dark"] .compose-dock .water__skin {
   background: #2c2c2e !important;
 }
-html[data-home-skin="paper"][data-halo-theme="dark"] .ask-hero .compose .action-btn:not(.action-btn--icon),
+html[data-home-skin="paper"][data-halo-theme="dark"] :is(.ask-hero, .ask-shell-compose) .compose .action-btn:not(.action-btn--icon),
 html[data-home-skin="paper"][data-halo-theme="dark"] .compose-dock .action-btn:not(.action-btn--icon) {
   color: #111111;
   background: #d8d8de;
 }
-html[data-home-skin="paper"][data-halo-theme="dark"] .ask-hero .compose .action-btn:not(.action-btn--icon) .water__skin,
+html[data-home-skin="paper"][data-halo-theme="dark"] :is(.ask-hero, .ask-shell-compose) .compose .action-btn:not(.action-btn--icon) .water__skin,
 html[data-home-skin="paper"][data-halo-theme="dark"] .compose-dock .action-btn:not(.action-btn--icon) .water__skin {
   background: #d8d8de !important;
 }
-html[data-home-skin="paper"][data-halo-theme="dark"] .ask-hero .compose .action-btn:not(.action-btn--icon):hover:not(:disabled),
-html[data-home-skin="paper"][data-halo-theme="dark"] .ask-hero .compose .action-btn:not(.action-btn--icon):focus-visible,
+html[data-home-skin="paper"][data-halo-theme="dark"] :is(.ask-hero, .ask-shell-compose) .compose .action-btn:not(.action-btn--icon):hover:not(:disabled),
+html[data-home-skin="paper"][data-halo-theme="dark"] :is(.ask-hero, .ask-shell-compose) .compose .action-btn:not(.action-btn--icon):focus-visible,
 html[data-home-skin="paper"][data-halo-theme="dark"] .compose-dock .action-btn:not(.action-btn--icon):hover:not(:disabled),
 html[data-home-skin="paper"][data-halo-theme="dark"] .compose-dock .action-btn:not(.action-btn--icon):focus-visible {
   background: #e8e8ed;
 }
-html[data-home-skin="paper"][data-halo-theme="dark"] .ask-hero .compose .action-btn--icon,
+html[data-home-skin="paper"][data-halo-theme="dark"] :is(.ask-hero, .ask-shell-compose) .compose .action-btn--icon,
 html[data-home-skin="paper"][data-halo-theme="dark"] .compose-dock .action-btn--icon {
   color: #f5f5f7;
   background: transparent;
 }
-html[data-home-skin="paper"][data-halo-theme="dark"] .ask-hero .compose .action-btn--icon .water__skin,
+html[data-home-skin="paper"][data-halo-theme="dark"] :is(.ask-hero, .ask-shell-compose) .compose .action-btn--icon .water__skin,
 html[data-home-skin="paper"][data-halo-theme="dark"] .compose-dock .action-btn--icon .water__skin {
   background: transparent !important;
 }
-html[data-home-skin="paper"][data-halo-theme="dark"] .ask-hero .compose .action-btn--icon:hover:not(:disabled),
-html[data-home-skin="paper"][data-halo-theme="dark"] .ask-hero .compose .action-btn--icon:focus-visible,
+html[data-home-skin="paper"][data-halo-theme="dark"] :is(.ask-hero, .ask-shell-compose) .compose .action-btn--icon:hover:not(:disabled),
+html[data-home-skin="paper"][data-halo-theme="dark"] :is(.ask-hero, .ask-shell-compose) .compose .action-btn--icon:focus-visible,
 html[data-home-skin="paper"][data-halo-theme="dark"] .compose-dock .action-btn--icon:hover:not(:disabled),
 html[data-home-skin="paper"][data-halo-theme="dark"] .compose-dock .action-btn--icon:focus-visible {
   background: rgba(255, 255, 255, 0.08);
 }
-html[data-home-skin="paper"][data-halo-theme="dark"] .ask-hero .compose-suggest,
+html[data-home-skin="paper"][data-halo-theme="dark"] :is(.ask-hero, .ask-shell-compose) .compose-suggest,
 html[data-home-skin="paper"][data-halo-theme="dark"] .compose-dock .compose-suggest {
   background: #2c2c2e;
 }
-html[data-home-skin="paper"][data-halo-theme="dark"] .ask-hero .compose-suggest-item,
+html[data-home-skin="paper"][data-halo-theme="dark"] :is(.ask-hero, .ask-shell-compose) .compose-suggest-item,
 html[data-home-skin="paper"][data-halo-theme="dark"] .compose-dock .compose-suggest-item {
   background: transparent;
   color: #f5f5f7;
 }
-html[data-home-skin="paper"][data-halo-theme="dark"] .ask-hero .compose-suggest-item:hover,
-html[data-home-skin="paper"][data-halo-theme="dark"] .ask-hero .compose-suggest-item:focus-visible,
-html[data-home-skin="paper"][data-halo-theme="dark"] .ask-hero .compose-suggest-item.is-active,
+html[data-home-skin="paper"][data-halo-theme="dark"] :is(.ask-hero, .ask-shell-compose) .compose-suggest-item:hover,
+html[data-home-skin="paper"][data-halo-theme="dark"] :is(.ask-hero, .ask-shell-compose) .compose-suggest-item:focus-visible,
+html[data-home-skin="paper"][data-halo-theme="dark"] :is(.ask-hero, .ask-shell-compose) .compose-suggest-item.is-active,
 html[data-home-skin="paper"][data-halo-theme="dark"] .compose-dock .compose-suggest-item:hover,
 html[data-home-skin="paper"][data-halo-theme="dark"] .compose-dock .compose-suggest-item:focus-visible,
 html[data-home-skin="paper"][data-halo-theme="dark"] .compose-dock .compose-suggest-item.is-active {

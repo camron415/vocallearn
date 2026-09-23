@@ -1,0 +1,17 @@
+node_modules/
+.DS_Store
+*.tsbuildinfo
+
+ios/App/Pods
+ios/App/build
+ios/DerivedData
+ios/App/App/public
+
+*.xcuserstate
+xcuserdata/
+*.xccheckout
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM

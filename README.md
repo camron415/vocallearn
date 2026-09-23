@@ -16,7 +16,7 @@ This is the project I want hiring teams to open first.
 | --- | --- |
 | **Live product** | [halo-gules-three.vercel.app](https://halo-gules-three.vercel.app) — Paper Ask + Cove/Keep loop (invite-only) |
 | **UI preview (no login)** | [halo-gules-three.vercel.app/demo](https://halo-gules-three.vercel.app/demo) — short link; same as `/preview` |
-| **Code** | [`web/`](./web/) (Halo) · [`app/`](./app/) (VocalLearn iOS) |
+| **Code** | [`web/`](./web/) (Halo) · [`native/`](./native/) (1.3 iOS shell) · [`app/`](./app/) (VocalLearn lab) |
 | **Stack** | TypeScript, React, Next.js, React Native, PostgreSQL, Supabase, Vercel, xAI/Grok |
 | **Recruiter summary** | [`docs/FOR_RECRUITERS.md`](./docs/FOR_RECRUITERS.md) |
 | **Vision & roadmap** | [`docs/PRODUCT_ROADMAP.md`](./docs/PRODUCT_ROADMAP.md) |

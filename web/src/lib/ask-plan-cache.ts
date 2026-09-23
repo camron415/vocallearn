@@ -8,7 +8,7 @@ function cacheKey(userId: string, conversationId: string, userText: string) {
   return `${userId}:${conversationId}:${userText.trim().slice(0, 400)}`;
 }
 
-/** One classify flight per user turn — shared by prepareOnly and resume stream. */
+/** One classify flight per user turn — Home stream and follow-up share this. */
 export function ensureAskClassify(
   userId: string,
   conversationId: string,

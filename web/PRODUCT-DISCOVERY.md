@@ -96,6 +96,8 @@ One component under the **last assistant bubble** in `ChatThread`:
 
 **Not in scope:** Withholding the answer until Socratic steps complete; global curriculum maps; storing copyrighted textbook pages for reuse.
 
+**When it ships (Keith 2026, not 1.3):** start from **their take**, then lock the atom — not a lecture. Climb define → apply → compare → combine. Closed chips stay token SAY; blank-page “explain from scratch” is for open meaning only. Same science, still opt-in. [`docs/KEITH-AI-LEARNING-GUIDE.md`](../docs/KEITH-AI-LEARNING-GUIDE.md).
+
 ---
 
 ## Why this order

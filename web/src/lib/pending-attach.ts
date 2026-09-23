@@ -4,7 +4,7 @@ function key(id: string) {
   return `halo-ask-files:${id}`;
 }
 
-/** Home Ask uses prepareOnly, then Chat resume. Files have to ride along. */
+/** Home Ask starts the live stream; files ride along if Chat has to resume. */
 export function stashAskAttachments(id: string, files: ChatAttachment[]) {
   if (!id || !files.length) return;
   try {

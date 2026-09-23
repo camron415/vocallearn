@@ -4,21 +4,17 @@ import { toJpeg } from "html-to-image";
 import { useEffect, useRef, useState } from "react";
 import { harvestStyleFromDom } from "@/lib/harvest-style";
 import { scoreHarvest, type HarvestCheck, type HarvestPoseSample } from "@/lib/harvest-score";
+import { filmSnapOpts, filmStillEveryMs } from "@/lib/film-rate";
 
 export type CaptureSink = "mac-sink" | "local-api" | "none";
 
 const SINK = "http://127.0.0.1:8791/harvest-capture";
 const RECORD_MAX_MS = 180000;
-const STILL_EVERY_MS = 2000;
 const MAX_STILLS = 90;
 
 async function snapStage() {
   return toJpeg(document.body, {
-    quality: 0.52,
-    pixelRatio: 1,
-    cacheBust: false,
-    skipFonts: true,
-    canvasWidth: 720,
+    ...filmSnapOpts(window.location.search, window.innerWidth),
     filter: (el) => {
       if (!(el instanceof HTMLElement)) return true;
       return (
@@ -152,6 +148,7 @@ export function HarvestCapture({
         );
       }
       grab("start");
+      const stillEvery = filmStillEveryMs(window.location.search);
       await new Promise<void>((resolve) => {
         let lastUi = 0;
         let lastStill = 0;
@@ -162,7 +159,7 @@ export function HarvestCapture({
             lastUi = now;
             setLive((prev) => ({ ...prev, t }));
           }
-          if (wantFilm && t - lastStill >= STILL_EVERY_MS) {
+          if (wantFilm && t - lastStill >= stillEvery) {
             lastStill = t;
             grab("tick");
           }
@@ -189,6 +186,7 @@ export function HarvestCapture({
         sampleCount: samples.current.length,
         fps,
         film: wantFilm,
+        stillEveryMs: stillEvery,
         checks,
       };
       const saved = await postCapture({ meta, frames: stills });

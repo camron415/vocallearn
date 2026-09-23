@@ -9,11 +9,15 @@ import {
   parseAskIntent,
   peekAskIntent,
   resolveAskIntentForAnswer,
+  CLASSIFY_MS,
+  classifyProvider,
 } from "@/lib/ask-intent";
 import { skipHarvestTurn, shouldSkipHarvest } from "@/lib/harvest-policy";
 import { cardsFromMinerJson, parseMinerJson } from "@/lib/learn-mine";
 import { V2_HARVEST_POLICY } from "@/lib/harvest-policy";
 import { PREVIEW_HARVEST_REPLY } from "@/lib/harvest";
+import { grokInput } from "@/lib/grok";
+import { openaiMessages } from "@/lib/openai";
 
 function fail(failures: string[], message: string) {
   failures.push(message);
@@ -51,6 +55,23 @@ export function runAskIntentFixtures(): { ok: boolean; failures: string[] } {
   if (hello.harvest) fail(failures, "hello should not harvest");
   if (!/greet them back/i.test(intentAnswerGuide(hello))) {
     fail(failures, "hello guide should be a short greeting");
+  }
+
+  const goldSpot = fallbackAskIntent("what is the spot price of gold");
+  if (goldSpot.harvest || goldSpot.job !== "live" || goldSpot.freshness !== "web") {
+    fail(failures, "gold spot price should search live, not Keep");
+  }
+  const goldRemember = parseAskIntent(
+    `{"job":"remember","freshness":"weights","feedDomain":null,"askKind":"number","answerMode":"direct","primaryAsk":"gold spot price","topicKey":"gold","maxChips":2,"primaryRecall":"closed","maxOpen":0,"saveOffer":null}`,
+    "what is the spot price of gold"
+  );
+  if (
+    !goldRemember ||
+    goldRemember.job !== "live" ||
+    goldRemember.freshness !== "web" ||
+    goldRemember.harvest
+  ) {
+    fail(failures, "classify remember must not Keep a gold spot price");
   }
 
   const quake = fallbackAskIntent("why do earthquakes happen");
@@ -685,6 +706,31 @@ export async function runAskIntentAsyncFixtures(): Promise<{
   const fast = await resolveAskIntentForAnswer(Promise.resolve(classified), fallback);
   if (fast.answerMode !== "teach_light") {
     fail(failures, "resolveAskIntentForAnswer should keep a fast classify");
+  }
+  if (CLASSIFY_MS > 1500) {
+    fail(failures, "CLASSIFY_MS is a hang cap, not a 2.5s wait");
+  }
+  const provider = classifyProvider();
+  if (provider !== "luna" && provider !== "grok") {
+    fail(failures, "classifyProvider should be luna or grok");
+  }
+  const grokBare = grokInput([{ role: "user", content: "USER: hi" }], {
+    system: "Return ONLY JSON.",
+    bareSystem: true,
+    answerLength: "short",
+  });
+  const grokSystem = String(grokBare[0]?.content ?? "");
+  if (grokSystem !== "Return ONLY JSON." || /Length:/.test(grokSystem)) {
+    fail(failures, "Grok classify must not append Ask length/clock");
+  }
+  const lunaBare = openaiMessages([{ role: "user", content: "USER: hi" }], {
+    system: "Return ONLY JSON.",
+    bareSystem: true,
+    answerLength: "short",
+  });
+  const lunaSystem = lunaBare[0]?.content ?? "";
+  if (lunaSystem !== "Return ONLY JSON." || /Length:/.test(lunaSystem)) {
+    fail(failures, "Luna classify must not append Ask length/clock");
   }
   return { ok: failures.length === 0, failures };
 }

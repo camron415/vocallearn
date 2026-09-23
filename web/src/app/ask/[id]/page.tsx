@@ -28,26 +28,18 @@ export default async function AskConversationPage({
 
   const profile = await loadHaloProfile(supabase, user);
 
-  const [{ data: messages }, { data: conversations }] = await Promise.all([
-    supabase
-      .from("ask_messages")
-      .select("*")
-      .eq("conversation_id", id)
-      .order("created_at", { ascending: true }),
-    supabase
-      .from("ask_conversations")
-      .select("id, title")
-      .eq("user_id", user.id)
-      .order("updated_at", { ascending: false })
-      .limit(40),
-  ]);
+  const { data: messages } = await supabase
+    .from("ask_messages")
+    .select("*")
+    .eq("conversation_id", id)
+    .order("created_at", { ascending: true });
 
   return (
     <ChatThread
       conversationId={id}
       title={conversation.title}
       initialMessages={(messages ?? []) as AskMessage[]}
-      conversations={conversations ?? []}
+      conversations={[]}
       profile={profile}
     />
   );

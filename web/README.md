@@ -66,6 +66,7 @@ Open http://localhost:3000.
 **Preview (no login):** http://localhost:3000/preview
 
 **iPhone on same Wi‑Fi:** see [`MOBILE-QA.md`](./MOBILE-QA.md) — `npm run dev:lan` then ping `http://<ip>:3000/api/dev/ping`.  
+**Off-LAN phone (1.3 Wave 0):** Xcode app in [`../native/README.md`](../native/README.md) loads production Halo — no LAN.  
 **Pre-promote mobile (recommended):** `npm run deploy:lab` → Vercel preview URL on phone.
 
 See [`HARVEST-OPS.md`](./HARVEST-OPS.md) for harvest telemetry, Lab QA (Settings), and promote checklist.

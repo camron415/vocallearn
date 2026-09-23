@@ -83,10 +83,12 @@ export function grokInput(
     answerLength?: "short" | "medium" | "long";
     system?: string;
     timeZone?: string;
+    bareSystem?: boolean;
   }
 ) {
-  const system =
-    `${options?.system || ASK_SYSTEM_PROMPT}\n\n${lengthLine(options?.answerLength)}\n\n${clockLine(new Date(), options?.timeZone)}`;
+  const system = options?.bareSystem
+    ? options.system || ASK_SYSTEM_PROMPT
+    : `${options?.system || ASK_SYSTEM_PROMPT}\n\n${lengthLine(options?.answerLength)}\n\n${clockLine(new Date(), options?.timeZone)}`;
   return [
     {
       role: "system",
@@ -109,6 +111,7 @@ export function grokResponsesBody(
     answerLength?: "short" | "medium" | "long";
     system?: string;
     timeZone?: string;
+    bareSystem?: boolean;
   }
 ) {
   const effort = options?.effort ?? DEFAULT_EFFORT;
@@ -126,6 +129,7 @@ export function grokResponsesBody(
       answerLength: length,
       system: options?.system,
       timeZone: options?.timeZone,
+      bareSystem: options?.bareSystem,
     }),
     temperature: options?.temperature ?? 0.5,
     max_output_tokens: maxTokens,
@@ -150,6 +154,7 @@ export async function callGrokChat(
     answerLength?: "short" | "medium" | "long";
     system?: string;
     timeZone?: string;
+    bareSystem?: boolean;
   }
 ): Promise<string> {
   const { apiUrl, headers } = grokAuth();

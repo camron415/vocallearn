@@ -29,6 +29,7 @@ function lanDevOrigins() {
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: lanDevOrigins(),
+  devIndicators: false,
   turbopack: {
     root: path.join(__dirname),
   },

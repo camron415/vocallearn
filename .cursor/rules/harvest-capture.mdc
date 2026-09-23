@@ -8,7 +8,7 @@ alwaysApply: false
 
 Visual QA for Keep harvest lives in `web/captures/harvest/latest/`.
 
-After Start / Stop on `/preview?view=chat` with `npm run capture:sink` running in `web/`:
+After Start / Stop on `/preview?view=chat` with `npm run capture:sink` running in `web/`, or an agent take (`/preview?look=paper&burst=1&take=roundtrip` — Home↔Chat, Mix clicks itself):
 
 1. Read `web/captures/harvest/latest/meta.json` (mixer settings, fps, scorecard).
 2. Read `frame-00.jpg` … in order. These are the motion, not screenshots of a paused state.

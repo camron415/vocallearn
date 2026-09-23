@@ -613,12 +613,35 @@ html[data-halo-perf="soft"] body::before {
     max-width: 100%;
   }
 
+  html[data-halo-native] .ask-stage,
+  html[data-halo-native] .chat-stage {
+    padding-bottom: var(--halo-native-bottom);
+  }
+
+  html[data-halo-native] .ask-stage {
+    display: flex;
+    flex-direction: column;
+  }
+
+  html[data-halo-native] .ask-stage .topbar {
+    flex: 0 0 auto;
+  }
+
+  html[data-halo-native] .ask-hero {
+    min-height: 0;
+    flex: 1 1 auto;
+  }
+
   .ask-hero:has(.compose-stack.is-open) {
     transform: none;
   }
 
   html[data-halo-kb] .ask-stage {
     padding-bottom: calc(0.35rem + var(--kb-inset, 0px));
+  }
+
+  html[data-halo-ask-shell="1"][data-halo-kb] .ask-stage {
+    padding-bottom: var(--halo-native-bottom, env(safe-area-inset-bottom, 0px));
   }
 
   html[data-halo-kb] .chat-stage {
@@ -632,8 +655,40 @@ html[data-halo-perf="soft"] body::before {
     padding-bottom: 0.2rem;
   }
 
+  html {
+    transition: --kb-inset var(--kb-travel, 480ms) var(--ease-travel);
+  }
+
+  /* Sliding the focused field dismisses the iOS keyboard and can tear the webview white. Snap the inset; the field fade still eases. */
+  html[data-halo-native] {
+    transition: none;
+  }
+
+  html[data-halo-motion="soft"] {
+    transition: none;
+  }
+
+  /* One field fade — same ease as Ask travel, shorter. Do not kill child
+     animations with animation:none; that snaps greeting/chips. Cove stays. */
+  html[data-halo-ask-shell="1"] .ask-shell--home .ask-stage:not(.is-playing),
+  html[data-halo-ask-shell="1"] .ask-shell--chat .chat-stage .chat-scroll {
+    transition: opacity var(--kb-travel, 480ms) var(--ease-travel);
+  }
+
+  html[data-halo-kb][data-halo-ask-shell="1"] .ask-shell--home .ask-stage:not(.is-playing),
+  html[data-halo-kb][data-halo-ask-shell="1"] .ask-shell--chat .chat-stage .chat-scroll {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  html[data-halo-motion="soft"][data-halo-ask-shell="1"] .ask-shell--home .ask-stage:not(.is-playing),
+  html[data-halo-motion="soft"][data-halo-ask-shell="1"] .ask-shell--chat .chat-stage .chat-scroll,
+  html[data-halo-motion="soft"][data-halo-kb][data-halo-ask-shell="1"] .ask-shell-compose {
+    transition: none;
+  }
+
   html[data-halo-kb] .ask-greeting {
-    display: none;
+    display: block;
   }
 
   html[data-halo-kb] .compose-suggest {
@@ -808,6 +863,17 @@ html[data-halo-perf="soft"] body::before {
   .recipe-card-head h2 {
     font-size: 1.22rem;
   }
+}
+
+html[data-halo-native] .capsule,
+html[data-halo-native] .capsule * {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+html[data-halo-native] .capsule.is-pressing {
+  scale: 0.97;
 }
 
 @media (max-width: 560px) {

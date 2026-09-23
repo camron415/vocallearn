@@ -58,15 +58,19 @@ export function openaiMessages(
     answerLength?: "short" | "medium" | "long";
     system?: string;
     timeZone?: string;
+    /** Classifier / miner: only the given system. No Ask length or clock. */
+    bareSystem?: boolean;
   }
 ): OpenAIMessage[] {
-  const system = [
-    options?.system || ASK_SYSTEM_PROMPT,
-    lengthLine(options?.answerLength),
-    clockLine(new Date(), options?.timeZone),
-  ]
-    .filter(Boolean)
-    .join("\n\n");
+  const system = options?.bareSystem
+    ? options.system || ASK_SYSTEM_PROMPT
+    : [
+        options?.system || ASK_SYSTEM_PROMPT,
+        lengthLine(options?.answerLength),
+        clockLine(new Date(), options?.timeZone),
+      ]
+        .filter(Boolean)
+        .join("\n\n");
   return [
     { role: "system", content: system },
     ...messages.filter((m) => m.role !== "system"),
@@ -82,6 +86,7 @@ export async function callOpenAIChat(
     answerLength?: "short" | "medium" | "long";
     system?: string;
     timeZone?: string;
+    bareSystem?: boolean;
   }
 ): Promise<{ text: string; usage?: OpenAIUsage }> {
   const { apiKey, model } = openaiAuth();

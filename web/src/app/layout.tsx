@@ -4,19 +4,23 @@ import { Fraunces, Manrope, Nunito } from "next/font/google";
 import { MotionProvider } from "@/components/MotionProvider";
 import { AppPaperSkin } from "@/components/AppPaperSkin";
 import { LoopSkin } from "@/components/LoopSkin";
+import { NativeBoot } from "@/components/NativeBoot";
+import { APP_CHROME_INLINE } from "@/lib/app-chrome";
 import { APP_PAPER_INLINE } from "@/lib/app-paper-skin";
 import { HALO_BOOT_INLINE } from "@/lib/halo-boot";
+import { APP_THEME_INLINE } from "@/lib/halo-theme";
 import "./globals.css";
 
-export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-  viewportFit: "cover",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fafaf9" },
-    { media: "(prefers-color-scheme: dark)", color: "#0e0e10" },
-  ],
-};
+export async function generateViewport(): Promise<Viewport> {
+  const hdrs = await headers();
+  const dark = hdrs.get("x-halo-theme") === "dark";
+  return {
+    width: "device-width",
+    initialScale: 1,
+    viewportFit: "cover",
+    themeColor: dark ? "#0e0e10" : "#fafaf9",
+  };
+}
 
 const display = Fraunces({
   variable: "--font-fraunces",
@@ -195,10 +199,13 @@ export default async function RootLayout({
     >
       <body className="min-h-full antialiased">
         <script dangerouslySetInnerHTML={{ __html: HALO_BOOT_INLINE }} />
+        <script dangerouslySetInnerHTML={{ __html: APP_THEME_INLINE }} />
         <script dangerouslySetInnerHTML={{ __html: APP_PAPER_INLINE }} />
+        <script dangerouslySetInnerHTML={{ __html: APP_CHROME_INLINE }} />
         <div className="halo-filter-warmup" aria-hidden />
         <HaloFilters />
         <LoopSkin />
+        <NativeBoot />
         <AppPaperSkin />
         <MotionProvider>{children}</MotionProvider>
         {/* Future overlay portal. No UI. Do not bolt menus onto HaloHeader. */}

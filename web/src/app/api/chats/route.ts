@@ -1,6 +1,27 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
+export async function GET() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { data, error } = await supabase
+    .from("ask_conversations")
+    .select("id, title")
+    .eq("user_id", user.id)
+    .order("updated_at", { ascending: false })
+    .limit(40);
+  if (error) {
+    return NextResponse.json({ conversations: [] });
+  }
+  return NextResponse.json({ conversations: data ?? [] });
+}
+
 export async function DELETE(request: Request) {
   const supabase = await createClient();
   const {

@@ -11,6 +11,7 @@ import {
   sortKeepBeads,
 } from "@/lib/keep-memory";
 import { HALO_BEAD_INSPECT, HALO_GOLD_INSPECT } from "@/lib/keep-inspect";
+import { haloJuice } from "@/lib/halo-juice";
 import { harvestStyleFromDom } from "@/lib/harvest-style";
 import { keepSlotRem } from "@/lib/keep-land";
 import {
@@ -270,6 +271,7 @@ export function KeepPocket({
               style={{ background: keepHexPair(ink, chip.kind, dark).lo }}
               onClick={(event) => {
                 event.stopPropagation();
+                haloJuice("object");
                 setInspect((current) => (current?.id === chip.id ? null : chip));
               }}
               onPointerDown={(event) => event.stopPropagation()}

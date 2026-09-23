@@ -29,6 +29,7 @@ import {
 import type { HarvestCheck } from "@/lib/harvest-score";
 import { PREVIEW_HARVEST_CHIPS } from "@/lib/harvest";
 import { HARVEST_LAB_PRESETS } from "@/lib/harvest-lab-presets";
+import { parseAgentTake, submitPreviewAsk, submitPreviewHome } from "@/lib/film-rate";
 import {
   bankDue,
   clearKeepChips,
@@ -41,6 +42,9 @@ import {
   spawnLabFact,
   subscribeKeep,
 } from "@/lib/keep-memory";
+
+let agentTakeLive = "";
+let agentTakeGen = 0;
 
 const SCREENS = [
   { id: "home", label: "Home" },
@@ -146,6 +150,9 @@ export function PreviewSwitcher() {
     total: 0,
     cap: 30,
   });
+  const takeKey = ["take", "q", "hold", "burst", "_t"]
+    .map((key) => `${key}=${params.get(key) || ""}`)
+    .join("&");
 
   useLayoutEffect(() => {
     document.documentElement.dataset.preview = "1";
@@ -204,6 +211,73 @@ export function PreviewSwitcher() {
   useEffect(() => {
     writeHarvestStyle(style);
   }, [orb, fly, keepTint, dock, style]);
+
+  useEffect(() => {
+    const parsed = parseAgentTake(window.location.search);
+    if (!parsed.take) return;
+    if (agentTakeLive === takeKey) return;
+    agentTakeLive = takeKey;
+    const gen = ++agentTakeGen;
+    setMin(true);
+    setHomeFilm(true);
+    const wait = (ms: number) =>
+      new Promise<void>((resolve) => {
+        window.setTimeout(resolve, ms);
+      });
+
+    async function run() {
+      await wait(700);
+      if (gen !== agentTakeGen) return;
+      const startRec = () => {
+        setHomeRec(true);
+        window.dispatchEvent(new Event("halo-home-replay"));
+      };
+      const waitFor = async (sel: string, ms: number) => {
+        const t = Date.now() + ms;
+        while (Date.now() < t && gen === agentTakeGen) {
+          if (document.querySelector(sel)) return true;
+          await wait(80);
+        }
+        return false;
+      };
+
+      if (parsed.take === "return") {
+        submitPreviewAsk(parsed.q);
+        await waitFor(".chat-stage", parsed.holdMs + 1500);
+        if (gen !== agentTakeGen) return;
+        startRec();
+        await wait(500);
+        submitPreviewHome();
+        await waitFor(".ask-stage", parsed.holdMs + 1500);
+        await wait(900);
+      } else if (parsed.take === "roundtrip") {
+        startRec();
+        await wait(400);
+        submitPreviewAsk(parsed.q);
+        await waitFor(".chat-stage", parsed.holdMs + 1500);
+        await wait(900);
+        if (gen !== agentTakeGen) return;
+        submitPreviewHome();
+        if (document.querySelector(".chat-stage")) {
+          await wait(240);
+          submitPreviewHome();
+        }
+        await waitFor(".ask-stage", parsed.holdMs + 1500);
+        await wait(900);
+      } else if (parsed.take === "morph") {
+        startRec();
+        await wait(400);
+        submitPreviewAsk(parsed.q);
+        await wait(parsed.holdMs);
+      } else {
+        startRec();
+        await wait(parsed.holdMs);
+      }
+      if (gen === agentTakeGen) window.dispatchEvent(new Event("halo-home-stop"));
+    }
+
+    void run();
+  }, [takeKey]);
 
   useEffect(() => {
     let stop = false;
@@ -567,7 +641,7 @@ export function PreviewSwitcher() {
             </button>
           </div>
           <p className="preview-switcher__hint">
-            Start records until you hit Stop. Film on grabs stills along the way (travel too). Writes web/captures/home/latest.
+                    Start records until Stop. Agent: /preview?burst=1&take=roundtrip (Home↔Chat, I fire Mix). Frames: web/captures/home/latest.
           </p>
           <p className={`preview-switcher__hint ${sinkUp ? "is-ok" : "is-wait"}`}>
             {sinkUp

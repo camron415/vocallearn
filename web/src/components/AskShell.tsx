@@ -14,7 +14,8 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
+import { flushSync } from "react-dom";
 import { AttachButton, AttachList } from "@/components/AttachButton";
 import { ComposeField } from "@/components/ComposeField";
 import { ComposeSuggest, type SuggestRow } from "@/components/ComposeSuggest";
@@ -53,8 +54,6 @@ type HomeComposeUi = {
 
 type ShellSubmit = (event: FormEvent) => void | Promise<void>;
 
-type CopySwap = { from: string; to: string; toMuted: boolean };
-
 type AskShellContextValue = {
   active: boolean;
   mode: AskShellMode;
@@ -84,9 +83,21 @@ export function useAskShell() {
   return useContext(AskShellContext);
 }
 
-function modeFromView(view: string | null): AskShellMode | "other" {
+function modeFromRoute(
+  view: string | null,
+  path: string
+): AskShellMode | "other" {
   if (view === "join" || view === "login") return "other";
-  return view === "chat" ? "chat" : "home";
+  if (
+    path === "/login" ||
+    path.startsWith("/invite") ||
+    path === "/join"
+  ) {
+    return "other";
+  }
+  if (view === "chat") return "chat";
+  if (/^\/ask\/[^/]+/.test(path)) return "chat";
+  return "home";
 }
 
 export function AskShellProvider({
@@ -97,7 +108,7 @@ export function AskShellProvider({
   lab?: boolean;
 }) {
   return (
-    <Suspense fallback={<AskShellInner lab={lab} view={null}>{children}</AskShellInner>}>
+    <Suspense fallback={children}>
       <AskShellFromSearch lab={lab}>{children}</AskShellFromSearch>
     </Suspense>
   );
@@ -111,8 +122,13 @@ function AskShellFromSearch({
   lab: boolean;
 }) {
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   return (
-    <AskShellInner lab={lab} view={searchParams.get("view")}>
+    <AskShellInner
+      lab={lab}
+      view={searchParams.get("view")}
+      path={pathname}
+    >
       {children}
     </AskShellInner>
   );
@@ -122,13 +138,15 @@ function AskShellInner({
   children,
   lab,
   view,
+  path,
 }: {
   children: ReactNode;
   lab: boolean;
   view: string | null;
+  path: string;
 }) {
   const soft = useEffectiveMotion() === "reduced";
-  const stage = modeFromView(view);
+  const stage = modeFromRoute(view, path);
   const active = lab && stage !== "other";
   const [mode, setMode] = useState<AskShellMode>(() =>
     stage === "other" ? "home" : stage
@@ -144,9 +162,11 @@ function AskShellInner({
   );
   const [contentLeaving, setContentLeaving] = useState(false);
   const [contentEntering, setContentEntering] = useState(false);
-  const [copySwap, setCopySwap] = useState<CopySwap | null>(null);
+  const [leaveFrom, setLeaveFrom] = useState<AskShellMode | null>(null);
   const composeRef = useRef<HTMLDivElement | null>(null);
+  const shellRoot = useRef<HTMLDivElement | null>(null);
   const leaving = useRef(false);
+  const pendingPose = useRef<AskShellMode | null>(null);
 
   useEffect(() => {
     if (!active) {
@@ -171,6 +191,12 @@ function AskShellInner({
     rememberHeroCompose(el);
   }, [active, soft, mode]);
 
+  useLayoutEffect(() => {
+    if (!pendingPose.current || pendingPose.current !== mode) return;
+    pendingPose.current = null;
+    resetComposeTravel(composeRef.current);
+  }, [mode]);
+
   const setHomeUi = useCallback((ui: HomeComposeUi | null) => {
     setHomeUiState(ui);
   }, []);
@@ -183,17 +209,13 @@ function AskShellInner({
     setContentEntering(false);
   }, []);
 
-  const runCopySwap = useCallback(
-    (from: string, to: string, toMuted: boolean) => {
-      if (soft) {
-        setCopySwap(null);
-        return;
-      }
-      setCopySwap({ from, to, toMuted });
-      window.setTimeout(() => setCopySwap(null), COMPOSE_TRAVEL_MS);
-    },
-    [soft]
-  );
+  useLayoutEffect(() => {
+    if (!leaveFrom) return;
+    const src = leaveFrom === "home" ? ".ask-stage" : ".chat-stage";
+    if (shellRoot.current?.querySelector(`.ask-shell-page ${src}`)) return;
+    setContentLeaving(false);
+    setLeaveFrom(null);
+  }, [leaveFrom, children, mode]);
 
   const leaveToChat = useCallback(
     (navigate: () => void | Promise<void>) => {
@@ -202,20 +224,22 @@ function AskShellInner({
         return;
       }
       leaving.current = true;
-      setContentLeaving(true);
+      flushSync(() => {
+        setLeaveFrom("home");
+        setContentLeaving(true);
+      });
       rememberHeroCompose(composeRef.current);
       travelComposeTowardDock(composeRef.current);
       window.setTimeout(() => {
-        const from = draft.trim() || HOME_COPY;
-        resetComposeTravel(composeRef.current);
-        setMode("chat");
-        setDraft("");
-        setFiles([]);
-        setContentLeaving(false);
-        setContentEntering(true);
-        runCopySwap(from, CHAT_COPY, true);
         void (async () => {
           try {
+            pendingPose.current = "chat";
+            flushSync(() => {
+              setMode("chat");
+              setDraft("");
+              setFiles([]);
+              setContentEntering(true);
+            });
             await navigate();
           } finally {
             leaving.current = false;
@@ -224,7 +248,7 @@ function AskShellInner({
         })();
       }, COMPOSE_TRAVEL_MS);
     },
-    [soft, draft, runCopySwap]
+    [soft]
   );
 
   const leaveToHome = useCallback(
@@ -234,23 +258,25 @@ function AskShellInner({
         return;
       }
       leaving.current = true;
-      setContentLeaving(true);
+      flushSync(() => {
+        setLeaveFrom("chat");
+        setContentLeaving(true);
+      });
       travelComposeTowardHero(composeRef.current);
       window.setTimeout(() => {
-        const from = draft.trim() || CHAT_COPY;
-        resetComposeTravel(composeRef.current);
-        setMode("home");
-        setDraft("");
-        setFiles([]);
-        setContentLeaving(false);
-        setContentEntering(true);
-        runCopySwap(from, HOME_COPY, true);
+        pendingPose.current = "home";
+        flushSync(() => {
+          setMode("home");
+          setDraft("");
+          setFiles([]);
+          setContentEntering(true);
+        });
         navigate();
         leaving.current = false;
         window.setTimeout(() => setContentEntering(false), COMPOSE_TRAVEL_MS);
       }, COMPOSE_TRAVEL_MS);
     },
-    [soft, draft, runCopySwap]
+    [soft]
   );
 
   async function onSubmit(event: FormEvent) {
@@ -320,11 +346,10 @@ function AskShellInner({
   return (
     <AskShellContext.Provider value={value}>
       <div
+        ref={shellRoot}
         className={`ask-shell ask-shell--${mode}${
-          contentLeaving ? " is-content-leaving" : ""
-        }${contentEntering ? " is-content-entering" : ""}${
-          copySwap ? " is-copy-swap" : ""
-        }`}
+          contentLeaving && leaveFrom ? ` is-content-leaving is-leave-${leaveFrom}` : ""
+        }${contentEntering ? " is-content-entering" : ""}`}
       >
         <div className="ask-shell-page">{children}</div>
         <div
@@ -379,7 +404,6 @@ function AskShellInner({
                     <div className="ask-shell-copy-slot">
                       <ComposeField
                         id="ask-shell-field"
-                        className={copySwap ? "is-copy-hidden" : ""}
                         placeholder={placeholder}
                         value={draft}
                         onValueChange={setDraft}
@@ -388,21 +412,6 @@ function AskShellInner({
                         onBlur={home ? ui?.onBlurField : undefined}
                         onKeyDown={home ? ui?.onKeyDown : undefined}
                       />
-                      {copySwap ? (
-                        <>
-                          <span className="ask-shell-copy is-out" aria-hidden>
-                            {copySwap.from}
-                          </span>
-                          <span
-                            className={`ask-shell-copy is-in${
-                              copySwap.toMuted ? " is-muted" : ""
-                            }`}
-                            aria-hidden
-                          >
-                            {copySwap.to}
-                          </span>
-                        </>
-                      ) : null}
                     </div>
                     <div className="compose-actions">
                       <AttachButton

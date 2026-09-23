@@ -568,7 +568,7 @@ html[data-halo-loop="17"][data-home-skin="paper"] .keep-bead--when { background:
 html[data-halo-loop="17"][data-home-skin="paper"] .keep-bead--where { background: #a3d9ff !important; }
 html[data-halo-loop="17"][data-home-skin="paper"] .keep-bead--who { background: #fbcfe8 !important; }
 html[data-halo-loop="17"][data-home-skin="paper"] .keep-bead--meaning { background: #c5f3d4 !important; }
-html[data-halo-loop="17"][data-home-skin="paper"] .ask-hero .compose,
+html[data-halo-loop="17"][data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose,
 html[data-halo-loop="17"][data-home-skin="paper"] .compose-dock {
   --water: 0;
   border-radius: 28px !important;
@@ -594,18 +594,18 @@ html[data-halo-loop="17"][data-home-skin="paper"] .compose-dock {
   margin-right: auto !important;
   justify-self: center !important;
 }
-html[data-halo-loop="17"][data-home-skin="paper"] .ask-hero .compose .water__skin,
-html[data-halo-loop="17"][data-home-skin="paper"] .ask-hero .compose .water__edge,
-html[data-halo-loop="17"][data-home-skin="paper"] .ask-hero .compose .water__ambient,
-html[data-halo-loop="17"][data-home-skin="paper"] .ask-hero .compose .water__shade,
+html[data-halo-loop="17"][data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose .water__skin,
+html[data-halo-loop="17"][data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose .water__edge,
+html[data-halo-loop="17"][data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose .water__ambient,
+html[data-halo-loop="17"][data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose .water__shade,
 html[data-halo-loop="17"][data-home-skin="paper"] .compose-dock .water__skin,
 html[data-halo-loop="17"][data-home-skin="paper"] .compose-dock .water__edge,
 html[data-halo-loop="17"][data-home-skin="paper"] .compose-dock .water__ambient,
 html[data-halo-loop="17"][data-home-skin="paper"] .compose-dock .water__shade,
-html[data-halo-loop="17"][data-home-skin="paper"] .ask-hero .compose .action-btn .water__skin,
-html[data-halo-loop="17"][data-home-skin="paper"] .ask-hero .compose .action-btn .water__edge,
-html[data-halo-loop="17"][data-home-skin="paper"] .ask-hero .compose .action-btn .water__ambient,
-html[data-halo-loop="17"][data-home-skin="paper"] .ask-hero .compose .action-btn .water__shade,
+html[data-halo-loop="17"][data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose .action-btn .water__skin,
+html[data-halo-loop="17"][data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose .action-btn .water__edge,
+html[data-halo-loop="17"][data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose .action-btn .water__ambient,
+html[data-halo-loop="17"][data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose .action-btn .water__shade,
 html[data-halo-loop="17"][data-home-skin="paper"] .compose-dock .action-btn .water__skin,
 html[data-halo-loop="17"][data-home-skin="paper"] .compose-dock .action-btn .water__edge,
 html[data-halo-loop="17"][data-home-skin="paper"] .compose-dock .action-btn .water__ambient,
@@ -630,7 +630,7 @@ html[data-halo-loop="17"][data-home-skin="paper"] .chat-stage .topbar .stone-btn
 html[data-halo-loop="17"][data-home-skin="paper"] .chat-stage .topbar .stone-btn:focus-visible {
   background: rgba(0, 0, 0, 0.05) !important;
 }
-html[data-halo-loop="17"][data-home-skin="paper"] .ask-hero .compose .action-btn:not(.action-btn--icon),
+html[data-halo-loop="17"][data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose .action-btn:not(.action-btn--icon),
 html[data-halo-loop="17"][data-home-skin="paper"] .compose-dock .action-btn:not(.action-btn--icon) {
   color: #ffffff !important;
   background: #636366 !important;
@@ -641,13 +641,13 @@ html[data-halo-loop="17"][data-home-skin="paper"] .compose-dock .action-btn:not(
   padding: 0.52rem 1.05rem !important;
   transition: background 180ms var(--ease-gel, cubic-bezier(0.22, 0.61, 0.36, 1)) !important;
 }
-html[data-halo-loop="17"][data-home-skin="paper"] .ask-hero .compose .action-btn:not(.action-btn--icon):hover:not(:disabled),
-html[data-halo-loop="17"][data-home-skin="paper"] .ask-hero .compose .action-btn:not(.action-btn--icon):focus-visible,
+html[data-halo-loop="17"][data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose .action-btn:not(.action-btn--icon):hover:not(:disabled),
+html[data-halo-loop="17"][data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose .action-btn:not(.action-btn--icon):focus-visible,
 html[data-halo-loop="17"][data-home-skin="paper"] .compose-dock .action-btn:not(.action-btn--icon):hover:not(:disabled),
 html[data-halo-loop="17"][data-home-skin="paper"] .compose-dock .action-btn:not(.action-btn--icon):focus-visible {
   background: #48484a !important;
 }
-html[data-halo-loop="17"][data-home-skin="paper"] .ask-hero .compose .action-btn--icon,
+html[data-halo-loop="17"][data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose .action-btn--icon,
 html[data-halo-loop="17"][data-home-skin="paper"] .compose-dock .action-btn--icon {
   width: 2.35rem !important;
   height: 2.35rem !important;
@@ -665,8 +665,8 @@ html[data-halo-loop="17"][data-home-skin="paper"] .compose-dock .action-btn--ico
   place-items: center !important;
   transition: background 180ms var(--ease-gel, cubic-bezier(0.22, 0.61, 0.36, 1)) !important;
 }
-html[data-halo-loop="17"][data-home-skin="paper"] .ask-hero .compose .action-btn--icon:hover:not(:disabled),
-html[data-halo-loop="17"][data-home-skin="paper"] .ask-hero .compose .action-btn--icon:focus-visible,
+html[data-halo-loop="17"][data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose .action-btn--icon:hover:not(:disabled),
+html[data-halo-loop="17"][data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose .action-btn--icon:focus-visible,
 html[data-halo-loop="17"][data-home-skin="paper"] .compose-dock .action-btn--icon:hover:not(:disabled),
 html[data-halo-loop="17"][data-home-skin="paper"] .compose-dock .action-btn--icon:focus-visible {
   background: rgba(0, 0, 0, 0.05) !important;
@@ -688,7 +688,7 @@ html[data-halo-loop="17"][data-home-skin="paper"] .compose-stack.is-open .compos
 html[data-halo-loop="17"][data-home-skin="paper"] .compose-stack.is-open .compose-suggest {
   border-radius: 0 0 28px 28px !important;
 }
-html[data-halo-loop="17"][data-home-skin="paper"] .ask-hero .compose-suggest,
+html[data-halo-loop="17"][data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose-suggest,
 html[data-halo-loop="17"][data-home-skin="paper"] .compose-dock .compose-suggest {
   top: 100% !important;
   margin-top: 0 !important;
@@ -701,18 +701,18 @@ html[data-halo-loop="17"][data-home-skin="paper"] .compose-dock .compose-suggest
 html[data-halo-loop="17"][data-home-skin="paper"] .compose-stack.is-open .compose-suggest {
   border-top: 1px solid var(--paper-inset-border) !important;
 }
-html[data-halo-loop="17"][data-home-skin="paper"] .ask-hero .compose-suggest li + li .compose-suggest-item,
+html[data-halo-loop="17"][data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose-suggest li + li .compose-suggest-item,
 html[data-halo-loop="17"][data-home-skin="paper"] .compose-dock .compose-suggest li + li .compose-suggest-item {
   border-top: 1px solid var(--paper-inset-border) !important;
 }
-html[data-halo-loop="17"][data-home-skin="paper"] .ask-hero .compose-suggest-item,
+html[data-halo-loop="17"][data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose-suggest-item,
 html[data-halo-loop="17"][data-home-skin="paper"] .compose-dock .compose-suggest-item {
   background: transparent !important;
   color: #111111 !important;
 }
-html[data-halo-loop="17"][data-home-skin="paper"] .ask-hero .compose-suggest-item:hover,
-html[data-halo-loop="17"][data-home-skin="paper"] .ask-hero .compose-suggest-item:focus-visible,
-html[data-halo-loop="17"][data-home-skin="paper"] .ask-hero .compose-suggest-item.is-active,
+html[data-halo-loop="17"][data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose-suggest-item:hover,
+html[data-halo-loop="17"][data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose-suggest-item:focus-visible,
+html[data-halo-loop="17"][data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose-suggest-item.is-active,
 html[data-halo-loop="17"][data-home-skin="paper"] .compose-dock .compose-suggest-item:hover,
 html[data-halo-loop="17"][data-home-skin="paper"] .compose-dock .compose-suggest-item:focus-visible,
 html[data-halo-loop="17"][data-home-skin="paper"] .compose-dock .compose-suggest-item.is-active {
@@ -767,31 +767,31 @@ html[data-halo-loop="17"][data-home-skin="paper"] .capsule--choice .capsule__lab
   color: inherit !important;
   text-shadow: none !important;
 }
-html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] .ask-hero .compose,
+html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] :is(.ask-hero, .ask-shell-compose) .compose,
 html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] .compose-dock {
   background: var(--paper-card) !important;
   background-color: var(--paper-card) !important;
   border: 0 !important;
   box-shadow: var(--paper-card-shadow) !important;
 }
-html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] .ask-hero .compose .action-btn:not(.action-btn--icon),
+html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] :is(.ask-hero, .ask-shell-compose) .compose .action-btn:not(.action-btn--icon),
 html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] .compose-dock .action-btn:not(.action-btn--icon) {
   color: #111111 !important;
   background: #d8d8de !important;
 }
-html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] .ask-hero .compose .action-btn:not(.action-btn--icon):hover:not(:disabled),
-html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] .ask-hero .compose .action-btn:not(.action-btn--icon):focus-visible,
+html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] :is(.ask-hero, .ask-shell-compose) .compose .action-btn:not(.action-btn--icon):hover:not(:disabled),
+html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] :is(.ask-hero, .ask-shell-compose) .compose .action-btn:not(.action-btn--icon):focus-visible,
 html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] .compose-dock .action-btn:not(.action-btn--icon):hover:not(:disabled),
 html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] .compose-dock .action-btn:not(.action-btn--icon):focus-visible {
   background: #e8e8ed !important;
 }
-html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] .ask-hero .compose .action-btn--icon,
+html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] :is(.ask-hero, .ask-shell-compose) .compose .action-btn--icon,
 html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] .compose-dock .action-btn--icon {
   color: #f5f5f7 !important;
   background: transparent !important;
 }
-html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] .ask-hero .compose .action-btn--icon:hover:not(:disabled),
-html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] .ask-hero .compose .action-btn--icon:focus-visible,
+html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] :is(.ask-hero, .ask-shell-compose) .compose .action-btn--icon:hover:not(:disabled),
+html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] :is(.ask-hero, .ask-shell-compose) .compose .action-btn--icon:focus-visible,
 html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] .compose-dock .action-btn--icon:hover:not(:disabled),
 html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] .compose-dock .action-btn--icon:focus-visible {
   background: rgba(255, 255, 255, 0.08) !important;
@@ -811,20 +811,20 @@ html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] .chat-
 html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] .chat-stage .topbar .stone-btn {
   color: #f5f5f7 !important;
 }
-html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] .ask-hero .compose-suggest,
+html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] :is(.ask-hero, .ask-shell-compose) .compose-suggest,
 html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] .compose-dock .compose-suggest {
   background: var(--paper-card) !important;
   border: 0 !important;
   box-shadow: var(--paper-card-shadow) !important;
 }
-html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] .ask-hero .compose-suggest-item,
+html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] :is(.ask-hero, .ask-shell-compose) .compose-suggest-item,
 html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] .compose-dock .compose-suggest-item {
   background: transparent !important;
   color: #f5f5f7 !important;
 }
-html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] .ask-hero .compose-suggest-item:hover,
-html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] .ask-hero .compose-suggest-item:focus-visible,
-html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] .ask-hero .compose-suggest-item.is-active,
+html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] :is(.ask-hero, .ask-shell-compose) .compose-suggest-item:hover,
+html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] :is(.ask-hero, .ask-shell-compose) .compose-suggest-item:focus-visible,
+html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] :is(.ask-hero, .ask-shell-compose) .compose-suggest-item.is-active,
 html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] .compose-dock .compose-suggest-item:hover,
 html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] .compose-dock .compose-suggest-item:focus-visible,
 html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] .compose-dock .compose-suggest-item.is-active {
@@ -871,7 +871,7 @@ html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] .capsu
   color: #111111 !important;
 }
 @supports (-apple-visual-effect: -apple-system-glass-material) {
-  html[data-halo-loop="17"][data-home-skin="paper"] .ask-hero .compose .water__skin,
+  html[data-halo-loop="17"][data-home-skin="paper"] :is(.ask-hero, .ask-shell-compose) .compose .water__skin,
   html[data-halo-loop="17"][data-home-skin="paper"] .compose-dock .water__skin {
     -apple-visual-effect: none !important;
     display: none !important;
@@ -1463,6 +1463,24 @@ html[data-halo-loop="17"][data-halo-theme="dark"] .login-card .brand-mark,
 html[data-halo-loop="17"][data-halo-theme="dark"] .login-title {
   color: #f5f5f7;
   text-shadow: none;
+}
+html[data-halo-loop="17"] .login-oauth-btn {
+  box-shadow: none !important;
+}
+html[data-halo-loop="17"] .login-google {
+  background: var(--paper-card) !important;
+  border: 1px solid var(--paper-inset-border) !important;
+  color: var(--halo-ink) !important;
+}
+html[data-halo-loop="17"] .login-text-btn {
+  color: var(--halo-ink-soft) !important;
+}
+html[data-halo-loop="17"][data-halo-theme="dark"] .login-google {
+  color: #f5f5f7 !important;
+}
+html[data-halo-native][data-halo-loop="17"] .login-card.auth-card {
+  background: transparent !important;
+  box-shadow: none !important;
 }
 @media (max-width: 720px) {
   html[data-halo-loop="17"] .brand-row {

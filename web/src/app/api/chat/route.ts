@@ -31,6 +31,7 @@ import {
 } from "@/lib/ask-guard";
 import { loadMemberLane } from "@/lib/usage";
 import { encodeHaloEvent, type HaloStreamEvent } from "@/lib/halo-stream";
+import { HALO_CONVERSATION_HEADER } from "@/lib/ask-stream-headers";
 import {
   geoFromProfile,
   loadHaloProfile,
@@ -127,13 +128,16 @@ export async function POST(request: Request) {
     const priorText = priorUserText(history);
     const priorReply = priorAssistantText(history);
     const clip = threadClip(history);
-    void ensureAskClassify(user.id, conversationId, userText, {
+    await ensureAskClassify(user.id, conversationId, userText, {
       hasFiles: attachments.length > 0,
       priorText,
       priorReply,
       threadClip: clip,
     });
-    return NextResponse.json({ conversationId });
+    return NextResponse.json(
+      { conversationId },
+      { headers: { [HALO_CONVERSATION_HEADER]: conversationId } }
+    );
   }
 
   const { conversationId, userText } = prepared;
@@ -205,10 +209,13 @@ export async function POST(request: Request) {
       content: reply,
       created_at: new Date().toISOString(),
     };
-    return NextResponse.json({
-      conversationId,
-      reply: assistantError || !assistantRow ? fallback : assistantRow,
-    });
+    return NextResponse.json(
+      {
+        conversationId,
+        reply: assistantError || !assistantRow ? fallback : assistantRow,
+      },
+      { headers: { [HALO_CONVERSATION_HEADER]: conversationId } }
+    );
   }
 
   const encoder = new TextEncoder();
@@ -433,6 +440,7 @@ export async function POST(request: Request) {
       "Cache-Control": "no-cache, no-transform",
       Connection: "keep-alive",
       "X-Accel-Buffering": "no",
+      [HALO_CONVERSATION_HEADER]: conversationId,
     },
   });
 }

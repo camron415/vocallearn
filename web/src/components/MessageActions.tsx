@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { MessageCopy } from "@/components/MessageCopy";
 import { messageCopyText } from "@/lib/markdown-plain";
+import { listenAtom } from "@/lib/listen-atom";
 
 function SpeakIcon() {
   return (
@@ -80,7 +81,17 @@ function EditIcon() {
 
 function MessageSpeak({ content }: { content: string }) {
   const [speaking, setSpeaking] = useState(false);
+  const [pass, setPass] = useState<"atom" | "rest">("atom");
   const plain = messageCopyText(content).trim();
+  const { atom, rest, truncated } = listenAtom(plain);
+
+  useEffect(() => {
+    setPass("atom");
+    setSpeaking(false);
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+  }, [plain]);
 
   useEffect(() => {
     return () => {
@@ -92,27 +103,48 @@ function MessageSpeak({ content }: { content: string }) {
 
   if (!plain) return null;
 
+  function speak(text: string, next: "atom" | "rest") {
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.onend = () => {
+      setSpeaking(false);
+      setPass(next);
+    };
+    utter.onerror = () => {
+      setSpeaking(false);
+      setPass("atom");
+    };
+    setSpeaking(true);
+    window.speechSynthesis.speak(utter);
+  }
+
   function toggle() {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
     if (speaking) {
       window.speechSynthesis.cancel();
       setSpeaking(false);
+      setPass("atom");
       return;
     }
     window.speechSynthesis.cancel();
-    const utter = new SpeechSynthesisUtterance(plain);
-    utter.onend = () => setSpeaking(false);
-    utter.onerror = () => setSpeaking(false);
-    setSpeaking(true);
-    window.speechSynthesis.speak(utter);
+    if (pass === "rest" && rest) {
+      speak(rest, "atom");
+      return;
+    }
+    speak(atom || plain, truncated ? "rest" : "atom");
   }
+
+  const idleTitle = truncated
+    ? pass === "rest"
+      ? "Listen to the rest"
+      : "Listen to the first sentence"
+    : "Listen";
 
   return (
     <button
       type="button"
       className={`stone-btn msg-action${speaking ? " is-copied" : ""}`}
-      title={speaking ? "Stop" : "Listen"}
-      aria-label={speaking ? "Stop reading" : "Listen"}
+      title={speaking ? "Stop" : idleTitle}
+      aria-label={speaking ? "Stop reading" : idleTitle}
       onClick={toggle}
     >
       <SpeakIcon />

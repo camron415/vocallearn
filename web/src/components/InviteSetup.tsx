@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Link from "next/link";
 import { AuthShell } from "@/components/AuthShell";
 import {
   authErrorMessage,
@@ -73,6 +74,13 @@ export function InviteSetup({
     <AuthShell
       title={`Join ${APP_NAME}`}
       sub="This invite is just for you, and it only works once. After you create the account, the link cannot be reused."
+      footer={
+        demo ? null : (
+          <Link href="/login" className="login-text-btn">
+            Already have an account? Sign in
+          </Link>
+        )
+      }
     >
       <form
         className="login-form"

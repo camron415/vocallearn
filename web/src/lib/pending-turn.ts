@@ -1,44 +1,90 @@
-import type { ChatAttachment } from "@/lib/types";
+import { readHaloStream, type HaloStreamEvent } from "@/lib/halo-stream";
 
 type PendingTurn = {
   conversationId: string;
-  response: Promise<Response>;
   abort: AbortController;
+  replayAndFollow: (
+    onEvent: (event: HaloStreamEvent) => void,
+    signal?: AbortSignal
+  ) => Promise<void>;
 };
 
 let pending: PendingTurn | null = null;
 
-/** Start Grok during the Home→Chat travel so first token isn't waiting on RSC. */
-export function armPendingResume(
+/**
+ * Home starts the real answer stream during travel. Chat replays whatever
+ * already arrived, then follows the rest. One classify, one model call.
+ */
+export function armPendingStream(
   conversationId: string,
-  attachments: ChatAttachment[]
+  response: Response,
+  abort: AbortController
 ) {
   abortPendingTurn();
-  const abort = new AbortController();
-  const response = fetch("/api/chat", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "text/event-stream",
-    },
-    body: JSON.stringify({
-      conversationId,
-      resume: true,
-      attachments: attachments.length ? attachments : undefined,
-      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    }),
-    signal: abort.signal,
+  const queued: HaloStreamEvent[] = [];
+  const pumps = new Set<() => void>();
+  let settled: { ok: true } | { ok: false; error: unknown } | null = null;
+  let resolveDone: () => void = () => undefined;
+  const done = new Promise<void>((resolve) => {
+    resolveDone = resolve;
   });
-  pending = { conversationId, response, abort };
+
+  void readHaloStream(
+    response,
+    (event) => {
+      queued.push(event);
+      for (const pump of pumps) pump();
+    },
+    abort.signal
+  ).then(
+    () => {
+      settled = { ok: true };
+      resolveDone();
+    },
+    (error: unknown) => {
+      settled = { ok: false, error };
+      resolveDone();
+    }
+  );
+
+  pending = {
+    conversationId,
+    abort,
+    replayAndFollow: async (onEvent, signal) => {
+      let index = 0;
+      const pump = () => {
+        while (index < queued.length) {
+          onEvent(queued[index]);
+          index += 1;
+        }
+      };
+      pumps.add(pump);
+      pump();
+      const onAbort = () => pumps.delete(pump);
+      signal?.addEventListener("abort", onAbort, { once: true });
+      try {
+        await done;
+        pump();
+        if (settled && !settled.ok) throw settled.error;
+      } finally {
+        pumps.delete(pump);
+        signal?.removeEventListener("abort", onAbort);
+      }
+    },
+  };
+}
+
+export function peekPendingResume(conversationId: string) {
+  return pending?.conversationId === conversationId;
 }
 
 export function takePendingResume(
   conversationId: string
-): { response: Promise<Response>; abort: AbortController } | null {
+): PendingTurn | null {
   if (!pending || pending.conversationId !== conversationId) return null;
   const hit = pending;
   pending = null;
-  return { response: hit.response, abort: hit.abort };
+  return hit;
 }
 
 export function abortPendingTurn() {

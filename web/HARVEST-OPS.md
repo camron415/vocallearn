@@ -93,6 +93,13 @@ DELETE FROM halo_harvest_turns WHERE user_id = '<your-uuid>';
 
 **Before promote, run `test:harvest` (includes claims) + build.** Cue uniqueness must stay: do not restore token/answer `knownFactKeys` blocking. Camron lab 2026-09-16: “largest planet” harvests Jupiter. Spec: [`INTENT-HARVEST-1.2.md`](./INTENT-HARVEST-1.2.md) § Cue uniqueness.
 
+### 1.3 close checklist
+
+Do not mark 1.3 done without this. Full list: [`docs/PRODUCT_ROADMAP.md`](../docs/PRODUCT_ROADMAP.md) § 1.3 close checklist.
+
+- [ ] **One workshop** — morph / harvest land / duration mint. Lane 15. Not covered by bells. Frozen 1080 / z 120.
+- [ ] Bells: lock-in + gold juice; Listen = first sentence. Lane 16.
+
 ### 1.2 closeout (2026-09-17)
 
 Live `/ask` is **1.2.0** (promoted 2026-09-17). Early access and Family share https://halo-gules-three.vercel.app.

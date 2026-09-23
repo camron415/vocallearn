@@ -29,7 +29,7 @@ export const V2_HARVEST_POLICY: HarvestPolicy = {
 
 /** Live feeds — not worth long-term review. Closed facts are not in this list. */
 const EPHEMERAL_ASK =
-  /\b(weather|forecast|rain|snow|temperature|umbrella|sunrise|sunset|air quality|aqi|news|headline|stock|ticker|market|nasdaq|dow|s&p|crypto|bitcoin|ethereum|btc|eth|sports?|score|game last night|next game|world cup|nfl|nba|mlb|nhl|hockey|football|f1|formula 1|flights?|airfare|traffic|commute|movie times|what'?s playing|tv show|tv series|exchange rate|dollar to|euro to|currency|forex|holiday|earthquake|quake)\b/i;
+  /\b(weather|forecast|rain|snow|temperature|umbrella|sunrise|sunset|air quality|aqi|news|headline|stock|ticker|market|nasdaq|dow|s&p|crypto|bitcoin|ethereum|btc|eth|spot price|gold price|silver price|price of gold|price of silver|crude oil|oil price|sports?|score|game last night|next game|world cup|nfl|nba|mlb|nhl|hockey|football|f1|formula 1|flights?|airfare|traffic|commute|movie times|what'?s playing|tv show|tv series|exchange rate|dollar to|euro to|currency|forex|holiday|earthquake|quake)\b/i;
 
 /** Live feeds / lookups — reply is not worth long-term review. */
 const EPHEMERAL_REPLY =

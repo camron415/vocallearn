@@ -1,11 +1,10 @@
-# iOS fit + 1.3 planning (2026-09-14)
+# iOS fit + 1.3 Keeply
 
-**Status:** Camron planning lock for **type scale** and **QA device**. 1.3 theme is a **candidate** (not yet rewritten in `PRODUCT_ROADMAP.md`).  
-**From:** Cursor chat 2026-09-14 (Camron + chief).  
+**Status:** **1.3 locked 2026-09-17** — invite-only iOS app (Capacitor around live Halo). Type scale + canonical phone still locked from 2026-09-14.  
 **Canonical product index:** [`PRODUCT_ROADMAP.md`](./PRODUCT_ROADMAP.md)  
 **Safari QA how-to:** [`web/HARVEST-OPS.md`](../web/HARVEST-OPS.md)
 
-Paste for a new tab: `Read docs/IOS-FIT-AND-1.3.md. Type scale is locked. Canonical iPhone = default Text Size + Standard Display Zoom. Do not shrink beads or Home seats. No promote.`
+Paste for a new tab: `Read docs/IOS-FIT-AND-1.3.md. 1.3 is Keeply iOS (Capacitor around live Halo, TestFlight invites). Type scale locked. Canonical iPhone = default Text Size + Standard Display Zoom. Do not shrink beads or Home seats. No promote.`
 
 ---
 
@@ -108,35 +107,66 @@ Old 1.3 streaks / Teach-me / achievements are **parked on purpose**.
 
 ---
 
-## 1.3 candidate (Camron, not yet canonical)
+## 1.3 locked (2026-09-17)
 
-He wants: **invite-start iOS app → UI/transition polish → then a more engaging review loop.**
-
-That **pulls TestFlight from 1.4 into 1.3**. Do not wrap until Safari is signed on the canonical settings above.
-
-Apple (invite vs public):
+**Invite-only iOS app.** Not searchable App Store. Camron sends a TestFlight email; Halo invite still creates the account.
 
 | Path | Fit |
 | --- | --- |
-| **TestFlight + email invites** | Closest to Halo rings. Beta App Review on first build. Builds expire ~90 days. TestFlight app. |
-| TestFlight public link | Not invite-only |
-| **Unlisted App Store** | Full review; not in search; **anyone with the link** can install — keep **in-app invite**. After TestFlight. |
-| Searchable App Store | Old **1.5** |
+| **TestFlight + email invites** | **1.3.** Closest to Lab / Early access / Family rings. Beta App Review on first build. Builds expire ~90 days. |
+| TestFlight public link | Not invite-only — later if we want |
+| **Unlisted App Store** | After TestFlight. Full review; anyone with the link can install — keep **in-app invite**. |
+| Searchable App Store | **1.5+** |
 
-Capacitor/WKWebView is still this CSS. The shell **helps** fit (no Safari URL bar → more stable `dvh`). It does not one-size SE vs Pro Max.
+**Stack:** Capacitor + WKWebView **navigates to live Halo** (same Next/Vercel, same AI routes). Not a React Native rebuild. Not VocalLearn `app/`. USB Xcode debug does **not** wait on the $99 account; TestFlight does.
 
-**Proposed 1.3:** TestFlight (email rings) + locked type film + polish (morph ghost, play feel, fly trust) + leftover loop if not in 1.2 (Drop, H1, due-drop). **Do not retune** z 120 / 1080 / beads / seats without a Replay.
+**Waves:** 0 shell on Camron’s phone → 1 app chrome (launch, invite create-account, 2–3 first-run screens) → 1b morph/QA (Composer) → 1c Legal (13) → 2 TestFlight → **15 one-workshop joins (required 1.3 close)** → 16 bells (haptics / earcons / atom Listen). File locks: [`web/lane-plans/13-1.3-priority.md`](../web/lane-plans/13-1.3-priority.md). Close checklist: [`docs/PRODUCT_ROADMAP.md`](./PRODUCT_ROADMAP.md) § 1.3 close checklist.
 
-**Later:** more engaging reviews, Teach-me thin, Stripe. **Streaks stay out** until the loop is sticky.
+### Wave 0 — Xcode on your phone (no LAN)
 
-To make this official, update `docs/PRODUCT_ROADMAP.md` § 1.3 / 1.4 in a later turn when Camron says so.
+Folder: [`native/README.md`](../native/README.md). Capacitor WKWebView loads **production** `https://halo-gules-three.vercel.app`. Cellular works at work.
+
+```bash
+cd native
+npm install
+npx cap sync ios
+npx cap open ios
+```
+
+Pick the iPhone, set Signing Team to your Apple ID, ⌘R. Free Apple ID is enough. `$99` is TestFlight only.
+
+Onboard / Sign in with Apple+Google is a **different lane**: [`web/lane-plans/12-app-onboard.md`](../web/lane-plans/12-app-onboard.md). Composer send-speed is a third lane — do not mix.
+
+Capacitor is still this CSS. The shell **helps** fit (no Safari URL bar → more stable `dvh`). It does not one-size SE vs Pro Max.
+
+**Do not retune** z 120 / 1080 / beads / seats without a Replay. Teach-me, streaks, Stripe, **cloud/duplex** STT/TTS stay later. On-device dictate + atom Listen are 1.3 lanes 18–20 after Native + Composer unlock — do not start them from this Native chat.
+
+---
+
+## Brand: Keeply (working, not unique)
+
+Camron’s pick for the **app people see**. Loop vocabulary stays **Cove / Keep / Home**. Do not mass-rename `Halo*` / `APP_NAME` in Wave 0.
+
+Already in the world:
+
+| Collision | What it is |
+| --- | --- |
+| [Keeply – Hide photos & notes](https://apps.apple.com/us/app/keeply-hide-photos-notes/id757172898) | iOS vault since ~2013 |
+| [Keeply – AI link organizer](https://apps.apple.com/us/app/keeply-ai-link-organizer/id6751549375) | iOS Utilities, 2026 |
+| [keeply.com](https://keeply.com) | Ampko Oy (Finland) — lead radiation blankets. **Do not buy expecting this.** |
+| **Keepy** (no L) | Kids artwork / memory app (`keepy.me`) — sounds the same |
+| USPTO KEEPLY | Hand tools (shears), different class |
+| Shopify / keeply.work | Unrelated SaaS |
+
+Apple listing name must be unique. Bare **Keeply** is likely rejected. Before App Store Connect: either a modifier (**Keeply Ask**) or a cleaner unused word. Domain: look at **free** TLDs (`.ai`, `.app`, `.co`, `.io`) this weekend — not `keeply.com`. Wire the winner to Vercel for desktop + the WebView origin later.
 
 ---
 
 ## Do not do from this file
 
 - No src for a Dynamic Type reflow system.
-- No Capacitor until 1.2 Safari sign-off at default type.
-- No promote.
 - No shrinking Keep beads or Home seats to “fit more.”
 - No `user-scalable=no`.
+- No VocalLearn Expo restyle as the family app.
+- No public App Store / public signup in 1.3.
+- No promote of family `/ask` unless Camron says promote.

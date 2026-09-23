@@ -1,0 +1,18 @@
+{
+  "name": "halo-ios",
+  "private": true,
+  "version": "1.3.0",
+  "description": "Halo iOS shell — Capacitor WKWebView around live Halo web. Not VocalLearn Expo.",
+  "scripts": {
+    "sync": "cap sync ios",
+    "open": "cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/cli": "^8.5.2",
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/ios": "^8.5.2",
+    "@capacitor/splash-screen": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.3"
+  }
+}

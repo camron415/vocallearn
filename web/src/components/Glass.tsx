@@ -11,6 +11,7 @@ import {
   type RefObject,
 } from "react";
 import { useEffectiveMotion } from "@/components/MotionProvider";
+import { haloJuice } from "@/lib/halo-juice";
 
 export type GlassVariant = "panel" | "bar" | "pill";
 
@@ -159,7 +160,10 @@ export function GlassButton({
       title={title}
       aria-label={title}
       disabled={disabled}
-      onClick={onClick}
+      onClick={() => {
+        haloJuice("chrome");
+        onClick?.();
+      }}
       className={`stone-btn ${className}`}
     >
       {children}

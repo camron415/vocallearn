@@ -66,7 +66,7 @@ import {
   clearAskAttachments,
   peekAskAttachments,
 } from "@/lib/pending-attach";
-import { takePendingResume } from "@/lib/pending-turn";
+import { takePendingResume, peekPendingResume } from "@/lib/pending-turn";
 import type { AskMessage, HaloProfile } from "@/lib/types";
 
 const RESUME_MS = 3 * 60 * 1000;
@@ -320,7 +320,6 @@ export function ChatThread({
     }
     if (shell?.active) {
       leaving.current = true;
-      setExit(true);
       shell.leaveToHome(() => {
         router.replace(dest);
         leaving.current = false;
@@ -361,8 +360,23 @@ export function ChatThread({
   }, [conversationId]);
 
   useEffect(() => {
-    setChats(conversations);
+    if (conversations.length) setChats(conversations);
   }, [conversations]);
+
+  useEffect(() => {
+    if (demo) return;
+    let cancelled = false;
+    void fetch("/api/chats")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { conversations?: HistoryItem[] } | null) => {
+        if (cancelled || !Array.isArray(data?.conversations)) return;
+        setChats(data.conversations);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [conversationId, demo]);
 
   function replayHarvest() {
     if (lockTimer.current) {
@@ -601,17 +615,14 @@ export function ChatThread({
     setStreamText("");
     setWorkSteps([]);
     setThinking("");
-    setShowWork(false);
+    setShowWork(true);
     bufferRef.current = "";
-
-    const workTimer = window.setTimeout(() => setShowWork(true), 450);
 
     if (demo) {
       try {
         await playDemo();
         return "ok";
       } finally {
-        window.clearTimeout(workTimer);
         setSending(false);
         setShowWork(false);
         setStreamText("");
@@ -630,44 +641,59 @@ export function ChatThread({
     turnAborts.set(conversationId, abort);
     let result: "ok" | "blocked" | "fail" = "fail";
 
+    const onStreamEvent = (event: HaloStreamEvent) => {
+      if (event.type === "error") {
+        setError(event.error);
+        return;
+      }
+      if (event.type === "done") {
+        flushBuffer(true);
+        setStreamText("");
+        setWorkSteps([]);
+        setThinking("");
+        setShowWork(false);
+        markFresh(event.reply.id);
+        setMessages((prev) => [...prev, event.reply]);
+        setSending(false);
+        result = "ok";
+        return;
+      }
+      if (event.type === "harvest") {
+        beginHarvest(event.chips);
+        return;
+      }
+      if (event.type === "saveOffer") {
+        rememberSaveOffer(event.messageId);
+        return;
+      }
+      handleLive(event);
+    };
+
     try {
-      let res: Response;
       if (armed) {
         try {
-          res = await armed.response;
-        } catch {
-          res = await fetch("/api/chat", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Accept: "text/event-stream",
-            },
-            body: JSON.stringify({
-              conversationId,
-              resume: true,
-              attachments: opts.attachments,
-              timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            }),
-            signal: abort.signal,
-          });
+          await armed.replayAndFollow(onStreamEvent, abort.signal);
+          return result;
+        } catch (err) {
+          if ((err as { name?: string }).name === "AbortError") throw err;
         }
-      } else {
-        res = await fetch("/api/chat", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "text/event-stream",
-          },
-          body: JSON.stringify({
-            conversationId,
-            message: opts.text,
-            resume: opts.resume || undefined,
-            attachments: opts.attachments,
-            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          }),
-          signal: abort.signal,
-        });
       }
+
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "text/event-stream",
+        },
+        body: JSON.stringify({
+          conversationId,
+          message: opts.text,
+          resume: opts.resume || (armed ? true : undefined),
+          attachments: opts.attachments,
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        }),
+        signal: abort.signal,
+      });
 
       const contentType = res.headers.get("content-type") || "";
       if (!res.ok) {
@@ -693,44 +719,13 @@ export function ChatThread({
         return "ok";
       }
 
-      await readHaloStream(
-        res,
-        (event) => {
-          if (event.type === "error") {
-            setError(event.error);
-            return;
-          }
-          if (event.type === "done") {
-            flushBuffer(true);
-            setStreamText("");
-            setWorkSteps([]);
-            setThinking("");
-            setShowWork(false);
-            markFresh(event.reply.id);
-            setMessages((prev) => [...prev, event.reply]);
-            setSending(false);
-            result = "ok";
-            return;
-          }
-          if (event.type === "harvest") {
-            beginHarvest(event.chips);
-            return;
-          }
-          if (event.type === "saveOffer") {
-            rememberSaveOffer(event.messageId);
-            return;
-          }
-          handleLive(event);
-        },
-        abort.signal
-      );
+      await readHaloStream(res, onStreamEvent, abort.signal);
       return result;
     } catch (err) {
       if ((err as { name?: string }).name === "AbortError") return "fail";
       setError(err instanceof Error ? err.message : "Something went wrong");
       return result === "blocked" ? "blocked" : "fail";
     } finally {
-      window.clearTimeout(workTimer);
       const superseded = turnAborts.get(conversationId) !== abort;
       if (!superseded) {
         turnAborts.delete(conversationId);
@@ -791,10 +786,11 @@ export function ChatThread({
     }
 
     // Delay past Strict Mode's immediate unmount so we start one fetch, not two.
+    // If Home already started the stream, attach immediately so thinking is on screen.
     const timer = window.setTimeout(() => {
       if (cancelled) return;
       void attemptResume();
-    }, 80);
+    }, peekPendingResume(conversationId) ? 0 : 80);
 
     return () => {
       cancelled = true;

@@ -81,6 +81,8 @@ Same pill style as future Civil War buttons. No kind colors on Save.
 
 **Implication for harvest:** Each chip should be **one retrievable unit** — a name, year, place, or short phrase — not a paragraph.
 
+**External confirmation (2026-09-20):** Mark Keith’s BYU student guide (v1.2) uses the same stack — testing effect, offloading, generation, spacing — and the same “teacher writing a quiz” harvest test. Halo already productized it (lock-in, SEE/SAY, 3-chip cap, intent skip). His course default (ask what they know *before* answering) is **not** our harvest or Ask path. Detail: [`docs/KEITH-AI-LEARNING-GUIDE.md`](../docs/KEITH-AI-LEARNING-GUIDE.md).
+
 ### What makes a fact “worth keeping”
 
 Psychologists distinguish:

@@ -229,6 +229,7 @@
   min-height: 100dvh;
   display: grid;
   place-items: center;
+  overflow-y: auto;
   padding: max(1.5rem, env(safe-area-inset-top))
     max(1.5rem, env(safe-area-inset-right))
     max(1.5rem, env(safe-area-inset-bottom))
@@ -291,6 +292,112 @@
   display: inline-flex;
   justify-content: center;
   text-decoration: none;
+}
+
+.login-oauth {
+  display: grid;
+  gap: 0.55rem;
+  margin-bottom: 0.15rem;
+}
+
+.login-oauth-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  width: 100%;
+  min-height: 2.85rem;
+  padding: 0.65rem 1.1rem;
+  border-radius: 999px;
+  border: 0;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.login-oauth-icon {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex: 0 0 auto;
+}
+
+.login-apple {
+  background: #111111;
+  color: #f5f5f7;
+}
+
+.login-google {
+  background: var(--paper-card, #fff);
+  color: var(--halo-ink);
+  border: 1px solid var(--paper-inset-border, rgba(20, 32, 43, 0.12));
+}
+
+.login-or {
+  margin: 0.85rem 0 0.7rem;
+  text-align: center;
+  color: var(--halo-muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.login-text-btn {
+  display: block;
+  width: 100%;
+  margin-top: 0.35rem;
+  padding: 0.45rem;
+  border: 0;
+  background: none;
+  color: var(--halo-ink-soft);
+  font: inherit;
+  font-size: 0.92rem;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.login-join {
+  margin-top: 1.15rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--paper-inset-border, rgba(20, 32, 43, 0.1));
+}
+
+.app-first-run-kicker {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--halo-ink-soft);
+}
+
+.app-first-run-dots {
+  display: flex;
+  justify-content: center;
+  gap: 0.4rem;
+  margin: 0.35rem 0 1rem;
+}
+
+.app-first-run-dots span {
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--halo-ink) 18%, transparent);
+}
+
+.app-first-run-dots span.is-on {
+  background: var(--halo-ink);
+}
+
+html[data-halo-theme="dark"] .login-apple {
+  background: #f5f5f7;
+  color: #111111;
+}
+
+html[data-halo-native] .login-card.auth-card {
+  box-shadow: none;
+  background: transparent;
 }
 
 .ask-stage,

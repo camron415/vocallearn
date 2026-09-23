@@ -136,12 +136,76 @@ html[data-halo-ask-shell="1"] .ask-shell--home .ask-shell-compose.is-play-grown 
     display: none;
   }
 
+  html[data-halo-ask-shell="1"] .ask-shell--home .ask-shell-compose {
+    top: auto;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    margin-top: 0;
+    transform: none;
+    bottom: calc(
+      0.35rem +
+        max(
+          var(--kb-inset, 0px),
+          var(--halo-native-bottom, env(safe-area-inset-bottom, 0px))
+        )
+    );
+  }
+
   html[data-halo-ask-shell="1"] .ask-shell--chat .ask-shell-compose {
     left: 12px;
     right: 12px;
     width: auto;
     transform: none;
-    bottom: 0.75rem;
+    bottom: calc(
+      0.75rem +
+        max(
+          var(--kb-inset, 0px),
+          var(--halo-native-bottom, env(safe-area-inset-bottom, 0px))
+        )
+    );
+  }
+
+  html[data-halo-native][data-halo-ask-shell="1"] .ask-shell--home .ask-shell-compose {
+    bottom: calc(
+      0.35rem +
+        max(var(--kb-inset, 0px), var(--halo-native-bottom, 34px))
+    );
+  }
+
+  html[data-halo-native][data-halo-ask-shell="1"] .ask-shell--chat .ask-shell-compose {
+    bottom: calc(
+      0.75rem +
+        max(var(--kb-inset, 0px), var(--halo-native-bottom, 34px))
+    );
+  }
+
+  /* Same formula idle and focused so --kb-inset can interpolate. Loop 17
+     chat dock uses !important; beat it here, not in LoopSkin. */
+  html[data-halo-loop="17"][data-halo-ask-shell="1"]
+    .ask-shell--home
+    .ask-shell-compose:not(.is-play-grown) {
+    bottom: calc(
+      0.35rem +
+        max(
+          var(--kb-inset, 0px),
+          var(--halo-native-bottom, env(safe-area-inset-bottom, 0px))
+        )
+    ) !important;
+  }
+
+  html[data-halo-loop="17"][data-halo-ask-shell="1"] .ask-shell--chat .ask-shell-compose {
+    bottom: calc(
+      0.75rem +
+        max(
+          var(--kb-inset, 0px),
+          var(--halo-native-bottom, env(safe-area-inset-bottom, 0px))
+        )
+    ) !important;
+  }
+
+  html[data-halo-ask-shell="1"] .ask-shell-compose.is-open {
+    margin-top: 0;
   }
 
   html[data-halo-ask-shell="1"] .ask-shell--chat .compose-dock {
@@ -184,19 +248,56 @@ html[data-halo-ask-shell="1"] .ask-shell.is-content-leaving .ask-shell-page .cha
   pointer-events: none;
 }
 
-html[data-halo-ask-shell="1"] .ask-shell.is-content-entering .chat-stage .topbar,
-html[data-halo-ask-shell="1"] .ask-shell.is-content-entering .chat-stage .chat-scroll {
-  animation: halo-travel-in var(--travel) var(--ease-travel) both;
+@keyframes halo-shell-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 
-html[data-halo-ask-shell="1"] .ask-shell.is-content-entering .ask-stage.is-entering .ask-greeting,
-html[data-halo-ask-shell="1"] .ask-shell.is-content-entering .ask-stage.is-entering .home-bubbles.is-arriving .recent-slot.is-packed {
-  animation: halo-greeting-in var(--travel) var(--ease-travel) both !important;
+@keyframes halo-shell-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Fade the field as one layer so slot re-renders cannot snap chips back. */
+html[data-halo-ask-shell="1"] .ask-shell.is-leave-home .ask-stage .home-bubbles,
+html[data-halo-ask-shell="1"] .ask-shell.is-leave-home .ask-stage .ask-hero,
+html[data-halo-ask-shell="1"] .ask-shell.is-leave-chat .chat-stage .chat-scroll {
+  animation: halo-shell-fade-out var(--travel) var(--ease-travel) both !important;
   animation-delay: 0ms !important;
+}
+
+html[data-halo-ask-shell="1"] .ask-shell.is-leave-home .ask-stage .home-bubbles .recent-slot.is-packed {
+  transition: none !important;
+}
+
+html[data-halo-ask-shell="1"] .ask-shell--chat.is-content-entering .chat-stage .chat-scroll,
+html[data-halo-ask-shell="1"] .ask-shell--home.is-content-entering .ask-stage .home-bubbles,
+html[data-halo-ask-shell="1"] .ask-shell--home.is-content-entering .ask-stage .ask-hero {
+  animation: halo-shell-fade-in var(--travel) var(--ease-travel) both !important;
+  animation-delay: 0ms !important;
+}
+
+html[data-halo-ask-shell="1"] .ask-shell.is-leave-home .ask-stage .home-bubbles .recent-slot,
+html[data-halo-ask-shell="1"] .ask-shell.is-leave-home .ask-stage .home-bubbles.is-arriving .recent-slot.is-packed,
+html[data-halo-ask-shell="1"] .ask-shell--home.is-content-entering .ask-stage .home-bubbles.is-arriving .recent-slot.is-packed,
+html[data-halo-ask-shell="1"][data-halo-morph] .home-bubbles.is-arriving .recent-slot.is-packed {
+  animation: none !important;
 }
 
 html[data-halo-ask-shell="1"] .ask-shell-compose .compose[data-morph="moving"] {
   transition: transform var(--travel) var(--ease-travel);
+}
+
+html[data-halo-morph] .ask-shell-compose .compose {
+  background: var(--paper-card, #e8e6e2);
 }
 
 html[data-halo-ask-shell="1"] .ask-shell-compose .compose,
@@ -213,43 +314,4 @@ html[data-halo-ask-shell="1"] .ask-shell-copy-slot {
 
 html[data-halo-ask-shell="1"] .ask-shell-copy-slot .field {
   width: 100%;
-}
-
-html[data-halo-ask-shell="1"] .ask-shell-copy-slot .field.is-copy-hidden,
-html[data-halo-ask-shell="1"] .ask-shell-copy-slot .field.is-copy-hidden::placeholder {
-  color: transparent;
-  caret-color: transparent;
-}
-
-html[data-halo-ask-shell="1"] .ask-shell-copy {
-  position: absolute;
-  left: 0.55rem;
-  right: 0.55rem;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-  font-size: 1.02rem;
-  line-height: 1.35;
-  color: var(--halo-ink);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  text-align: left;
-}
-
-html[data-halo-ask-shell="1"] .ask-shell-copy.is-muted {
-  color: rgba(90, 110, 130, 0.72);
-}
-
-html[data-halo-ask-shell="1"] .ask-shell-copy.is-out {
-  animation: halo-greeting-out var(--travel) var(--ease-travel) both;
-}
-
-html[data-halo-ask-shell="1"] .ask-shell-copy.is-in {
-  animation: halo-greeting-in var(--travel) var(--ease-travel) both;
-}
-
-html[data-halo-ask-shell="1"] .ask-shell.is-content-leaving .ask-shell-page .ask-stage.is-leaving .ask-greeting,
-html[data-halo-ask-shell="1"] .ask-shell.is-content-leaving .ask-shell-page .home-bubbles .recent-slot.is-packed {
-  animation: halo-greeting-out var(--travel) var(--ease-travel) both;
 }

@@ -3,7 +3,7 @@
 **Canonical planning doc.** When product direction, version scope, or open decisions change, update **this file first**, then link out to detail specs.
 
 **Owner:** Camron Trost  
-**Last updated:** 2026-09-17  
+**Last updated:** 2026-09-20  
 **Live product:** https://halo-gules-three.vercel.app (**v1.2.0** — early access + Family `/ask`)  
 **Lab:** localhost / LAN `/preview` mixer. Same 1.2 tree as live.
 
@@ -16,6 +16,9 @@
 | Vision & positioning | [§ Vision](#vision) |
 | Trajectory (2026-09-01) | [§ Trajectory adjustment](#trajectory-adjustment-2026-09-01) |
 | Fun / retention (2026-09-07) | [`docs/FUN-LOOP.md`](./FUN-LOOP.md) |
+| Keith 2026 (same science, don’t copy the course OS) | [`docs/KEITH-AI-LEARNING-GUIDE.md`](./KEITH-AI-LEARNING-GUIDE.md) |
+| 1.3 agent lanes (2026-09-20) | [`web/lane-plans/13-1.3-priority.md`](../web/lane-plans/13-1.3-priority.md) |
+| 1.3 close checklist | [§ 1.3 close checklist](#13-close-checklist-review-before-calling-13-done) |
 | What shipped | [§ Shipped — v1.1](#shipped--v11) |
 | Version plan (1.1.1 → 1.6) | [§ Version roadmap](#version-roadmap) |
 | Save / Learn-more / Teach-me | [§ Discovery layer](#discovery-layer) |
@@ -27,7 +30,9 @@
 
 **Cadence:** ~2 weeks per release. **Rings:** Lab (Camron) → Early access (wife, parents) → Family (siblings+) → Friends (1.2+) → Public-ish (1.5).
 
-**Fun / retention (2026-09-07):** Juice is a multiplier, not the product. Same-visit lock-in + day-1 play + inspect are in flight; next is Drop + honest H1 copy, not Spark/streaks/7-cap. Detail: [`docs/FUN-LOOP.md`](./FUN-LOOP.md).
+**Fun / retention (2026-09-07):** Juice is a multiplier, not the product. Same-visit lock-in + day-1 play + inspect shipped in 1.2; juice stays light. Detail: [`docs/FUN-LOOP.md`](./FUN-LOOP.md).
+
+**1.3 (2026-09-17 / 20):** Invite-only **iOS app** (Capacitor around live Halo). Public brand candidate **Keeply**. Craft + Voice I/O lanes (do not overlap Native / Auth / Composer): [`web/lane-plans/13-1.3-priority.md`](../web/lane-plans/13-1.3-priority.md). Streaks / Teach-me stay later.
 
 ---
 
@@ -45,6 +50,7 @@
 - **Not write-only AI.** Most chat apps: ask → read → forget. Halo adds encoding *when you choose it* and a daily tidy for people who tap chips.
 - **Reading = free discovery.** Thin Teach-me opt-in → full lesson depth premium. Review loop = everyone.
 - **Not Duolingo’s content factory.** User curiosity + JIT lessons = the library. No pre-built curriculum maps for every subject.
+- **Same science as serious AI-and-learning teaching; not their product.** Keith 2026 (BYU student guide) independently lands on retrieval, spacing, generation, and “Oracle has a place.” Halo already ships the family protocol. Do **not** import Socratic-on-every-send, a syllabus OS, or a 58-skill plugin. [`docs/KEITH-AI-LEARNING-GUIDE.md`](./KEITH-AI-LEARNING-GUIDE.md).
 
 ### Product pillars
 
@@ -58,7 +64,7 @@
 
 ### VocalLearn native (same repo)
 
-React Native voice tutor on a physical iPhone — where spaced repetition, lesson frames, and semantic grading were prototyped. **Halo web is the live multi-user product.** Native remains the research lab for voice-first mechanics until iOS shell (1.4).
+React Native voice tutor on a physical iPhone — where spaced repetition, lesson frames, and semantic grading were prototyped. **Halo web is the live multi-user product.** The VocalLearn Expo app stays a voice lab. **1.3 iOS is a Capacitor shell around Halo web**, not a port of `app/`.
 
 ---
 
@@ -74,7 +80,7 @@ React Native voice tutor on a physical iPhone — where spaced repetition, lesso
 | Most casual AI questions aren’t worth studying | **Intent harvest (1.2)** + skip weather/news/throwaway; UI should not invite junk asks |
 | Reading an answer ≠ encoding it | **Teach-me / interactive climb** for depth asks — opt-in click first, not withhold every answer |
 | Duolingo-scale libraries are impossible at startup | **JIT from user questions** — facts and lesson arcs generated on demand, indexed per user in Keep |
-| Mobile is a selling point | **Push iOS shell as soon as web mobile is solid** (1.4); do not ship a shell before Safari QA passes |
+| Mobile is a selling point | **1.3 iOS TestFlight** — Safari QA on the canonical phone passed with 1.2 |
 
 ### Intent qualification (product rule)
 
@@ -95,6 +101,7 @@ user asks
 - Socratic intercept on every chat send (XP bars, cheat tokens, streak-as-core in V2)
 - Scanning copyrighted pages into a reusable global corpus
 - Competing head-on with Duolingo language trees or Quizlet’s pre-made decks
+- University AI-study OS (syllabus projects, paper/problem-set coaches, 58 Claude skills) — Keith 2026 confirmed the science, not this shape. [`docs/KEITH-AI-LEARNING-GUIDE.md`](./KEITH-AI-LEARNING-GUIDE.md)
 
 ### Phased learning tools
 
@@ -138,8 +145,8 @@ Full manifest: [`web/RELEASE-1.1.md`](../web/RELEASE-1.1.md)
 | **1.1.2** | 2026-09-02 | Library ≡ recipes, Save pill, morph hotfixes | **Shipped** |
 | **1.1.2-mobile** | 2026-09-03 | iPhone header + recipes scroll | **Shipped** (superseded by 1.2) |
 | **1.2** | 2026-09-17 | Luna + intent harvest + unbox + lock-in + phone Home | **Shipped** (live `/ask`) |
-| **1.3** | Early Oct | Streaks, achievements, grading, **Teach-me opt-in (thin)**, T&S draft, brand chosen | Planned |
-| **1.4** | Mid-Oct | **iOS TestFlight** (mobile priority), domain, Stripe, notifications, Teach-me integrated | Planned |
+| **1.3** | Early–mid Oct | **Keeply iOS** — Capacitor around live Halo, TestFlight, onboard, same-mint juice, on-device Voice I/O | Planned |
+| **1.4** | Mid–late Oct | Stripe, push, Sign in with Apple/Google, Teach-me thin if the loop is sticky | Planned |
 | **1.5** | Nov | Polish, legal, public-ish, ~100 accounts, Teach-me premium GA | Planned |
 | **1.6** | Dec | Android, minigames, full tutor depth + voice polish | Planned |
 
@@ -172,30 +179,61 @@ Detail: [`web/PATCH-1.1.1.md`](../web/PATCH-1.1.1.md)
 | **Mobile QA** | Canonical iPhone = default Text Size + Standard zoom. Type scale locked. Safari + Chrome signed with the confirm list. |
 | **Telemetry** | `halo_harvest_turns` + `harvest_miss` + Don't-keep `reject`. Migration **017** already applied. |
 
-**Explicitly not 1.2 (do not hunt these before promote):** Learn-more chips, Teach-me, full product tour, follow-up Keep rewrite as the chat continues, Packet C miner rewrite, AskShell persistent composer, synonym/list Keep merge, iOS TestFlight, streaks/achievements, miss reveal term vs full sentence.
+**Explicitly not 1.2:** Learn-more, Teach-me, tour slides, follow-up Keep rewrite, Packet C, AskShell, synonym/list merge, streaks, miss reveal term vs sentence. **iOS is 1.3.**
 
 **What family feels vs 1.1.2:** Luna on shallow asks, classify wait before stream, smarter Keep (and less junk Keep), lock-in quiz, unbox actions, phone Home that isn’t a pile, signed Follow-up dock. Same Paper login / recipes / invite — no restyle.
 
 Detail: [`web/INTENT-HARVEST-1.2.md`](../web/INTENT-HARVEST-1.2.md) · QA: [`web/HARVEST-OPS.md`](../web/HARVEST-OPS.md) § 1.2 closeout
 
-### 1.3 — Habit + trust + first Teach-me
+### 1.3 — Keeply iOS (invite-only)
 
-- Streaks (clear-the-day or “≥1 round” — fair day-cap UX)
-- Day-cap cooldown (Duolingo-style optional extra round)
-- Light achievements (◎, first gold, streak milestones)
-- Grading nuance (paraphrase per kind)
-- **Teach-me opt-in (thin)** — `[ Teach me this ]` on depth asks only; short interactive climb on existing play sheet; facts → Keep (not premium yet)
-- **Inline edit** of a user bubble in place (today Edit prefills Follow up)
-- Terms + Privacy draft; **brand name chosen** (domain in 1.4)
-- Referral tracking (month-free credit OK manual)
+Safari gate is met (1.2 signed at default Text Size + Standard zoom). Detail: [`docs/IOS-FIT-AND-1.3.md`](./IOS-FIT-AND-1.3.md). **Agent order + file locks:** [`web/lane-plans/13-1.3-priority.md`](../web/lane-plans/13-1.3-priority.md). Craft mint: [`docs/CRAFT-JUICE.md`](./CRAFT-JUICE.md).
 
-### 1.4 — Money + mobile
+**Stack:** Capacitor + WKWebView **navigating to live Halo** (same Vercel app, same APIs). Do not rebuild in React Native. Do not wrap VocalLearn `app/`.
 
-- **iOS TestFlight** — Capacitor/WebView shell around production web (**gate:** mobile web QA green on Safari iPhone before shell ships)
-- Domain + brand live; Stripe Family/Plus
-- Push notifications (streak/review reminders)
-- Learn-more chips if not in 1.2
-- **Teach-me integrated** — lesson flow feels native in chat + play sheet; optional voice where cheap
+**Distribution:** TestFlight email invites only. Not searchable App Store. Halo invite still required to create an account.
+
+| Wave | What | Lane | Gate |
+| --- | --- | --- | --- |
+| **0** | Xcode on Camron’s phone — splash, status bar, safe area, load Halo | **Native** (live) | USB; free Apple ID |
+| **1** | First-run + invite create-account + paper login; Apple/Google later | **Auth onboard** (live) | Before wife TestFlight |
+| **1b** | Send path + Home↔Chat morph film | **Composer / QA** (live) | Camron signs iPhone lab |
+| **1c** | Terms + Privacy in Settings | **13** — legal tab claims | Store / TestFlight copy |
+| **1d** | Menu sheets | **14 parked** — already shipped | Only if Camron films a hitch |
+| **2** | Paid Apple Developer + first TestFlight | **Native** | Wife / early testers |
+| **3a** | Same-mint **joins** (ghost, land, duration map) | **15** — other tab (QA debug). **Required on 1.3 close checklist** | One LoopSkin owner |
+| **3b** | Three haptics + tiny earcons + atom Listen | **16 Bells** (this juice chat) | Soft / reduce = off; play sheet silent |
+| **3e** | Domain on Vercel (desktop + app) | Native / Camron | After phones |
+
+**Brand (working):** **Keeply** for the app people see. Loop words stay Cove / Keep / Home. Code names (`Halo*`, `APP_NAME = "Cove"`) do not rename in Wave 0.
+
+**Name collision (do not ignore):** two iOS apps already list as Keeply (photo vault; AI link organizer). `keeply.com` is a Finnish lead-blanket company. Phonetic neighbor **Keepy** is a kids-memory app. Exact App Store name “Keeply” is likely blocked; buy a **free** domain (`.ai` / `.app` / `.co`) — do not expect `keeply.com`. Pick a listing name before App Store Connect (Keeply Ask, etc.) or a cleaner unique word.
+
+**Parked in 1.3:** Teach-me, streaks/XP, Stripe, public signup, **cloud / duplex** STT-TTS, OpenAI-class Listen on every turn, Harvest/Home seating retunes, morph 1080, harvest z 120, exhibit 3D theater.
+
+**Do not double-book:** Native owns `native/` + `--halo-native-bottom`. Auth owns Login/Invite/first-run. Composer owns AskLanding / ChatThread / pending-turn. Legal tab claims **13**. Do not spawn **14**. **Bells (16)** is this juice chat — not LoopSkin.
+
+### 1.3 close checklist (review before calling 1.3 done)
+
+Other agents: **do not ship 1.3 without looking at this list.** Juice (haptics / ticks / Listen) is not a substitute for the joins.
+
+- [ ] **One workshop** — Home↔Chat morph, harvest land, sheet vs travel, no layout jump after fly. Same mint: instant / tap / travel / hold. Lane **15** (QA / Composer). See [`CRAFT-JUICE.md`](./CRAFT-JUICE.md) § 0. Frozen: morph **1080**, harvest z **120**, Home seats, phone dock.
+- [ ] Wave 0 shell + Trust on Camron’s phone
+- [ ] First-run / login signed (Auth)
+- [ ] Legal pages linked
+- [ ] Lock-in + gold juice (haptics / earcons); Soft + reduce off
+- [ ] Listen speaks the **atom**, not the whole article
+- [ ] TestFlight only when Native + Camron say go
+
+**Not this close:** Teach-me, streaks, exhibit 3D, duplex tutor, cloned voices.
+
+### 1.4 — Money + native plugins
+
+- Sign in with Apple (required if Google is offered on iOS) + optional Google — invited accounts only
+- Stripe Family/Plus when people actually return
+- Push for due / “you’re clear”
+- Teach-me thin / Learn-more only if uncoached rounds are happening
+- Duplex tutor / custom actor clone / Deepgram only if on-device dictate (1.3 lanes 18–19) lost to the Grok app
 
 ### 1.5 — Scale
 
@@ -305,7 +343,8 @@ userText → resolveHarvestIntent()     // regex + optional mini-model
 | 4 | Max chips per turn | 3 default; 4–5 only for depth asks after validation |
 | 5 | Open facts in Keep | Display/log only; closed-only play through 1.3 |
 | 6 | Teach-me default vs opt-in | **Opt-in click only** — no Socratic intercept on every send |
-| 7 | iOS shell timing | **1.4** after mobile web QA; mobile is a selling point but not before loop is solid on Safari |
+| 7 | iOS shell timing | **1.3** — Capacitor around live Halo; Safari QA passed with 1.2 |
+| 8 | Public brand / domain | **Keeply** working name. Exact App Store “Keeply” taken. Domain ≠ `keeply.com` (Finnish industrial). Free TLD + listing modifier TBD |
 
 ---
 
@@ -318,9 +357,9 @@ userText → resolveHarvestIntent()     // regex + optional mini-model
 | K-12 textbook / district curriculum library | Out — user JIT + private Keep only |
 | Global shared lesson DB / semantic curriculum merge | Out — per-user Keep is the library |
 | Socratic intercept on every Ask | Out — depth opt-in only |
-| Realtime voice in web | Parked; native lab + 1.4 shell first |
+| Realtime voice in web | Parked; **on-device** dictate + atom Listen are 1.3 lanes 18–20 after Native + Composer unlock. Duplex / cloud streaming is 1.4+ |
 | GPT Luna on production | **Shipped in 1.2** — `HALO_USE_LUNA=1` + `OPENAI_API_KEY` on Vercel |
-| Achievements / sound | 1.3+ — after the fun loop is sticky; see [`docs/FUN-LOOP.md`](./FUN-LOOP.md) |
+| Achievements / sound | Light haptics/audio in 1.3 Wave 3 (lanes 16–17); no streak cabinet. [`docs/FUN-LOOP.md`](./FUN-LOOP.md) · [`docs/CRAFT-JUICE.md`](./CRAFT-JUICE.md) |
 | Spark-only harvest / 7-bead dock / family ticker | Out — [`docs/FUN-LOOP.md`](./FUN-LOOP.md) |
 | Billing | 1.4 |
 | Full product tour | Out — H1 line is the 1.2 “tour”; no what’s-new slides |
@@ -362,7 +401,12 @@ Harvest z-index 120 · morph `--travel` 1080ms · bead diameter · Home seating 
 | [`docs/FUN-LOOP.md`](./FUN-LOOP.md) | Retention / QA burnout — juice vs lock-in; what not to build |
 | [`docs/HALO_PRICING_AND_SCALING.md`](./HALO_PRICING_AND_SCALING.md) | Pricing tiers (future) |
 | [`docs/WESLEY_FOUNDER_ADVICE.md`](./WESLEY_FOUNDER_ADVICE.md) | 2026-09-12 DSP-owner conversation — users, pay test, no kids pivot, follow-up |
-| [`docs/IOS-FIT-AND-1.3.md`](./IOS-FIT-AND-1.3.md) | 2026-09-14 — lock type scale; canonical iPhone QA; why first-run phone looked off; 1.3 TestFlight candidate |
+| [`docs/KEITH-AI-LEARNING-GUIDE.md`](./KEITH-AI-LEARNING-GUIDE.md) | 2026-09-20 BYU student AI guide — same retrieval science; do not copy the course OS |
+| [`docs/IOS-FIT-AND-1.3.md`](./IOS-FIT-AND-1.3.md) | Type scale lock + **1.3 Keeply iOS** (TestFlight, Capacitor, brand collision) |
+| [`docs/ACHIEVEMENT-EXHIBITS.md`](./ACHIEVEMENT-EXHIBITS.md) | Future: topic kits, socketed trophies, museum shelf — not 1.3 |
+| [`docs/CRAFT-JUICE.md`](./CRAFT-JUICE.md) | Same-mint motion, then haptics, then a tiny sound palette, then Voice I/O |
+| [`web/lane-plans/13-1.3-priority.md`](../web/lane-plans/13-1.3-priority.md) | **1.3 agent order** + file locks vs Native / Auth / Composer |
+| [`web/lane-plans/16-bells.md`](../web/lane-plans/16-bells.md) | Bells lane: haptics, earcons, atom Listen |
 
 ---
 
@@ -370,6 +414,11 @@ Harvest z-index 120 · morph `--travel` 1080ms · bead diameter · Home seating 
 
 | Date | Change |
 | --- | --- |
+| 2026-09-20 | **Bells lane 16 claimed.** Lock/gold juice + atom Listen. **1.3 close checklist** keeps one-workshop (lane 15) required. [`web/lane-plans/16-bells.md`](../web/lane-plans/16-bells.md). |
+| 2026-09-20 | **Keith 2026 aside.** BYU student AI guide confirms retrieval / spacing / two-door; do not copy Socratic intercept or a university skill OS. [`docs/KEITH-AI-LEARNING-GUIDE.md`](./KEITH-AI-LEARNING-GUIDE.md). |
+| 2026-09-20 | **1.3 craft/voice lanes queued.** Smooth sheets → joins → 3 haptics → earcons → on-device dictate → atom Listen. Spawn 13+14 now; 15–20 wait Native/Auth/Composer. [`web/lane-plans/13-1.3-priority.md`](../web/lane-plans/13-1.3-priority.md). |
+| 2026-09-20 | Exhibit trophies + craft juice vision (not 1.3 build). [`ACHIEVEMENT-EXHIBITS.md`](./ACHIEVEMENT-EXHIBITS.md) · [`CRAFT-JUICE.md`](./CRAFT-JUICE.md) |
+| 2026-09-17 | **1.3 locked as Keeply iOS.** Capacitor around live Halo; TestFlight invites only; Wave 0 before paid Apple account. Keeply is the working public name — exact App Store “Keeply” already taken; `keeply.com` is Finnish industrial. Streaks/Teach-me stay later. [`IOS-FIT-AND-1.3.md`](./IOS-FIT-AND-1.3.md). |
 | 2026-09-17 | **1.2 promoted** to early access + Family (`halo-gules-three.vercel.app`). Luna env flip on Vercel. Confirm list + review sheet already signed. |
 | 2026-09-17 | **Camron signed 1.2 confirm list.** Bookmark Save + Library is enough (no flyer). Parked: composer ghost, thinking-stream UX. |
 | 2026-09-17 | **1.2 lab-ready closeout.** Lab tree has Luna + intent harvest + unbox + lock-in + phone seats + H1. Live stays 1.1.2-mobile until **promote**. Review motion polish is the last visual. Learn-more / Teach-me / tour slides / TestFlight stay later. Camron confirm list in [`web/HARVEST-OPS.md`](../web/HARVEST-OPS.md) § 1.2 closeout. |

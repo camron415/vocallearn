@@ -62,7 +62,7 @@ const FEED_HINTS: Array<{ domain: FeedDomain; re: RegExp }> = [
 ];
 
 const LOOKUP =
-  /\b(weather|forecast|rain|snow|temperature|umbrella|sunrise|sunset|air quality|aqi|news|headline|stock|ticker|market|nasdaq|dow|s&p|crypto|bitcoin|ethereum|btc|eth|sports?|score|game last night|next game|who they(?:'re| are) playing|who(?:'s| are they) playing|world cup|nfl|nba|mlb|nhl|hockey|football|soccer|basketball|baseball|f1|formula 1|flights?|airfare|traffic|commute|movie times|what'?s playing|tv show|tv series|exchange rate|dollar to|euro to|currency|forex|holiday|earthquake|quake|define|definition of|meaning of|capital of|population of|time in|what time is it|isbn|who wrote|author of)\b/i;
+  /\b(weather|forecast|rain|snow|temperature|umbrella|sunrise|sunset|air quality|aqi|news|headline|stock|ticker|market|nasdaq|dow|s&p|crypto|bitcoin|ethereum|btc|eth|spot price|gold price|silver price|price of gold|price of silver|platinum|crude oil|sports?|score|game last night|next game|who they(?:'re| are) playing|who(?:'s| are they) playing|world cup|nfl|nba|mlb|nhl|hockey|football|soccer|basketball|baseball|f1|formula 1|flights?|airfare|traffic|commute|movie times|what'?s playing|tv show|tv series|exchange rate|dollar to|euro to|currency|forex|holiday|earthquake|quake|define|definition of|meaning of|capital of|population of|time in|what time is it|isbn|who wrote|author of)\b/i;
 
 const DEPTH =
   /\b(why|how come|what happened|what caused|tell me more|more details?|in depth|in details?|detailed|explain|history of|brief history|overview of|should i|is it (a )?good|news about|behind (the |this )|analy[sz]e|compare|trade-?offs?|sentiment|fan reaction)\b/i;
@@ -72,6 +72,13 @@ const FOLLOW_UP =
 
 export function isLookupAsk(text: string) {
   return LOOKUP.test(text);
+}
+
+/** Live number that moves — search, not Keep. No own feed. */
+export function isLivePriceAsk(text: string) {
+  return /\b((?:spot )?price of (?:gold|silver|platinum|oil)|(?:gold|silver|platinum) (?:spot )?price|crude oil|oil price)\b/i.test(
+    text
+  );
 }
 
 export function wantsDeeperAsk(text: string) {
