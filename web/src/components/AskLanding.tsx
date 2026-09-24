@@ -467,6 +467,8 @@ export function AskLanding({
         if (!conversationId) throw new Error("Failed to send");
         stashAskAttachments(conversationId, attachments);
         sessionStorage.setItem(`halo-ask-live:${conversationId}`, "1");
+        shell?.showOpening(message || "Sent an attachment");
+        router.prefetch(`/ask/${conversationId}`);
         pushAsk(`/ask/${conversationId}`);
       } catch (err) {
         abortLeave(err instanceof Error ? err.message : "Something went wrong");

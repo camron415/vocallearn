@@ -97,6 +97,7 @@ Not this sitting. Finish before any 1.3 / TestFlight / `--prod`:
 
 ## Log (newest first)
 
+- 2026-09-24 Orchestrator — **Phone Ask paints your line as soon as the chat id exists.** The composer stays put. The real chat page replaces that line when it arrives. Desktop still uses the 1080ms travel. No reload. **No promote.**
 - 2026-09-24 15:55 Composer send path — **Removed the full-reload backup from native Ask, hold, and History.** `pushAsk` in AskLanding used to call `location.assign` after 700ms whenever chat had not landed yet. Chat is slow, so that reload fired and flashed white. The open is now only `router.push`, after the keyboard flag clears. AskShellProvider stays mounted from `ask/layout.tsx`. prepareOnly and `halo-ask-live` unchanged. Harvest 25/25, build green. Untouched: morph 1080, harvest z 120, Home fade. **No promote.**
 - 2026-09-24 Orchestrator — **Ask and hold stay inside the shell again.** They use the same in-app open as History. A full reload is only the backup if that open does not land. The composer lives above the page, so it should not flash white or gray. **No promote.**
 - 2026-09-24 Orchestrator — **Overnight branch is on the lab alias.** `cloud/overnight-ui` `9b196fe` deployed as `halo-li1i2174n` and aliased to `halo-lab-personal-f999`. Lab mark should read `9b196fe`. Phone: quit Halo and reopen. Keyboard still unsigned. **No promote.**
