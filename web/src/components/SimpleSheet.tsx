@@ -35,6 +35,9 @@ export function SimpleSheet({
     if (!open) return;
     document.documentElement.dataset.haloSheet = "1";
     return () => {
+      // Another sheet may have opened in the same tap (Menu → History).
+      // Do not clear the flag out from under it.
+      if (document.querySelector(".history-overlay")) return;
       delete document.documentElement.dataset.haloSheet;
     };
   }, [open]);

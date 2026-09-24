@@ -97,6 +97,7 @@ Not this sitting. Finish before any 1.3 / TestFlight / `--prod`:
 
 ## Log (newest first)
 
+- 2026-09-24 Orchestrator — **Lane A on the phone path.** History and Library were leaving Home through the 1080ms animation, which freezes the web view. On the phone they now load the page directly. Composer touch-scroll is blocked while the keyboard flag is on, and a second tap no longer releases the keyboard in between. Harvest 25/25. Lab deploy next. **No promote.**
 - 2026-09-24 Orchestrator — **Overnight branch is on the lab alias.** `cloud/overnight-ui` `9b196fe` deployed as `halo-li1i2174n` and aliased to `halo-lab-personal-f999`. Lab mark should read `9b196fe`. Phone: quit Halo and reopen. Keyboard still unsigned. **No promote.**
 - 2026-09-24 overnight — Handoff for Mac agents is `web/OVERNIGHT-HANDOFF.md` on `cloud/overnight-ui`. Atlas was down, so git is the dump. No new UI change. Untouched: morph 1080, harvest z 120.
 - 2026-09-24 overnight — Stop. Clock is 8:27am Denver. No further timer. Last pass found no safe hitch. Lab alias was never updated (`vercel whoami` logged out). Phone still has to prove the keys. Untouched: morph 1080, harvest z 120.

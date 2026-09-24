@@ -296,29 +296,47 @@ export function MotionProvider({ children }: { children: ReactNode }) {
     };
     syncHeight();
     vv?.addEventListener("resize", syncHeight);
-    // A viewport scroll while the keys are up slides the composer under them.
-    // Resize still updates the inset; scroll does not.
-    vv?.addEventListener("scroll", () => {
+    const onViewportScroll = () => {
       if (root.dataset.haloNative === "1" && composeFocused()) return;
       syncHeight();
-    });
+    };
+    vv?.addEventListener("scroll", onViewportScroll);
     phone.addEventListener("change", syncHeight);
-    document.addEventListener("focusin", syncHeight);
-    const blurKb = () => window.setTimeout(syncHeight, 40);
+    let blurWait = 0;
+    const onFocusIn = () => {
+      window.clearTimeout(blurWait);
+      syncHeight();
+    };
+    const blurKb = () => {
+      window.clearTimeout(blurWait);
+      // A second tap focuses again. Releasing in between jumps the page.
+      blurWait = window.setTimeout(syncHeight, 220);
+    };
+    document.addEventListener("focusin", onFocusIn);
     document.addEventListener("focusout", blurKb);
+    const stopPageScroll = (event: TouchEvent) => {
+      if (root.dataset.haloNative !== "1") return;
+      if (root.dataset.haloKb !== "1" && !composeFocused()) return;
+      const target = event.target instanceof Element ? event.target : null;
+      if (target?.closest(".chat-scroll, .history-overlay, .history-page")) return;
+      event.preventDefault();
+    };
+    document.addEventListener("touchmove", stopPageScroll, { passive: false });
 
     return () => {
       cancelled = true;
       window.clearTimeout(kbHide);
       window.clearTimeout(settleTick);
       window.clearTimeout(guessTick);
+      window.clearTimeout(blurWait);
       reduceQuery.removeEventListener("change", sync);
       pointerQuery.removeEventListener("change", sync);
       vv?.removeEventListener("resize", syncHeight);
-      vv?.removeEventListener("scroll", syncHeight);
+      vv?.removeEventListener("scroll", onViewportScroll);
       phone.removeEventListener("change", syncHeight);
-      document.removeEventListener("focusin", syncHeight);
+      document.removeEventListener("focusin", onFocusIn);
       document.removeEventListener("focusout", blurKb);
+      document.removeEventListener("touchmove", stopPageScroll);
     };
   }, []);
 

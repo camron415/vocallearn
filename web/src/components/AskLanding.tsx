@@ -335,6 +335,13 @@ export function AskLanding({
   }
 
   function goAfterLeave(run: () => void | Promise<void>) {
+    // The phone web view freezes if Home starts the 1080ms leave and then
+    // navigates. Chips and Settings stay on this page, so they still work.
+    if (document.documentElement.dataset.haloNative === "1") {
+      leaving.current = false;
+      void run();
+      return;
+    }
     // A leave already in flight used to return here and leave Home on
     // "Asking…" forever. The timer still performs this navigation once.
     let ran = false;
@@ -532,6 +539,11 @@ export function AskLanding({
   }, [shell, onSubmit]);
 
   function openChat(id: string) {
+    if (document.documentElement.dataset.haloNative === "1" && !demo && !isLabPreviewPath()) {
+      leaving.current = false;
+      window.location.assign(`/ask/${id}`);
+      return;
+    }
     if (demo || isLabPreviewPath()) {
       window.dispatchEvent(new Event("halo-home-play-end"));
       setPlaying(false);

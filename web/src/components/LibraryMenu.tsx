@@ -63,6 +63,10 @@ export function LibraryMenu({
             onClick={() => {
               if (demo) return;
               setOpen(false);
+              if (document.documentElement.dataset.haloNative === "1") {
+                window.location.assign("/recipes");
+                return;
+              }
               router.push("/recipes");
             }}
             disabled={demo}
