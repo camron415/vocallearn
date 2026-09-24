@@ -77,43 +77,6 @@ function isSayFace(face?: "see" | "say" | "say-b") {
   return face === "say" || face === "say-b";
 }
 
-function isPhonePlay() {
-  return (
-    typeof window !== "undefined" &&
-    window.matchMedia("(max-width: 720px)").matches
-  );
-}
-
-function warmSayKeyboard() {
-  if (typeof document === "undefined" || !isPhonePlay()) return;
-  let el = document.getElementById("halo-say-warm") as HTMLTextAreaElement | null;
-  if (!el) {
-    el = document.createElement("textarea");
-    el.id = "halo-say-warm";
-    el.setAttribute("aria-hidden", "true");
-    el.tabIndex = -1;
-    el.setAttribute("autocomplete", "off");
-    Object.assign(el.style, {
-      position: "fixed",
-      top: "0",
-      left: "0",
-      width: "1px",
-      height: "1px",
-      opacity: "0",
-      border: "0",
-      padding: "0",
-      fontSize: "16px",
-      pointerEvents: "none",
-    });
-    document.body.appendChild(el);
-  }
-  el.focus({ preventScroll: true });
-}
-
-function clearSayWarm() {
-  document.getElementById("halo-say-warm")?.remove();
-}
-
 function homeComposeEl() {
   return (
     document.querySelector<HTMLElement>(".ask-shell-compose .compose") ??
@@ -616,15 +579,10 @@ export function HomeBubbles({
   }, [play?.cluster, play?.mode]);
 
   useEffect(() => {
-    if (!play) {
-      clearSayWarm();
-      return;
-    }
-    if (play.mode !== "play") return;
+    if (!play || play.mode !== "play") return;
     if (!isSayFace(play.beats[play.index]?.face)) return;
     const id = window.setTimeout(() => {
       typeRef.current?.focus({ preventScroll: true });
-      clearSayWarm();
     }, SAY_FOCUS_MS);
     return () => window.clearTimeout(id);
   }, [play, play?.mode, play?.index]);
@@ -906,14 +864,6 @@ export function HomeBubbles({
         answering.current = false;
       }, MISS_HOLD_MS);
       return;
-    }
-    const next = play.beats[play.index + 1];
-    if (isSayFace(next?.face)) {
-      const wait = play.retrying ? HOLD_RETRY_MS : HOLD_OK_MS;
-      window.setTimeout(() => {
-        warmSayKeyboard();
-        typeRef.current?.focus({ preventScroll: true });
-      }, wait + SAY_FOCUS_MS);
     }
     setPlay({
       ...play,

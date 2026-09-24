@@ -10,7 +10,7 @@ Shared desk for weekend V2. Not Atlas. Not Slack. One file every lane updates.
 
 **Harvest ops (telemetry, QA, mobile, promote):** [`web/HARVEST-OPS.md`](./HARVEST-OPS.md) — read before tuning or early access.
 
-Updated: 2026-09-24T04:15-06:00  
+Updated: 2026-09-24T04:50-06:00  
 By: Overnight UI (cloud/overnight-ui)
 
 ## Lanes
@@ -95,6 +95,7 @@ Not this sitting. Finish before any 1.3 / TestFlight / `--prod`:
 
 ## Log (newest first)
 
+- 2026-09-24 overnight — SEE→SAY no longer focuses a 1px field at the top of the page. That decoy could scroll the phone under the keys. The answer field still focuses with preventScroll. At 393×852 three correct Rome choices opened the type field, scroll stayed put, no warm field. History, Ask, and login passed. Harvest 25/25. No lab alias. Phone still has to prove the keys. Untouched: morph 1080, harvest z 120.
 - 2026-09-24 overnight — Edit on a chat line fills the shell field and focuses it with preventScroll. The old focus looked for `#followup`, which the shell does not render, so the keyboard never opened. At 393×852 the Nile question landed in Follow up and a forced page scroll stayed at 240. Rome, History, Settings Dark, Ask, and login passed. Harvest 25/25. No lab alias. Phone still has to prove the keys. Untouched: morph 1080, harvest z 120.
 - 2026-09-24 overnight — Lock-in no longer calls scrollIntoView. The card scrolls inside `.chat-scroll` until it sits above the composer (bottom 770, composer 782) and the page stays at 0. At 393×852 Rome opened, History caught the chip tap, Settings Light stayed open, Ask left Home, login rendered. Desktop greeting still there. Harvest 25/25. No lab alias. Phone still has to prove the keys. Untouched: morph 1080, harvest z 120.
 - 2026-09-24 overnight — Chat thread scrolls inside `.chat-scroll` only. `scrollIntoView` on the thread was also scrolling the page and could slide the composer under the keys. At 393×852 Rome opened four choices, Escape closed the round, Ask left Home with scrollY 0, login rendered. Harvest 25/25. No lab alias (`vercel whoami` logged out). Phone still has to prove the keys. Untouched: morph 1080, harvest z 120.
