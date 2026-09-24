@@ -978,7 +978,12 @@ export function ChatThread({
                       ? () => {
                           setDraft(stripMarkdownForDisplay(m.content));
                           window.requestAnimationFrame(() => {
-                            document.getElementById("followup")?.focus();
+                            const field = document.getElementById(
+                              shell?.active ? "ask-shell-field" : "followup"
+                            );
+                            if (field instanceof HTMLElement) {
+                              field.focus({ preventScroll: true });
+                            }
                           });
                         }
                       : undefined
