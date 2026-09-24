@@ -10,7 +10,7 @@ Shared desk for weekend V2. Not Atlas. Not Slack. One file every lane updates.
 
 **Harvest ops (telemetry, QA, mobile, promote):** [`web/HARVEST-OPS.md`](./HARVEST-OPS.md) — read before tuning or early access.
 
-Updated: 2026-09-24T02:00-06:00  
+Updated: 2026-09-24T02:30-06:00  
 By: Overnight UI (cloud/overnight-ui)
 
 ## Lanes
@@ -95,6 +95,7 @@ Not this sitting. Finish before any 1.3 / TestFlight / `--prod`:
 
 ## Log (newest first)
 
+- 2026-09-24 overnight — Play SAY no longer calls scrollIntoView on focus. That scroll was sliding the page while the keyboard was up. Phone focus still uses preventScroll. Round, Settings, Ask, and login passed at 393×852. Harvest 25/25. No lab alias. Untouched: morph 1080, harvest z 120.
 - 2026-09-24 overnight — Keyboard flag no longer drops the greeting under the header. It stays above the lifted composer (346 vs composer 469 at a 320px inset) and scroll stays at 0. Rome still opens. Phone still has to prove the keys. Untouched: morph 1080, harvest z 120.
 - 2026-09-24 overnight — While the keyboard flag is on, the phone page is position fixed so a scroll cannot stick and slide the composer. `scrollTo` stays at 0. Round, Library, Ask, and login still work at 393×852 with the flag off. Phone still has to prove the keys. No lab alias. Untouched: morph 1080, harvest z 120.
 - 2026-09-24 overnight — Faded Home chips and chips under a sheet no longer take taps. `.recent-slot` was `pointer-events: auto`, so it punched through the fade. A real hit while `data-halo-kb` is set misses the chip; after the fade clears, Rome still opens a round and Escape returns Home. Harvest 25/25. No lab alias (`vercel whoami` logged out). Untouched: morph 1080, harvest z 120.

@@ -1301,12 +1301,6 @@ export function HomeBubbles({
                             event.preventDefault();
                             typeRef.current?.focus({ preventScroll: true });
                           }}
-                          onFocus={() => {
-                            typeRef.current?.scrollIntoView({
-                              block: "nearest",
-                              inline: "nearest",
-                            });
-                          }}
                           disabled={Boolean(play.hitId)}
                           aria-label="Type the answer"
                         />
