@@ -6,6 +6,8 @@ Mobile is the product. A desktop click-through is not a pass. The overnight Chro
 
 Branch to edit: `cloud/overnight-ui`, then merge back to `halo-ui-streamline` only when a lane review passes. Lab only. No `deploy:early`. No `vercel --prod`. Family `/ask` stays 1.2.0.
 
+Lane A is signed enough to leave (2026-09-24 afternoon). Latency and the white load flash stay noted. This pass pulls the phone thread up under the header and lets the last History row scroll clear of the home indicator.
+
 ## How a pass runs
 
 One sub-agent at a time. The next one does not start until the reviewer for the previous one says pass.
