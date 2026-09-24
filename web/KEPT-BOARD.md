@@ -95,7 +95,7 @@ Not this sitting. Finish before any 1.3 / TestFlight / `--prod`:
 
 ## Log (newest first)
 
-- 2026-09-24 overnight — Phone-width `/preview` was opening the mixer over the left Home chips, so those taps never started a round. The mixer now starts minimized at ≤720px. Desktop mixer is unchanged. A scripted Rome tap opens the round. Click-through next. Untouched: morph 1080, harvest z 120.
+- 2026-09-24 overnight — Phone-width `/preview` starts the mixer minimized so left chips receive taps. Scripted 393×852 pass: Rome opens a round, Escape closes it, History stays, Ask leaves Home, login renders. Desktop mixer stays open. `vercel whoami` logged out, no lab alias. Harvest 25/25. Untouched: morph 1080, harvest z 120.
 - 2026-09-23 overnight — Send no longer drops the leave when one is already in flight. At 393×852 Paper, Ask left Home (no stuck “Asking…”), History stayed open, lab mark read `dev`. A field-chip click did not open a round — next wake. `vercel whoami` is logged out, so no lab alias this pass. Harvest 25/25. Untouched: morph 1080, harvest z 120.
 - 2026-09-23 Orchestrator — **Overnight UI brief is `web/OVERNIGHT-UI.md`.** Cloud chat on `halo-ui-streamline`, Grok 4.7 Fast off, wakes every 30 minutes until 8:00am Denver. Five known bugs are the start, not the end. Films stay on the Mac. **No promote.**
 - 2026-09-23 Orchestrator — **Keyboard lift is on the lab alias.** [Opus 5.5](15a22492) stopped the mid-rise guess. If the web view never reports height, the composer lifts once at 520ms. `/ask` is no-store. Alias `halo-lab-personal-f999` → `halo-5kwfbr572`. Quit Halo and reopen. **No promote.**
