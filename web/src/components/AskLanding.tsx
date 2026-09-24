@@ -339,11 +339,7 @@ export function AskLanding({
     const keyboard = root.dataset.haloNative === "1" && root.dataset.haloKb === "1";
     const go = () => {
       leaving.current = false;
-      const before = window.location.pathname;
       router.push(href);
-      window.setTimeout(() => {
-        if (window.location.pathname === before) window.location.assign(href);
-      }, 700);
     };
     if (!keyboard) {
       go();
