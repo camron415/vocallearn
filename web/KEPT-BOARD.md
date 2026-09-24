@@ -10,7 +10,7 @@ Shared desk for weekend V2. Not Atlas. Not Slack. One file every lane updates.
 
 **Harvest ops (telemetry, QA, mobile, promote):** [`web/HARVEST-OPS.md`](./HARVEST-OPS.md) — read before tuning or early access.
 
-Updated: 2026-09-24T05:30-06:00  
+Updated: 2026-09-24T06:05-06:00  
 By: Overnight UI (cloud/overnight-ui)
 
 ## Lanes
@@ -95,6 +95,7 @@ Not this sitting. Finish before any 1.3 / TestFlight / `--prod`:
 
 ## Log (newest first)
 
+- 2026-09-24 overnight — The keyboard fade no longer arms on load. It was blocking chip taps for the first second, and a focus during that window could leave the block on. A touch on Rome now opens the round immediately. History, Ask, and login passed at 393. Harvest 25/25. No lab alias. Phone still has to prove the keys. Untouched: morph 1080, harvest z 120.
 - 2026-09-24 overnight — Phone suggestions sit above the shell field. Loop had pinned the list under the field, so at 393 it was past the screen. Typing “When” shows two rows on screen (bottom 783, field 788) and a tap fills the question. Rome, Library, and login passed. Harvest 25/25. No lab alias. Phone still has to prove the keys. Untouched: morph 1080, harvest z 120.
 - 2026-09-24 overnight — SEE→SAY no longer focuses a 1px field at the top of the page. That decoy could scroll the phone under the keys. The answer field still focuses with preventScroll. At 393×852 three correct Rome choices opened the type field, scroll stayed put, no warm field. History, Ask, and login passed. Harvest 25/25. No lab alias. Phone still has to prove the keys. Untouched: morph 1080, harvest z 120.
 - 2026-09-24 overnight — Edit on a chat line fills the shell field and focuses it with preventScroll. The old focus looked for `#followup`, which the shell does not render, so the keyboard never opened. At 393×852 the Nile question landed in Follow up and a forced page scroll stayed at 240. Rome, History, Settings Dark, Ask, and login passed. Harvest 25/25. No lab alias. Phone still has to prove the keys. Untouched: morph 1080, harvest z 120.

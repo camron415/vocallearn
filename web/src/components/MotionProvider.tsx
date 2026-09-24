@@ -188,18 +188,32 @@ export function MotionProvider({ children }: { children: ReactNode }) {
         )
       );
     const releaseKb = () => {
+      const wasUp = root.dataset.haloKb === "1" || lifted >= 0;
       resetSettle();
       window.clearTimeout(guessTick);
       lifted = -1;
       focusAt = 0;
       root.style.setProperty("--kb-inset", "0px");
-      root.dataset.haloKbFade = "1";
-      kbHide = window.setTimeout(() => {
-        if (composeFocused()) return;
+      if (!wasUp) {
         delete root.dataset.haloKb;
-        window.setTimeout(() => {
-          if (!composeFocused()) delete root.dataset.haloKbFade;
-        }, 480);
+        delete root.dataset.haloKbFade;
+        return;
+      }
+      root.dataset.haloKbFade = "1";
+      const dropFade = () => {
+        if (composeFocused()) {
+          kbHide = window.setTimeout(dropFade, 480);
+          return;
+        }
+        delete root.dataset.haloKbFade;
+      };
+      kbHide = window.setTimeout(() => {
+        if (composeFocused()) {
+          kbHide = window.setTimeout(dropFade, 480);
+          return;
+        }
+        delete root.dataset.haloKb;
+        kbHide = window.setTimeout(dropFade, 480);
       }, 480);
     };
     const syncHeight = () => {
