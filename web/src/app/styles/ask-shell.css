@@ -171,7 +171,6 @@ html[data-halo-ask-shell="1"] .ask-shell--home .ask-shell-compose.is-play-grown 
       0.35rem +
         max(var(--kb-inset, 0px), var(--halo-native-bottom, 34px))
     );
-    transition: bottom 320ms cubic-bezier(0.32, 0.72, 0, 1);
   }
 
   html[data-halo-native][data-halo-ask-shell="1"] .ask-shell--chat .ask-shell-compose {
@@ -179,7 +178,6 @@ html[data-halo-ask-shell="1"] .ask-shell--home .ask-shell-compose.is-play-grown 
       0.75rem +
         max(var(--kb-inset, 0px), var(--halo-native-bottom, 34px))
     );
-    transition: bottom 320ms cubic-bezier(0.32, 0.72, 0, 1);
   }
 
   /* Same formula idle and focused so --kb-inset can interpolate. Loop 17

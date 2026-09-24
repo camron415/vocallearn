@@ -674,13 +674,18 @@ html[data-halo-perf="soft"] body::before {
     transition: --kb-inset var(--kb-travel, 480ms) var(--ease-travel);
   }
 
-  /* Sliding the focused field dismisses the iOS keyboard and can tear the webview white. Snap the inset; the field fade still eases. */
+  /* The inset is written only after the keys have settled, so this ease
+     starts after the present. Snapping it is what made the field jump. */
   html[data-halo-native] {
-    transition: none;
+    transition: --kb-inset 320ms cubic-bezier(0.32, 0.72, 0, 1);
   }
 
   html[data-halo-motion="soft"] {
     transition: none;
+  }
+
+  html[data-halo-native][data-halo-motion="soft"] {
+    transition: --kb-inset 320ms cubic-bezier(0.32, 0.72, 0, 1);
   }
 
   /* One field fade — same ease as Ask travel, shorter. Do not kill child
