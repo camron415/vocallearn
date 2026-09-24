@@ -640,6 +640,17 @@ html[data-halo-perf="soft"] body::before {
     padding-bottom: calc(0.35rem + var(--kb-inset, 0px));
   }
 
+  /* A page scroll while the keys are up slides the fixed composer under them.
+     overflow:hidden alone still accepts scrollTo on the root. */
+  html[data-halo-kb],
+  html[data-halo-kb] body {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
   html[data-halo-ask-shell="1"][data-halo-kb] .ask-stage {
     padding-bottom: var(--halo-native-bottom, env(safe-area-inset-bottom, 0px));
   }

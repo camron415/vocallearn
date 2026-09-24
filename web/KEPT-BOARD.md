@@ -10,7 +10,7 @@ Shared desk for weekend V2. Not Atlas. Not Slack. One file every lane updates.
 
 **Harvest ops (telemetry, QA, mobile, promote):** [`web/HARVEST-OPS.md`](./HARVEST-OPS.md) — read before tuning or early access.
 
-Updated: 2026-09-24T00:50-06:00  
+Updated: 2026-09-24T01:30-06:00  
 By: Overnight UI (cloud/overnight-ui)
 
 ## Lanes
@@ -95,6 +95,7 @@ Not this sitting. Finish before any 1.3 / TestFlight / `--prod`:
 
 ## Log (newest first)
 
+- 2026-09-24 overnight — While the keyboard flag is on, the phone page is position fixed so a scroll cannot stick and slide the composer. `scrollTo` stays at 0. Round, Library, Ask, and login still work at 393×852 with the flag off. Phone still has to prove the keys. No lab alias. Untouched: morph 1080, harvest z 120.
 - 2026-09-24 overnight — Faded Home chips and chips under a sheet no longer take taps. `.recent-slot` was `pointer-events: auto`, so it punched through the fade. A real hit while `data-halo-kb` is set misses the chip; after the fade clears, Rome still opens a round and Escape returns Home. Harvest 25/25. No lab alias (`vercel whoami` logged out). Untouched: morph 1080, harvest z 120.
 - 2026-09-24 overnight — Phone-width `/preview` starts the mixer minimized so left chips receive taps. Scripted 393×852 pass: Rome opens a round, Escape closes it, History stays, Ask leaves Home, login renders. Desktop mixer stays open. `vercel whoami` logged out, no lab alias. Harvest 25/25. Untouched: morph 1080, harvest z 120.
 - 2026-09-23 overnight — Send no longer drops the leave when one is already in flight. At 393×852 Paper, Ask left Home (no stuck “Asking…”), History stayed open, lab mark read `dev`. A field-chip click did not open a round — next wake. `vercel whoami` is logged out, so no lab alias this pass. Harvest 25/25. Untouched: morph 1080, harvest z 120.
