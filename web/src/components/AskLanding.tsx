@@ -349,7 +349,7 @@ export function AskLanding({
     window.setTimeout(() => {
       leaving.current = false;
       router.push(href);
-    }, 180);
+    }, 360);
   }
 
   function goAfterLeave(run: () => void | Promise<void>) {
@@ -578,6 +578,10 @@ export function AskLanding({
       return;
     }
     captureComposeMorph(composeRef.current);
+    if (document.documentElement.dataset.haloNative === "1") {
+      pushAsk(`/ask/${id}`);
+      return;
+    }
     goAfterLeave(() => {
       router.push(`/ask/${id}`);
     });

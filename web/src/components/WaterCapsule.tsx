@@ -194,13 +194,19 @@ export function WaterCapsule({
           setPressing(false);
           markSettled();
           if (isObjectChip(className)) haloJuice("hold");
-          onHold(rootRef.current);
+          // The phone web view stalls if the chat opens while the finger is still down.
+          if (!native) onHold(rootRef.current);
         }, 520);
       }}
-      onPointerUp={releaseHold}
-      onPointerCancel={() => {
-        if (nativeShell() && onHold) return;
+      onPointerUp={() => {
+        const open = held.current && nativeShell();
         releaseHold();
+        if (open) onHold?.(rootRef.current);
+      }}
+      onPointerCancel={() => {
+        const open = held.current && nativeShell();
+        releaseHold();
+        if (open) onHold?.(rootRef.current);
       }}
       onPointerLeave={() => {
         if (nativeShell() && onHold) return;

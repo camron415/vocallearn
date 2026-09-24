@@ -245,6 +245,15 @@ export function MotionProvider({ children }: { children: ReactNode }) {
         // Home fades on the tap. The field itself does not move yet.
         root.dataset.haloKb = "1";
         if (focusAt === 0) focusAt = Date.now();
+        /* interactive-widget already shrank the page. An inset on top of that
+           parks the composer at the top and leaves a gap above the keys. */
+        if (restingH - window.innerHeight >= KB_MIN) {
+          resetSettle();
+          window.clearTimeout(guessTick);
+          lifted = 0;
+          root.style.setProperty("--kb-inset", "0px");
+          return;
+        }
         if (
           kbMeasured < KB_MIN ||
           (lifted >= 0 && Math.abs(kbMeasured - lifted) < KB_STEP)
