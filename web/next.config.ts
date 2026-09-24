@@ -40,6 +40,8 @@ const nextConfig: NextConfig = {
     return [
       { source: "/preview", headers: noStore },
       { source: "/preview/:path*", headers: noStore },
+      { source: "/ask", headers: noStore },
+      { source: "/ask/:path*", headers: noStore },
     ];
   },
 };

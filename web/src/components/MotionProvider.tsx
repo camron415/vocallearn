@@ -159,8 +159,28 @@ export function MotionProvider({ children }: { children: ReactNode }) {
 
     const phone = window.matchMedia("(max-width: 720px)");
     const vv = window.visualViewport;
+    /* iOS owns the focused field while it presents the keyboard. Moving that
+       field mid-present makes WKWebView resign it, so the keyboard aborts and
+       the composer falls back to rest. The native inset snaps, so it is only
+       written once the measured keyboard has held still. Never guessed, and
+       nothing in here scrolls the page. */
+    const KB_MIN = 80;
+    const KB_JITTER = 12;
+    const KB_STILL = 100;
+    const KB_STEP = 24;
     let restingH = window.innerHeight;
     let kbHide = 0;
+    let settleTick = 0;
+    let settleH = -1;
+    let settleSince = 0;
+    let lifted = -1;
+    let focusAt = 0;
+    let guessTick = 0;
+    const resetSettle = () => {
+      window.clearTimeout(settleTick);
+      settleH = -1;
+      settleSince = 0;
+    };
     const composeFocused = () =>
       Boolean(
         document.activeElement?.closest?.(
@@ -168,6 +188,10 @@ export function MotionProvider({ children }: { children: ReactNode }) {
         )
       );
     const releaseKb = () => {
+      resetSettle();
+      window.clearTimeout(guessTick);
+      lifted = -1;
+      focusAt = 0;
       root.style.setProperty("--kb-inset", "0px");
       kbHide = window.setTimeout(() => {
         if (!composeFocused()) delete root.dataset.haloKb;
@@ -179,6 +203,10 @@ export function MotionProvider({ children }: { children: ReactNode }) {
         delete root.dataset.haloKb;
         restingH = window.innerHeight;
         window.clearTimeout(kbHide);
+        resetSettle();
+        window.clearTimeout(guessTick);
+        lifted = -1;
+        focusAt = 0;
         return;
       }
       const focused = composeFocused();
@@ -188,17 +216,53 @@ export function MotionProvider({ children }: { children: ReactNode }) {
       const offset = vv?.offsetTop ?? 0;
       const kbMeasured = Math.max(0, Math.round(restingH - visual - offset));
       window.clearTimeout(kbHide);
-      /* scrollTo while the keyboard is up tears WKWebView white and drops the keys. Never guess a lift once Ask has blurred, or Home stays faded until the viewport catches up. */
+      /* Never guess a lift once Ask has blurred, or Home stays faded until the viewport catches up. */
       if (native && !focused) {
         releaseKb();
         return;
       }
-      const kb =
-        native && focused && kbMeasured < 80
-          ? Math.round(Math.min(400, Math.max(240, window.innerHeight * 0.4)))
-          : kbMeasured;
-      root.style.setProperty("--kb-inset", `${kb}px`);
-      if (kb > 80 || (focused && (kb > 24 || native))) {
+      if (native && focused) {
+        // Home fades on the tap. The field itself does not move yet.
+        root.dataset.haloKb = "1";
+        if (focusAt === 0) focusAt = Date.now();
+        if (
+          kbMeasured < KB_MIN ||
+          (lifted >= 0 && Math.abs(kbMeasured - lifted) < KB_STEP)
+        ) {
+          resetSettle();
+          /* WKWebView often never shrinks. One lift after the keys have
+             finished presenting, so the caret is not moved mid-animation. */
+          if (lifted < 0 && Date.now() - focusAt >= 520) {
+            const guess = Math.round(
+              Math.min(400, Math.max(240, window.innerHeight * 0.4))
+            );
+            lifted = guess;
+            root.style.setProperty("--kb-inset", `${guess}px`);
+          } else if (lifted < 0) {
+            window.clearTimeout(guessTick);
+            guessTick = window.setTimeout(syncHeight, 520 - (Date.now() - focusAt));
+          }
+          return;
+        }
+        const now = Date.now();
+        if (settleH < 0 || Math.abs(kbMeasured - settleH) > KB_JITTER) {
+          settleH = kbMeasured;
+          settleSince = now;
+        }
+        const wait = settleSince + KB_STILL - now;
+        if (wait > 0) {
+          window.clearTimeout(settleTick);
+          settleTick = window.setTimeout(syncHeight, wait);
+          return;
+        }
+        resetSettle();
+        window.clearTimeout(guessTick);
+        lifted = kbMeasured;
+        root.style.setProperty("--kb-inset", `${kbMeasured}px`);
+        return;
+      }
+      root.style.setProperty("--kb-inset", `${kbMeasured}px`);
+      if (kbMeasured > 80 || (focused && kbMeasured > 24)) {
         root.dataset.haloKb = "1";
       } else {
         releaseKb();
@@ -215,6 +279,8 @@ export function MotionProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
       window.clearTimeout(kbHide);
+      window.clearTimeout(settleTick);
+      window.clearTimeout(guessTick);
       reduceQuery.removeEventListener("change", sync);
       pointerQuery.removeEventListener("change", sync);
       vv?.removeEventListener("resize", syncHeight);

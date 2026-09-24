@@ -4,7 +4,7 @@ Job board for Cloud Agents. Local chats do not edit a lane marked `ready` or `ru
 
 **Updated:** 2026-09-23  
 **Orchestrator:** local Halo chat  
-**Branch agents must use:** `halo-ui-streamline` after this tree is pushed. Remote today is `ef7fd94` (v1.2.0). The 1.3 tree is still uncommitted on the laptop, so a cloud VM that clones now will not see NativeBoot, legal pages, juice, or this file.
+**Tonight:** `web/OVERNIGHT-UI.md` is the live queue. One cloud chat, Grok 4.7, Fast off. It keeps waking every 30 minutes until 8:00am America/Denver on 2026-09-24. The lane table below is context, not a second runner.
 
 ## Wake rule
 
@@ -74,15 +74,39 @@ Thinking-stream: the reply should replace in place sentence by sentence, not gro
 
 ## Lane K — keyboard
 
-**Model:** Grok 4.7, xhigh, Fast off. **Status:** `blocked_on_spec`. **Branch:** `cloud/keyboard`.
+**Model:** Grok 4.7, xhigh, Fast off. **Status:** `needs_camron`. **Branch:** none — K1 is in the `halo-ui-streamline` working tree, uncommitted.
 
-### K1 — `blocked_on_spec`
+### K1 — `in_tree`, waiting on one phone tap
 
-Implement spec S1 from this file. Do not start until S1 status is `ready`.
+Spec S1 lives on `cloud/specs` (`git show cloud/specs:web/CLOUD-DISPATCH.md`). It is not pasted here. S1's reading was right and K1 implements it, in `MotionProvider.tsx` only.
 
-21:43 film: Ask focuses, keyboard rises, about a second later Home is back unless he is already typing. Native-only. Desktop at 1280 must still open a chip round.
+**Camron's 2026-09-23 live report (no film):** he taps Ask, the composer starts rising with the keyboard, the motion is taken over and cancelled, the composer drops back to rest and the keyboard never finishes opening. Confirmed bug. This is the *current* tree, not the 21:43 build.
 
-Done when `/preview` at 393 keeps the composer focused through the keyboard inset, `test:harvest` is green, and this file lists a one-tap phone check for Camron.
+**What was wrong.** `syncHeight` had two writers moving the focused field while iOS was still presenting:
+
+1. `focusin` → `kbMeasured` is 0 → `native && focused && kbMeasured < 80` wrote the guess (~341px at 852 tall) in the same tick as the tap, snapped (`html[data-halo-native] { transition: none }`).
+2. Every `visualViewport` resize/scroll during the rise re-ran `syncHeight` and rewrote the inset with the intermediate measured height, so the field hopped guess → partial → guess. iOS's caret-reveal `offsetTop` also pushed `kbMeasured` back under 80, refiring the guess.
+
+WKWebView resigns the textarea when the focused field is relayed out mid-present, which is the cancel-and-fall he sees. The 320ms hold is the right fix, but the hold *alone* is not enough — without the one-lift latch the intermediate writes in (2) land right after the hold expires and cancel the present anyway. Both are in.
+
+**The change** (`web/src/components/MotionProvider.tsx`, ~30 lines, no `motion.css`, no `NativeBoot`, no `scrollTo`):
+
+- Native compose `focusin` arms `holdUntil = now + 320` and one `liftTick` at 340ms.
+- Native + focused sets `data-halo-kb = "1"` immediately (Home fades on the tap) and leaves `--kb-inset` alone while `kbMeasured < 80 && now < holdUntil`.
+- One lift per focus: the commit records `lifted` and `quietUntil = now + 360`. Until then no write at all. After that the field moves again only for a real keyboard ≥ 80px that differs by ≥ 24px — it never falls from a measured value back to the guess.
+- `releaseKb` clears the latch; blur → inset 0, flag gone 480ms later. Desktop over 720 still returns early and deletes the flag. Non-native mobile Safari path is byte-for-byte the old behaviour.
+
+`test:harvest` 25/25. Typecheck clean. The Cursor browser could not open a tab this session, so the 393×852 Chrome check is **not** signed — the machine is reasoned, not observed.
+
+### One-tap phone check for Camron
+
+Force-quit Halo, open it, tap Ask once, thumb off for three seconds.
+
+- **Pass:** keyboard finishes rising and stays, Home stays faded, Ask sits above the keys. Tap above Ask → keyboard down, Home back.
+- **Fail, under a second:** the lift still moves the field; next step is the Capacitor Keyboard plugin (`native/`, Xcode rebuild), not another web try.
+- **Fail, about two seconds:** NativeBoot's 1.8s outside-tap guard, not the lift.
+
+Desktop at 1280 must still open a chip round.
 
 ## Lane C — composer send
 

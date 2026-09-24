@@ -12,7 +12,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 Cloud agents clone the remote branch. They do not see uncommitted laptop files.
 
-- Queue and file locks: `web/CLOUD-DISPATCH.md`. Do one item, then stop.
+- Tonight’s queue is `web/OVERNIGHT-UI.md`. You are not done after the five known bugs. One change, click-through, then the 30-minute timer in that file.
+- Older lane locks: `web/CLOUD-DISPATCH.md`. Do not retune a frozen token to clear a hitch.
 - Tests from `web/`: `npm run test:harvest`. Dry packs only unless secrets are in the Cloud Agents secrets tab.
 - App: `npm run dev` in `web/`, then open `http://localhost:3000/preview`.
 - Lab only. Do not run `deploy:early` or `vercel --prod`.
