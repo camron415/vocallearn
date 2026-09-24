@@ -745,6 +745,21 @@ html[data-halo-perf="soft"] body::before {
     overflow-y: auto;
   }
 
+  /* Paper + loop pin the list under the field with !important. On a phone
+     that puts it past the screen, and under the keyboard once the keys are up. */
+  html[data-halo-ask-shell="1"] .ask-shell-compose .compose-suggest,
+  html[data-halo-ask-shell="1"][data-halo-loop="17"][data-home-skin="paper"] .ask-shell-compose .compose-suggest {
+    top: auto !important;
+    bottom: calc(100% + 0.35rem) !important;
+    margin-top: 0 !important;
+    border-radius: 1.15rem !important;
+  }
+
+  html[data-halo-ask-shell="1"][data-halo-loop="17"][data-home-skin="paper"] .ask-shell-compose .compose-stack.is-open .compose,
+  html[data-halo-ask-shell="1"][data-halo-loop="17"][data-home-skin="paper"] .ask-shell-compose .compose-stack.is-open .compose-dock {
+    border-radius: 28px !important;
+  }
+
   .ask-stage,
   .chat-stage {
     overscroll-behavior: none;
