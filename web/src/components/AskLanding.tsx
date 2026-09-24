@@ -337,19 +337,23 @@ export function AskLanding({
   function pushAsk(href: string) {
     const root = document.documentElement;
     const keyboard = root.dataset.haloNative === "1" && root.dataset.haloKb === "1";
-    leaving.current = false;
-    if (!keyboard) {
+    const go = () => {
+      leaving.current = false;
+      const before = window.location.pathname;
       router.push(href);
+      window.setTimeout(() => {
+        if (window.location.pathname === before) window.location.assign(href);
+      }, 700);
+    };
+    if (!keyboard) {
+      go();
       return;
     }
     delete root.dataset.haloKb;
     delete root.dataset.haloKbFade;
     root.style.setProperty("--kb-inset", "0px");
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
-    window.setTimeout(() => {
-      leaving.current = false;
-      router.push(href);
-    }, 360);
+    window.setTimeout(go, 360);
   }
 
   function goAfterLeave(run: () => void | Promise<void>) {

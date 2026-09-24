@@ -72,6 +72,8 @@ export function WaterCapsule({
   const harvestFlyer = className.includes("capsule--harvest");
   const liquid = useLiquidEnabled() && !still && !paperChip && !harvestFlyer;
   const rootRef = useRef<HTMLButtonElement>(null);
+  const finger = useRef(false);
+  const opened = useRef(false);
   const glassRef = useRef<HTMLSpanElement>(null);
   const shadeRef = useRef<SVGPathElement>(null);
   const fillRef = useRef<SVGPathElement>(null);
@@ -184,6 +186,8 @@ export function WaterCapsule({
       aria-pressed={selected}
       onPointerDown={(event) => {
         held.current = false;
+        finger.current = true;
+        opened.current = false;
         const native = nativeShell();
         if (native) setPressing(true);
         wake(event.clientX, event.clientY);
@@ -194,19 +198,32 @@ export function WaterCapsule({
           setPressing(false);
           markSettled();
           if (isObjectChip(className)) haloJuice("hold");
-          // The phone web view stalls if the chat opens while the finger is still down.
-          if (!native) onHold(rootRef.current);
+          // Open while the finger is down only on desktop. The phone stalls.
+          if ((!native || !finger.current) && !opened.current) {
+            opened.current = true;
+            onHold(rootRef.current);
+          }
         }, 520);
       }}
       onPointerUp={() => {
-        const open = held.current && nativeShell();
+        finger.current = false;
+        const open = held.current && nativeShell() && !opened.current;
         releaseHold();
-        if (open) onHold?.(rootRef.current);
+        if (open) {
+          opened.current = true;
+          onHold?.(rootRef.current);
+        }
       }}
       onPointerCancel={() => {
-        const open = held.current && nativeShell();
+        finger.current = false;
+        // iOS cancels a long-press before the timer. Keep waiting, then open.
+        if (nativeShell() && onHold && !held.current) return;
+        const open = held.current && nativeShell() && !opened.current;
         releaseHold();
-        if (open) onHold?.(rootRef.current);
+        if (open) {
+          opened.current = true;
+          onHold?.(rootRef.current);
+        }
       }}
       onPointerLeave={() => {
         if (nativeShell() && onHold) return;
