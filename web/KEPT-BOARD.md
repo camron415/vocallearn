@@ -10,8 +10,10 @@ Shared desk for weekend V2. Not Atlas. Not Slack. One file every lane updates.
 
 **Harvest ops (telemetry, QA, mobile, promote):** [`web/HARVEST-OPS.md`](./HARVEST-OPS.md) — read before tuning or early access.
 
-Updated: 2026-09-24T08:27-06:00  
+Updated: 2026-09-24T08:40-06:00  
 By: Overnight UI (cloud/overnight-ui)
+
+**Handoff for Mac agents:** [`web/OVERNIGHT-HANDOFF.md`](./OVERNIGHT-HANDOFF.md). Branch `cloud/overnight-ui`. Night stopped 8:27am Denver. Atlas on the cloud VM was down, so this file is the dump.
 
 ## Lanes
 
@@ -95,6 +97,7 @@ Not this sitting. Finish before any 1.3 / TestFlight / `--prod`:
 
 ## Log (newest first)
 
+- 2026-09-24 overnight — Handoff for Mac agents is `web/OVERNIGHT-HANDOFF.md` on `cloud/overnight-ui`. Atlas was down, so git is the dump. No new UI change. Untouched: morph 1080, harvest z 120.
 - 2026-09-24 overnight — Stop. Clock is 8:27am Denver. No further timer. Last pass found no safe hitch. Lab alias was never updated (`vercel whoami` logged out). Phone still has to prove the keys. Untouched: morph 1080, harvest z 120.
 - 2026-09-24 overnight — No safe hitch. At 393, login fields are 16px and on screen, Library opens (Preview only is the disabled demo control), Settings name is 16px, Close hits. Did not invent a motion change. Harvest 25/25. No lab alias. Phone still has to prove the keys. Untouched: morph 1080, harvest z 120.
 - 2026-09-24 overnight — The ◎ next to Cove was under the Keep dock, so a tap never opened Kept. The brand row now sits above that dock on a phone. A touch opens the panel (12–381, on screen). A dock bead, Rome, and History still hit. Desktop header unchanged. Harvest 25/25. No lab alias. Phone still has to prove the keys. Untouched: morph 1080, harvest z 120.
