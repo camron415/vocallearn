@@ -1,0 +1,13 @@
+{
+  "name": "Halo + VocalLearn",
+  "install": "npm install --legacy-peer-deps && npm install --prefix web && { [ -n \"$NEXT_PUBLIC_SUPABASE_URL\" ] || [ -f web/.env.local ] || cp web/.env.example web/.env.local; }",
+  "terminals": [
+    {
+      "name": "halo-web",
+      "command": "cd web && npm run dev"
+    }
+  ],
+  "ports": [
+    3000
+  ]
+}
