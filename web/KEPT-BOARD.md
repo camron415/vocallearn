@@ -10,8 +10,8 @@ Shared desk for weekend V2. Not Atlas. Not Slack. One file every lane updates.
 
 **Harvest ops (telemetry, QA, mobile, promote):** [`web/HARVEST-OPS.md`](./HARVEST-OPS.md) — read before tuning or early access.
 
-Updated: 2026-09-23T22:22-06:00  
-By: Orchestrator (overnight UI)
+Updated: 2026-09-23T23:10-06:00  
+By: Overnight UI (cloud/overnight-ui)
 
 ## Lanes
 
@@ -95,6 +95,7 @@ Not this sitting. Finish before any 1.3 / TestFlight / `--prod`:
 
 ## Log (newest first)
 
+- 2026-09-23 overnight — Send no longer drops the leave when one is already in flight (Home was sticking on “Asking…”). Keyboard fade keeps chips untappable until the fade-back ends, and a viewport scroll no longer moves the native composer inset. Menu veil and phone sheets take the tap; chips do not. Lab header shows a short build id on lab hosts. Click-through next. Untouched: morph 1080, harvest z 120.
 - 2026-09-23 Orchestrator — **Overnight UI brief is `web/OVERNIGHT-UI.md`.** Cloud chat on `halo-ui-streamline`, Grok 4.7 Fast off, wakes every 30 minutes until 8:00am Denver. Five known bugs are the start, not the end. Films stay on the Mac. **No promote.**
 - 2026-09-23 Orchestrator — **Keyboard lift is on the lab alias.** [Opus 5.5](15a22492) stopped the mid-rise guess. If the web view never reports height, the composer lifts once at 520ms. `/ask` is no-store. Alias `halo-lab-personal-f999` → `halo-5kwfbr572`. Quit Halo and reopen. **No promote.**
 - 2026-09-23 22:05 Lane K — **K2 replaces K1 in the tree (uncommitted, not deployed).** Camron's 9.5s phone film was the old deployed code: the guessed ~341px inset written on focus moved the field while iOS was presenting, and the keyboard aborted by 4.17s.

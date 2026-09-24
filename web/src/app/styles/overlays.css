@@ -82,8 +82,13 @@ html[data-halo-theme="dark"] .history-overlay {
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
   opacity: 0;
-  pointer-events: none;
+  pointer-events: auto;
   transition: opacity var(--menu-grow) var(--ease-travel);
+}
+
+html[data-halo-sheet="1"] .home-bubbles,
+html[data-halo-sheet="1"] .ask-stage .ask-greeting {
+  pointer-events: none;
 }
 
 html[data-halo-theme="dark"] .history-overlay.menu-veil {

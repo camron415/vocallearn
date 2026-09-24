@@ -28,6 +28,9 @@ function lanDevOrigins() {
 }
 
 const nextConfig: NextConfig = {
+  env: {
+    NEXT_PUBLIC_HALO_BUILD: (process.env.VERCEL_GIT_COMMIT_SHA || "dev").slice(0, 7),
+  },
   allowedDevOrigins: lanDevOrigins(),
   devIndicators: false,
   turbopack: {

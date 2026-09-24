@@ -335,6 +335,17 @@ export function AskLanding({
   }
 
   function goAfterLeave(run: () => void | Promise<void>) {
+    // A leave already in flight used to return here and leave Home on
+    // "Asking…" forever. The timer still performs this navigation once.
+    let ran = false;
+    const once = async () => {
+      if (ran) return;
+      ran = true;
+      await run();
+    };
+    window.setTimeout(() => {
+      void once();
+    }, COMPOSE_TRAVEL_MS + 280);
     if (leaving.current) return;
     if (playing) {
       window.dispatchEvent(new Event("halo-home-play-end"));
@@ -342,18 +353,18 @@ export function AskLanding({
       setGrown(false);
       setPlayKind("");
       clearComposeHandoff();
-      void run();
+      void once();
       return;
     }
     if (soft) {
       setDraft("");
-      void run();
+      void once();
       return;
     }
     if (shell?.active) {
       leaving.current = true;
       shell.leaveToChat(async () => {
-        await run();
+        await once();
         leaving.current = false;
       });
       return;
@@ -365,7 +376,7 @@ export function AskLanding({
     window.setTimeout(() => {
       pinComposeGhost(composeRef.current);
       captureComposeMorph(composeRef.current);
-      void run();
+      void once();
     }, COMPOSE_TRAVEL_MS);
   }
 

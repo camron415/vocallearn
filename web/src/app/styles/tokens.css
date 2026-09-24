@@ -536,6 +536,15 @@ a {
   opacity: 0.86;
 }
 
+.lab-build {
+  margin-left: 0.4rem;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  opacity: 0.55;
+  vertical-align: 0.15em;
+}
+
 /* --------------------------------------------------------------------------
    THE MATERIAL
    One surface used by login card, topbar, buttons, compose, chat dock.

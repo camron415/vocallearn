@@ -184,6 +184,10 @@ function AskShellInner({
     setMode((prev) => (prev === stage ? prev : stage));
   }, [stage]);
 
+  useEffect(() => {
+    if (stage === "chat") setSending(false);
+  }, [stage]);
+
   useLayoutEffect(() => {
     if (!active || soft) return;
     const el = composeRef.current;

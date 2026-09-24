@@ -33,6 +33,14 @@ export function SimpleSheet({
 
   useEffect(() => {
     if (!open) return;
+    document.documentElement.dataset.haloSheet = "1";
+    return () => {
+      delete document.documentElement.dataset.haloSheet;
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
     function onKey(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
       if (onEscape) onEscape();

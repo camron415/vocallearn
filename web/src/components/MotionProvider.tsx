@@ -193,14 +193,20 @@ export function MotionProvider({ children }: { children: ReactNode }) {
       lifted = -1;
       focusAt = 0;
       root.style.setProperty("--kb-inset", "0px");
+      root.dataset.haloKbFade = "1";
       kbHide = window.setTimeout(() => {
-        if (!composeFocused()) delete root.dataset.haloKb;
+        if (composeFocused()) return;
+        delete root.dataset.haloKb;
+        window.setTimeout(() => {
+          if (!composeFocused()) delete root.dataset.haloKbFade;
+        }, 480);
       }, 480);
     };
     const syncHeight = () => {
       if (!phone.matches) {
         root.style.removeProperty("--kb-inset");
         delete root.dataset.haloKb;
+        delete root.dataset.haloKbFade;
         restingH = window.innerHeight;
         window.clearTimeout(kbHide);
         resetSettle();
@@ -218,6 +224,12 @@ export function MotionProvider({ children }: { children: ReactNode }) {
       window.clearTimeout(kbHide);
       /* Never guess a lift once Ask has blurred, or Home stays faded until the viewport catches up. */
       if (native && !focused) {
+        // A focus blip while the keys are still up used to fade Home back
+        // and let chips take the tap. Stay faded until the keyboard is gone.
+        if (kbMeasured >= KB_MIN) {
+          root.dataset.haloKb = "1";
+          return;
+        }
         releaseKb();
         return;
       }
@@ -270,7 +282,12 @@ export function MotionProvider({ children }: { children: ReactNode }) {
     };
     syncHeight();
     vv?.addEventListener("resize", syncHeight);
-    vv?.addEventListener("scroll", syncHeight);
+    // A viewport scroll while the keys are up slides the composer under them.
+    // Resize still updates the inset; scroll does not.
+    vv?.addEventListener("scroll", () => {
+      if (root.dataset.haloNative === "1" && composeFocused()) return;
+      syncHeight();
+    });
     phone.addEventListener("change", syncHeight);
     document.addEventListener("focusin", syncHeight);
     const blurKb = () => window.setTimeout(syncHeight, 40);

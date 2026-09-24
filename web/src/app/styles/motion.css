@@ -681,6 +681,12 @@ html[data-halo-perf="soft"] body::before {
     pointer-events: none;
   }
 
+  /* Fade-back still looks gone for ~480ms. Chips must not take taps until it ends. */
+  html[data-halo-kb-fade][data-halo-ask-shell="1"] .ask-shell--home .ask-stage:not(.is-playing),
+  html[data-halo-kb-fade][data-halo-ask-shell="1"] .ask-shell--chat .chat-stage .chat-scroll {
+    pointer-events: none;
+  }
+
   html[data-halo-motion="soft"][data-halo-ask-shell="1"] .ask-shell--home .ask-stage:not(.is-playing),
   html[data-halo-motion="soft"][data-halo-ask-shell="1"] .ask-shell--chat .chat-stage .chat-scroll,
   html[data-halo-motion="soft"][data-halo-kb][data-halo-ask-shell="1"] .ask-shell-compose {
