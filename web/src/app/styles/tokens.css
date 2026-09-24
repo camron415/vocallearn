@@ -257,6 +257,12 @@ html[data-halo-theme="dark"] {
   background-color: #0e141a;
 }
 
+html[data-halo-native][data-halo-theme="dark"],
+html[data-halo-native][data-halo-theme="dark"] body {
+  background: #0e141a;
+  background-color: #0e141a;
+}
+
 html[data-halo-theme="dark"] body::before {
   display: none;
 }

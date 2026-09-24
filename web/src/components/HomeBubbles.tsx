@@ -702,6 +702,12 @@ export function HomeBubbles({
 
   function holdSource(chip: HarvestChip, el: HTMLButtonElement | null) {
     if (play) return;
+    const dest = chip.askId?.trim();
+    if (document.documentElement.dataset.haloNative === "1") {
+      if (!dest || /^[1-6]$/.test(dest)) return;
+      onOpenSource(chip);
+      return;
+    }
     const family = familyOf(chip, board);
     const familyIds = new Set(family.map((item) => item.id));
     const field = fieldRef.current;

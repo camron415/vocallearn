@@ -334,6 +334,24 @@ export function AskLanding({
     });
   }
 
+  function pushAsk(href: string) {
+    const root = document.documentElement;
+    const keyboard = root.dataset.haloNative === "1" && root.dataset.haloKb === "1";
+    leaving.current = false;
+    if (!keyboard) {
+      router.push(href);
+      return;
+    }
+    delete root.dataset.haloKb;
+    delete root.dataset.haloKbFade;
+    root.style.setProperty("--kb-inset", "0px");
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+    window.setTimeout(() => {
+      leaving.current = false;
+      router.push(href);
+    }, 180);
+  }
+
   function goAfterLeave(run: () => void | Promise<void>) {
     // The phone web view freezes if Home starts the 1080ms leave and then
     // navigates. Chips and Settings stay on this page, so they still work.
@@ -408,7 +426,9 @@ export function AskLanding({
     setSending(true);
     setError(null);
     setComposeOpen(false);
-    composeRef.current?.querySelector("textarea")?.blur();
+    if (document.documentElement.dataset.haloNative !== "1") {
+      composeRef.current?.querySelector("textarea")?.blur();
+    }
 
     if (demo || isLabPreviewPath()) {
       window.dispatchEvent(new Event("halo-home-play-end"));
@@ -461,6 +481,15 @@ export function AskLanding({
       }
       return conversationId;
     })();
+
+    if (document.documentElement.dataset.haloNative === "1") {
+      try {
+        pushAsk(`/ask/${await prepWork}`);
+      } catch (err) {
+        abortLeave(err instanceof Error ? err.message : "Something went wrong");
+      }
+      return;
+    }
 
     goAfterLeave(async () => {
       try {
@@ -586,6 +615,10 @@ export function AskLanding({
           }
           const dest = chip.askId?.trim();
           if (!dest || /^[1-6]$/.test(dest)) return;
+          if (document.documentElement.dataset.haloNative === "1") {
+            pushAsk(`/ask/${dest}`);
+            return;
+          }
           goAfterLeave(() => {
             router.push(`/ask/${dest}`);
           });

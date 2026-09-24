@@ -97,7 +97,7 @@ Not this sitting. Finish before any 1.3 / TestFlight / `--prod`:
 
 ## Log (newest first)
 
-- 2026-09-24 Orchestrator — **Lane A cleanup from the 09:23 film.** Removed the header “dev” mark. Phone navigates without a full reload. Keyboard no longer pins the page. Home returns when the field blurs. Day cap is off in the phone app. Phone scrollbars hidden. **No promote.**
+- 2026-09-24 Orchestrator — **Hold and Ask were changing pages with the keyboard up.** That stalls the phone web view. History worked because the keyboard was down. They now wait until the keyboard flag drops, then use the same in-app open. The page also stops scrolling up to reveal the white web view. **No promote.** Removed the header “dev” mark. Phone navigates without a full reload. Keyboard no longer pins the page. Home returns when the field blurs. Day cap is off in the phone app. Phone scrollbars hidden. **No promote.**
 - 2026-09-24 Orchestrator — **Overnight branch is on the lab alias.** `cloud/overnight-ui` `9b196fe` deployed as `halo-li1i2174n` and aliased to `halo-lab-personal-f999`. Lab mark should read `9b196fe`. Phone: quit Halo and reopen. Keyboard still unsigned. **No promote.**
 - 2026-09-24 overnight — Handoff for Mac agents is `web/OVERNIGHT-HANDOFF.md` on `cloud/overnight-ui`. Atlas was down, so git is the dump. No new UI change. Untouched: morph 1080, harvest z 120.
 - 2026-09-24 overnight — Stop. Clock is 8:27am Denver. No further timer. Last pass found no safe hitch. Lab alias was never updated (`vercel whoami` logged out). Phone still has to prove the keys. Untouched: morph 1080, harvest z 120.

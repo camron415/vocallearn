@@ -316,6 +316,12 @@ export function MotionProvider({ children }: { children: ReactNode }) {
       event.preventDefault();
     };
     document.addEventListener("touchmove", stopPageScroll, { passive: false });
+    const pinScroll = () => {
+      if (root.dataset.haloNative !== "1" || root.dataset.haloKb !== "1") return;
+      if (!focusAt || Date.now() - focusAt < 400) return;
+      if (window.scrollY !== 0) window.scrollTo(0, 0);
+    };
+    window.addEventListener("scroll", pinScroll, { passive: true });
 
     return () => {
       cancelled = true;
@@ -331,6 +337,7 @@ export function MotionProvider({ children }: { children: ReactNode }) {
       document.removeEventListener("focusin", onFocusIn);
       document.removeEventListener("focusout", blurKb);
       document.removeEventListener("touchmove", stopPageScroll);
+      window.removeEventListener("scroll", pinScroll);
     };
   }, []);
 
