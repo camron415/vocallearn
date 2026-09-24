@@ -17,22 +17,6 @@ import { isLabPreviewPath } from "@/lib/lab-preview";
 import { haloJuice } from "@/lib/halo-juice";
 import type { HaloProfile } from "@/lib/types";
 
-function LabBuild() {
-  const [mark, setMark] = useState("");
-  useEffect(() => {
-    const host = window.location.hostname;
-    const lab =
-      isLabPreviewPath() ||
-      host === "localhost" ||
-      host === "127.0.0.1" ||
-      host.startsWith("halo-lab");
-    if (!lab || host === "halo-gules-three.vercel.app") return;
-    setMark(process.env.NEXT_PUBLIC_HALO_BUILD || "dev");
-  }, []);
-  if (!mark) return null;
-  return <span className="lab-build">{mark}</span>;
-}
-
 export function HaloHeader({
   conversations = [],
   currentId,
@@ -102,10 +86,7 @@ export function HaloHeader({
         suppressHydrationWarning
         onClick={goHome}
       >
-        <span className="brand-mark brand-mark--sm">
-          {APP_NAME}
-          <LabBuild />
-        </span>
+        <span className="brand-mark brand-mark--sm">{APP_NAME}</span>
       </Link>
       <GoldKeptBadge chips={keep} />
     </div>

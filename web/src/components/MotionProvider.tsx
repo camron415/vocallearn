@@ -238,12 +238,6 @@ export function MotionProvider({ children }: { children: ReactNode }) {
       window.clearTimeout(kbHide);
       /* Never guess a lift once Ask has blurred, or Home stays faded until the viewport catches up. */
       if (native && !focused) {
-        // A focus blip while the keys are still up used to fade Home back
-        // and let chips take the tap. Stay faded until the keyboard is gone.
-        if (kbMeasured >= KB_MIN) {
-          root.dataset.haloKb = "1";
-          return;
-        }
         releaseKb();
         return;
       }

@@ -914,10 +914,6 @@ export function ChatThread({
             router.replace(labPreviewChatHref(id));
             return;
           }
-          if (document.documentElement.dataset.haloNative === "1") {
-            window.location.assign(`/ask/${id}`);
-            return;
-          }
           if (!shell?.active) captureComposeMorph(dockRef.current);
           router.push(`/ask/${id}`);
         }}

@@ -18,6 +18,12 @@ const PASS_GAP_DAYS = [1, 3, 7] as const;
 
 export { HOME_SEAT_CAP, DAY_ROUND_CAP, MASTER_AFTER, PASS_GAP_DAYS };
 
+/** The phone lab build is for tapping through. The family day cap stays. */
+function phoneTestingUnlimited() {
+  if (typeof document === "undefined") return false;
+  return document.documentElement.dataset.haloNative === "1";
+}
+
 export type KeepCloudPayload = {
   v: number;
   chips: HarvestChip[];
@@ -741,6 +747,7 @@ export function isRemainderFreeTap(clusterId?: string | null) {
 export function canOpenRound(clusterId?: string | null) {
   hydrate();
   rollDayCap();
+  if (phoneTestingUnlimited()) return true;
   if (isRemainderFreeTap(clusterId)) return true;
   return roundsToday < DAY_ROUND_CAP;
 }
@@ -768,6 +775,7 @@ export function recordRoundOpen(clusterId?: string | null, now = Date.now()) {
     return true;
   }
   lastOpenRemainderFree = false;
+  if (phoneTestingUnlimited()) return true;
   if (roundsToday >= DAY_ROUND_CAP) {
     persist();
     emit();
@@ -790,7 +798,7 @@ export function readLoopStats() {
     cap: KEEP_CAP,
     roundsToday,
     dayCap: DAY_ROUND_CAP,
-    dayCapped: roundsToday >= DAY_ROUND_CAP,
+    dayCapped: !phoneTestingUnlimited() && roundsToday >= DAY_ROUND_CAP,
     roundsLifetime,
   };
 }

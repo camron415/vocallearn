@@ -539,11 +539,6 @@ export function AskLanding({
   }, [shell, onSubmit]);
 
   function openChat(id: string) {
-    if (document.documentElement.dataset.haloNative === "1" && !demo && !isLabPreviewPath()) {
-      leaving.current = false;
-      window.location.assign(`/ask/${id}`);
-      return;
-    }
     if (demo || isLabPreviewPath()) {
       window.dispatchEvent(new Event("halo-home-play-end"));
       setPlaying(false);

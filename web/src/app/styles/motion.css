@@ -644,12 +644,9 @@ html[data-halo-perf="soft"] body::before {
      Fix the root only. Fixing body as well collapses the hero and the
      greeting jumps under the header. */
   html[data-halo-kb] {
-    position: fixed;
-    inset: 0;
-    width: 100%;
-    height: 100%;
     overflow: hidden;
     overscroll-behavior: none;
+    background: var(--halo-bg, #14120f);
   }
 
   html[data-halo-kb] body {
