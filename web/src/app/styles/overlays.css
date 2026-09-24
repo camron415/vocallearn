@@ -301,6 +301,12 @@ html[data-halo-theme="dark"] .history-overlay.menu-veil {
   background: var(--paper-inset, var(--halo-stone));
 }
 
+@media (max-width: 720px) {
+  .menu-block .history-list {
+    padding-bottom: calc(0.85rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
 .menu-block .history-row + .history-row {
   border-top: 1px solid var(--paper-inset-border, color-mix(in srgb, var(--halo-ink) 8%, transparent));
 }

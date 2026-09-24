@@ -97,7 +97,7 @@ Not this sitting. Finish before any 1.3 / TestFlight / `--prod`:
 
 ## Log (newest first)
 
-- 2026-09-24 Orchestrator — **Phone Ask was starting the reply on Home, then waiting on a soft open that never landed.** It now saves the turn and loads the chat outright. Holding a chip with a real source chat does the same. Taps on the composer are no longer eaten by the scroll lock. **No promote.**
+- 2026-09-24 Orchestrator — **Lane A is signed enough to leave.** Phone chat no longer opens with a tall empty band under the header. History’s last row can scroll above the home indicator. Header jobs 2.1–2.5 were already in this branch. **No promote.**
 - 2026-09-24 Orchestrator — **Overnight branch is on the lab alias.** `cloud/overnight-ui` `9b196fe` deployed as `halo-li1i2174n` and aliased to `halo-lab-personal-f999`. Lab mark should read `9b196fe`. Phone: quit Halo and reopen. Keyboard still unsigned. **No promote.**
 - 2026-09-24 overnight — Handoff for Mac agents is `web/OVERNIGHT-HANDOFF.md` on `cloud/overnight-ui`. Atlas was down, so git is the dump. No new UI change. Untouched: morph 1080, harvest z 120.
 - 2026-09-24 overnight — Stop. Clock is 8:27am Denver. No further timer. Last pass found no safe hitch. Lab alias was never updated (`vercel whoami` logged out). Phone still has to prove the keys. Untouched: morph 1080, harvest z 120.
