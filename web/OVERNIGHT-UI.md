@@ -49,9 +49,17 @@ Keyboard stay-up is signed on the 22:07 film. Do not call `scrollTo` while Ask i
 - 2026-09-21 21:21 — Home pops back about a second after Ask. Holding a chip opens the iOS Copy menu and later taps die.
 - 2026-09-20 22:41 — Status-bar icons were inverted on appearance change. That invert was fixed. Do not reopen it.
 
+## What you are looking at
+
+The cloud computer’s display is not the product. A wide window of local `/preview` shows the old mixer rail and old palette. That rail is a lab tool. Do not restyle it, and do not treat its colors as Halo.
+
+Current Halo is Paper: stone field, chips, greeting, Keep beads, Cove, one composer. Set the viewport to **393×852** before you look or click. That is the phone.
+
+Open `https://halo-lab-personal-f999.vercel.app/preview?look=paper` after a lab deploy, or local `http://localhost:3000/preview?look=paper`. If a mixer panel is on screen, ignore it. The page behind it, at 393×852, is the one that must match the phone. A desktop pass is a second check only.
+
 ## Click-through (after every change)
 
-`npm run dev` in `web/`. Open `/preview` at 393×852 and at desktop width.
+`npm run dev` in `web/`. Open `/preview?look=paper` at **393×852** first. Then once at desktop width.
 
 - Home: a chip opens its round; the round closes; greeting, Keep, and Cove are still there.
 - Ask: focus fades Home; leaving Ask brings Home back; faded chips do not take the click.
