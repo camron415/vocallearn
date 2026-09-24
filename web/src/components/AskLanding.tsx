@@ -471,7 +471,7 @@ export function AskLanding({
         if (!conversationId) throw new Error("Failed to send");
         stashAskAttachments(conversationId, attachments);
         sessionStorage.setItem(`halo-ask-live:${conversationId}`, "1");
-        window.location.assign(`/ask/${conversationId}`);
+        pushAsk(`/ask/${conversationId}`);
       } catch (err) {
         abortLeave(err instanceof Error ? err.message : "Something went wrong");
       }
@@ -647,7 +647,7 @@ export function AskLanding({
           const dest = chip.askId?.trim();
           if (!dest || /^[1-6]$/.test(dest)) return;
           if (document.documentElement.dataset.haloNative === "1") {
-            window.location.assign(`/ask/${dest}`);
+            pushAsk(`/ask/${dest}`);
             return;
           }
           goAfterLeave(() => {
