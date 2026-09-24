@@ -10,7 +10,7 @@ Shared desk for weekend V2. Not Atlas. Not Slack. One file every lane updates.
 
 **Harvest ops (telemetry, QA, mobile, promote):** [`web/HARVEST-OPS.md`](./HARVEST-OPS.md) — read before tuning or early access.
 
-Updated: 2026-09-24T06:05-06:00  
+Updated: 2026-09-24T06:48-06:00  
 By: Overnight UI (cloud/overnight-ui)
 
 ## Lanes
@@ -49,7 +49,7 @@ Status: `idle` · `claimed` · `in_progress` · `blocked` · `done`
 
 ## Locks
 
-- **Phone breaks (this chat, 21:39):** P1 and P2 are on the lab alias. Files were `NativeBoot.tsx`, `MotionProvider.tsx`, `WaterCapsule.tsx`, `motion.css`. Gated on `data-halo-native`. Juice bridge in NativeBoot stays. AskLanding / LoopSkin / `native/` untouched. Unlocked. Chat header is the Home header. Keep dock fades the left when older beads are off-screen and the right when newer beads are off-screen (was left-only; scrolling used to hard-cut).
+- **Overnight UI (06:48):** phone chrome is CSS (`chrome-phone` / `chrome-wide` in `home.css`, `HaloHeader.tsx`). Coarse pointer no longer swaps the header after paint. Unlocked. Morph 1080 / harvest z 120 untouched. P1 and P2 are on the lab alias. Files were `NativeBoot.tsx`, `MotionProvider.tsx`, `WaterCapsule.tsx`, `motion.css`. Gated on `data-halo-native`. Juice bridge in NativeBoot stays. AskLanding / LoopSkin / `native/` untouched. Unlocked. Chat header is the Home header. Keep dock fades the left when older beads are off-screen and the right when newer beads are off-screen (was left-only; scrolling used to hard-cut).
 - **Home field lane:** unlocked. Phone seats are jumping left/right lanes (no dice-5, no leftover dump). Cap 8 visible; extra due wait as Keep beads until a seat opens. Desktop 16-seat MASTER frozen. Chip type 1.08rem unchanged. `--keep-chip-max` 18rem / 84vw on 720 only.
 - **Play lane:** unlocked. **Camron signed 2026-09-17** (light + dark, phone + desktop). Overlay pose unchanged. Desktop SAY is a stadium bar (`appearance: none`, no resize grip), Check stays on the right of the field (≥641), idle ghost / hover darkens. Line + caret + miss `em` use 58/42 `--play-ink` on light, candy `--play-kind` on dark. Done is `--halo-ink` on stone. Phone Check-below stays. Seating / morph 1080 / harvest z 120 frozen.
 - Morph 1080 / harvest z 120 / phone Follow-up dock / `text-size-adjust` / desktop 16-seat / desktop beads frozen. Family `/ask` is **1.2.0 live**.
@@ -95,6 +95,7 @@ Not this sitting. Finish before any 1.3 / TestFlight / `--prod`:
 
 ## Log (newest first)
 
+- 2026-09-24 overnight — Phone header no longer paints Library, History, and Settings before Menu. Both chromes are in the tree; width shows one, so the first paint at 393 is Menu. History still catches a chip tap, Settings Light stays open, Rome opens a round, Ask leaves Home, login renders. Desktop still shows the three buttons. Harvest 25/25. No lab alias. Phone still has to prove the keys. Untouched: morph 1080, harvest z 120.
 - 2026-09-24 overnight — The keyboard fade no longer arms on load. It was blocking chip taps for the first second, and a focus during that window could leave the block on. A touch on Rome now opens the round immediately. History, Ask, and login passed at 393. Harvest 25/25. No lab alias. Phone still has to prove the keys. Untouched: morph 1080, harvest z 120.
 - 2026-09-24 overnight — Phone suggestions sit above the shell field. Loop had pinned the list under the field, so at 393 it was past the screen. Typing “When” shows two rows on screen (bottom 783, field 788) and a tap fills the question. Rome, Library, and login passed. Harvest 25/25. No lab alias. Phone still has to prove the keys. Untouched: morph 1080, harvest z 120.
 - 2026-09-24 overnight — SEE→SAY no longer focuses a 1px field at the top of the page. That decoy could scroll the phone under the keys. The answer field still focuses with preventScroll. At 393×852 three correct Rome choices opened the type field, scroll stayed put, no warm field. History, Ask, and login passed. Harvest 25/25. No lab alias. Phone still has to prove the keys. Untouched: morph 1080, harvest z 120.

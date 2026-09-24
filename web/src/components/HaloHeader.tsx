@@ -14,7 +14,6 @@ import { existingDueHarvest, type HarvestChip } from "@/lib/harvest";
 import { addKeepChip, clearKeepChips, readKeepChips, subscribeKeep } from "@/lib/keep-memory";
 import { startKeepCloudSync } from "@/lib/keep-cloud";
 import { isLabPreviewPath } from "@/lib/lab-preview";
-import { useCoarsePointer } from "@/lib/coarse-pointer";
 import { haloJuice } from "@/lib/halo-juice";
 import type { HaloProfile } from "@/lib/types";
 
@@ -58,7 +57,6 @@ export function HaloHeader({
   onGoHome?: () => void;
 }) {
   const [keep, setKeep] = useState<HarvestChip[]>([]);
-  const compact = useCoarsePointer();
 
   useEffect(() => {
     setKeep(readKeepChips());
@@ -119,7 +117,18 @@ export function HaloHeader({
       {brand}
       <div className="topbar-actions">
         <KeepPocket chips={keep} />
-        {compact ? (
+        <div className="chrome-wide">
+          <LibraryMenu demo={demo} />
+          <HistoryMenu
+            items={conversations}
+            currentId={currentId}
+            demo={demo}
+            onSelect={onOpenChat}
+            onDeleted={onDeleted}
+          />
+          <SettingsMenu profile={profile} demo={demo} />
+        </div>
+        <div className="chrome-phone">
           <ChromeMenu
             conversations={conversations}
             currentId={currentId}
@@ -128,19 +137,7 @@ export function HaloHeader({
             onOpenChat={onOpenChat}
             onDeleted={onDeleted}
           />
-        ) : (
-          <>
-            <LibraryMenu demo={demo} />
-            <HistoryMenu
-              items={conversations}
-              currentId={currentId}
-              demo={demo}
-              onSelect={onOpenChat}
-              onDeleted={onDeleted}
-            />
-            <SettingsMenu profile={profile} demo={demo} />
-          </>
-        )}
+        </div>
       </div>
     </ChromeBar>
     </>

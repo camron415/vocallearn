@@ -484,6 +484,26 @@ html[data-halo-loop="17"] .msg--live {
   flex: 0 0 auto;
 }
 
+/* Both chromes render so the phone header does not flash the desktop
+   buttons before coarse-pointer state catches up. Width picks one. */
+.chrome-wide {
+  display: contents;
+}
+
+.chrome-phone {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .chrome-wide {
+    display: none;
+  }
+
+  .chrome-phone {
+    display: contents;
+  }
+}
+
 .topbar-title {
   display: flex;
   align-items: center;
