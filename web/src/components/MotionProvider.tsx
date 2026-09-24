@@ -321,7 +321,13 @@ export function MotionProvider({ children }: { children: ReactNode }) {
       if (root.dataset.haloNative !== "1") return;
       if (root.dataset.haloKb !== "1" && !composeFocused()) return;
       const target = event.target instanceof Element ? event.target : null;
-      if (target?.closest(".chat-scroll, .history-overlay, .history-page")) return;
+      if (
+        target?.closest(
+          ".chat-scroll, .history-overlay, .history-page, .ask-shell-compose, .compose, button, a"
+        )
+      ) {
+        return;
+      }
       event.preventDefault();
     };
     document.addEventListener("touchmove", stopPageScroll, { passive: false });

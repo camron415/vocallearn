@@ -446,6 +446,38 @@ export function AskLanding({
       return;
     }
 
+    if (document.documentElement.dataset.haloNative === "1") {
+      try {
+        const attachments = files.length ? await readAttachments(files) : [];
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: message || undefined,
+            attachments,
+            timeZone: resolveUserTimeZone(profile?.timeZone),
+            prepareOnly: true,
+          }),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(
+            (data as { error?: string }).error || "Failed to send"
+          );
+        }
+        const data = (await res.json()) as { conversationId?: string };
+        const conversationId =
+          res.headers.get(HALO_CONVERSATION_HEADER) || data.conversationId;
+        if (!conversationId) throw new Error("Failed to send");
+        stashAskAttachments(conversationId, attachments);
+        sessionStorage.setItem(`halo-ask-live:${conversationId}`, "1");
+        window.location.assign(`/ask/${conversationId}`);
+      } catch (err) {
+        abortLeave(err instanceof Error ? err.message : "Something went wrong");
+      }
+      return;
+    }
+
     // One stream during the 1080ms travel: create the chat, classify, and
     // start tokens. Chat only attaches — it does not classify again.
     const prepWork = (async () => {
@@ -485,15 +517,6 @@ export function AskLanding({
       }
       return conversationId;
     })();
-
-    if (document.documentElement.dataset.haloNative === "1") {
-      try {
-        pushAsk(`/ask/${await prepWork}`);
-      } catch (err) {
-        abortLeave(err instanceof Error ? err.message : "Something went wrong");
-      }
-      return;
-    }
 
     goAfterLeave(async () => {
       try {
@@ -624,7 +647,7 @@ export function AskLanding({
           const dest = chip.askId?.trim();
           if (!dest || /^[1-6]$/.test(dest)) return;
           if (document.documentElement.dataset.haloNative === "1") {
-            pushAsk(`/ask/${dest}`);
+            window.location.assign(`/ask/${dest}`);
             return;
           }
           goAfterLeave(() => {
