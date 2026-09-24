@@ -87,6 +87,7 @@ html[data-halo-theme="dark"] .history-overlay {
 }
 
 html[data-halo-sheet="1"] .home-bubbles,
+html[data-halo-sheet="1"] .home-bubbles .recent-slot,
 html[data-halo-sheet="1"] .ask-stage .ask-greeting {
   pointer-events: none;
 }

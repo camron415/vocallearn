@@ -681,9 +681,12 @@ html[data-halo-perf="soft"] body::before {
     pointer-events: none;
   }
 
-  /* Fade-back still looks gone for ~480ms. Chips must not take taps until it ends. */
+  /* Fade-back still looks gone for ~480ms. Chips must not take taps until it ends.
+     .recent-slot sets pointer-events:auto, which punches through a parent none. */
   html[data-halo-kb-fade][data-halo-ask-shell="1"] .ask-shell--home .ask-stage:not(.is-playing),
-  html[data-halo-kb-fade][data-halo-ask-shell="1"] .ask-shell--chat .chat-stage .chat-scroll {
+  html[data-halo-kb-fade][data-halo-ask-shell="1"] .ask-shell--chat .chat-stage .chat-scroll,
+  html[data-halo-kb] .home-bubbles .recent-slot,
+  html[data-halo-kb-fade] .home-bubbles .recent-slot {
     pointer-events: none;
   }
 
