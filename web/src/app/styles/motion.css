@@ -814,6 +814,9 @@ html[data-halo-perf="soft"] body::before {
   .brand-row {
     max-width: 100%;
     min-width: 0;
+    /* Keep dock paints in the actions layer (z 50) and covers the ◎. */
+    position: relative;
+    z-index: 51;
   }
 
   .gold-kept {

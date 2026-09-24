@@ -10,7 +10,7 @@ Shared desk for weekend V2. Not Atlas. Not Slack. One file every lane updates.
 
 **Harvest ops (telemetry, QA, mobile, promote):** [`web/HARVEST-OPS.md`](./HARVEST-OPS.md) — read before tuning or early access.
 
-Updated: 2026-09-24T06:48-06:00  
+Updated: 2026-09-24T07:22-06:00  
 By: Overnight UI (cloud/overnight-ui)
 
 ## Lanes
@@ -95,6 +95,7 @@ Not this sitting. Finish before any 1.3 / TestFlight / `--prod`:
 
 ## Log (newest first)
 
+- 2026-09-24 overnight — The ◎ next to Cove was under the Keep dock, so a tap never opened Kept. The brand row now sits above that dock on a phone. A touch opens the panel (12–381, on screen). A dock bead, Rome, and History still hit. Desktop header unchanged. Harvest 25/25. No lab alias. Phone still has to prove the keys. Untouched: morph 1080, harvest z 120.
 - 2026-09-24 overnight — Phone header no longer paints Library, History, and Settings before Menu. Both chromes are in the tree; width shows one, so the first paint at 393 is Menu. History still catches a chip tap, Settings Light stays open, Rome opens a round, Ask leaves Home, login renders. Desktop still shows the three buttons. Harvest 25/25. No lab alias. Phone still has to prove the keys. Untouched: morph 1080, harvest z 120.
 - 2026-09-24 overnight — The keyboard fade no longer arms on load. It was blocking chip taps for the first second, and a focus during that window could leave the block on. A touch on Rome now opens the round immediately. History, Ask, and login passed at 393. Harvest 25/25. No lab alias. Phone still has to prove the keys. Untouched: morph 1080, harvest z 120.
 - 2026-09-24 overnight — Phone suggestions sit above the shell field. Loop had pinned the list under the field, so at 393 it was past the screen. Typing “When” shows two rows on screen (bottom 783, field 788) and a tap fills the question. Rome, Library, and login passed. Harvest 25/25. No lab alias. Phone still has to prove the keys. Untouched: morph 1080, harvest z 120.
