@@ -49,6 +49,12 @@ Keyboard stay-up is signed on the 22:07 film. Do not call `scrollTo` while Ask i
 - 2026-09-21 21:21 — Home pops back about a second after Ask. Holding a chip opens the iOS Copy menu and later taps die.
 - 2026-09-20 22:41 — Status-bar icons were inverted on appearance change. That invert was fixed. Do not reopen it.
 
+## The iPhone shell
+
+The phone app is a web view of the lab site, not a separate interface. Read `MotionProvider.tsx`, `NativeBoot.tsx`, the keyboard rules in `ask-shell.css`, and `native/capacitor.config.js` before you change keyboard, scroll, or tap behavior.
+
+Diagnose shell bugs from that code and from the film log. Known shell rules: moving the composer while the keyboard is opening makes the web view drop the keyboard. Scrolling the page slides the composer under the keys. A faded layer that still receives taps lets a chip steal the click. The cloud computer cannot raise the real iOS keyboard. Do not claim that keyboard is fixed from a browser click. Say what the code does, and what only the phone can prove.
+
 ## What you are looking at
 
 The cloud computer’s display is not the product. A wide window of local `/preview` shows the old mixer rail and old palette. That rail is a lab tool. Do not restyle it, and do not treat its colors as Halo.
