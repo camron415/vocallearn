@@ -1,6 +1,6 @@
 # Phone handoff — 2026-09-24 night
 
-Read this before editing. The last chat burned a day toggling the same three strategies. Do not repeat them.
+Read `web/DECISIONS.md` first. Locked lines there are not up for debate. This file is the current job and the mistakes already made.
 
 Branch: `cloud/overnight-ui`. Phone loads `https://halo-lab-personal-f999.vercel.app`. Local worktree that has this branch checked out: `/tmp/halo-overnight`. The main repo may still be on `halo-ui-streamline`. Do not checkout this branch there if that worktree exists.
 
