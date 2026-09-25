@@ -1,5 +1,7 @@
 # Overnight UI pass
 
+**Morning handoff (2026-09-24, loop stopped 8:27am Denver):** [`web/OVERNIGHT-HANDOFF.md`](./OVERNIGHT-HANDOFF.md). Read that before editing. The night is over. Do not arm another overnight timer.
+
 Live queue for the cloud chat on `halo-ui-streamline`. Read this every wake before you edit.
 
 The phone videos are on Camron’s Mac, not in git. The film log below is the record you can use. Product context that is in git: `web/KEPT-BOARD.md`, `web/HALO-V2-SUNDAY.md`, `docs/PRODUCT_ROADMAP.md`, `docs/CRAFT-JUICE.md`, `web/lane-plans/`.

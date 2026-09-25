@@ -72,6 +72,7 @@ type AskShellContextValue = {
   setSubmitHandler: (handler: ShellSubmit | null) => void;
   leaveToChat: (navigate: () => void | Promise<void>) => void;
   leaveToHome: (navigate: () => void) => void;
+  showOpening: (text: string) => void;
   contentLeaving: boolean;
   contentEntering: boolean;
   onContentSettled: () => void;
@@ -167,6 +168,7 @@ function AskShellInner({
   const shellRoot = useRef<HTMLDivElement | null>(null);
   const leaving = useRef(false);
   const pendingPose = useRef<AskShellMode | null>(null);
+  const [opening, setOpening] = useState<string | null>(null);
 
   useEffect(() => {
     if (!active) {
@@ -180,9 +182,19 @@ function AskShellInner({
   }, [active]);
 
   useEffect(() => {
-    if (leaving.current || stage === "other") return;
+    if (opening || leaving.current || stage === "other") return;
     setMode((prev) => (prev === stage ? prev : stage));
+  }, [stage, opening]);
+
+  useEffect(() => {
+    if (stage === "chat") setSending(false);
   }, [stage]);
+
+  useEffect(() => {
+    if (stage !== "chat" || !opening) return;
+    leaving.current = false;
+    setOpening(null);
+  }, [stage, opening]);
 
   useLayoutEffect(() => {
     if (!active || soft) return;
@@ -251,6 +263,16 @@ function AskShellInner({
     [soft]
   );
 
+  const showOpening = useCallback((text: string) => {
+    flushSync(() => {
+      setOpening(text);
+      setMode("chat");
+      setDraft("");
+      setSending(false);
+      setError(null);
+    });
+  }, []);
+
   const leaveToHome = useCallback(
     (navigate: () => void) => {
       if (leaving.current || soft) {
@@ -303,6 +325,7 @@ function AskShellInner({
       setSubmitHandler,
       leaveToChat,
       leaveToHome,
+      showOpening,
       contentLeaving,
       contentEntering,
       onContentSettled,
@@ -319,6 +342,7 @@ function AskShellInner({
       setSubmitHandler,
       leaveToChat,
       leaveToHome,
+      showOpening,
       contentLeaving,
       contentEntering,
       onContentSettled,
@@ -349,9 +373,16 @@ function AskShellInner({
         ref={shellRoot}
         className={`ask-shell ask-shell--${mode}${
           contentLeaving && leaveFrom ? ` is-content-leaving is-leave-${leaveFrom}` : ""
-        }${contentEntering ? " is-content-entering" : ""}`}
+        }${contentEntering ? " is-content-entering" : ""}${opening ? " is-opening" : ""}`}
       >
-        <div className="ask-shell-page">{children}</div>
+        <div className="ask-shell-page">
+          {children}
+          {opening ? (
+            <div className="ask-shell-opening" aria-live="polite">
+              <p className="ask-shell-opening-line">{opening}</p>
+            </div>
+          ) : null}
+        </div>
         <div
           className={`ask-shell-compose${
             home && ui?.suggestOpen ? " is-open" : ""

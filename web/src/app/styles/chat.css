@@ -35,6 +35,21 @@
   box-sizing: border-box;
 }
 
+@media (max-width: 720px) {
+  .chat-scroll,
+  .history-list,
+  .recipes-main {
+    scrollbar-gutter: auto;
+    scrollbar-width: none;
+  }
+
+  .chat-scroll::-webkit-scrollbar,
+  .history-list::-webkit-scrollbar,
+  .recipes-main::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @keyframes halo-chat-in {
   from {
     opacity: 0;

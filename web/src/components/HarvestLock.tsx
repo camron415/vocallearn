@@ -86,7 +86,21 @@ export function HarvestLock({
   useEffect(() => {
     const root = rootRef.current;
     if (!root || !chip) return;
-    root.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    // scrollIntoView also scrolls the page, which slides the composer under the keys.
+    const frame = window.requestAnimationFrame(() => {
+      const scroller = root.closest(".chat-scroll");
+      if (!(scroller instanceof HTMLElement)) return;
+      const composer = document.querySelector(
+        ".ask-shell-compose, .compose-dock"
+      );
+      const scrollerBottom = scroller.getBoundingClientRect().bottom;
+      const limit =
+        composer instanceof HTMLElement
+          ? Math.min(composer.getBoundingClientRect().top - 12, scrollerBottom)
+          : scrollerBottom;
+      const delta = root.getBoundingClientRect().bottom - limit;
+      if (delta > 1) scroller.scrollTop += delta;
+    });
     const wrap = root.closest("[data-harvest-lock]");
     wrap?.querySelectorAll("[data-harvest]").forEach((mark) => {
       mark.classList.toggle(
@@ -95,6 +109,7 @@ export function HarvestLock({
       );
     });
     return () => {
+      window.cancelAnimationFrame(frame);
       wrap?.querySelectorAll("[data-harvest]").forEach((mark) => {
         mark.classList.remove("is-lock-current");
       });

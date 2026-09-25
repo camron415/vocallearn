@@ -442,7 +442,7 @@ html[data-halo-perf="soft"] body::before {
     grid-template-rows: auto minmax(0, 1fr) auto;
     gap: 0;
     --chat-dock-lift: 0.75rem;
-    --chat-head-fade: 1.2rem;
+    --chat-head-fade: 0.5rem;
   }
 
   .ask-stage .topbar,
@@ -498,8 +498,7 @@ html[data-halo-perf="soft"] body::before {
   }
 
   .chat-scroll {
-    padding: calc(1.15rem + var(--chat-head-fade, 1.2rem) + 0.2rem) 0.85rem
-      1.4rem;
+    padding: calc(0.2rem + var(--chat-head-fade, 0.5rem)) 0.85rem 1.4rem;
     gap: 0.75rem;
     width: 100%;
     max-width: 100%;
@@ -640,6 +639,21 @@ html[data-halo-perf="soft"] body::before {
     padding-bottom: calc(0.35rem + var(--kb-inset, 0px));
   }
 
+  /* A page scroll while the keys are up slides the fixed composer under them.
+     Fix the root only. Fixing body as well collapses the hero and the
+     greeting jumps under the header. */
+  html[data-halo-kb] {
+    overflow: hidden;
+    overscroll-behavior: none;
+    background: var(--halo-bg, #14120f);
+  }
+
+  html[data-halo-kb] body {
+    overflow: hidden;
+    overscroll-behavior: none;
+    height: 100%;
+  }
+
   html[data-halo-ask-shell="1"][data-halo-kb] .ask-stage {
     padding-bottom: var(--halo-native-bottom, env(safe-area-inset-bottom, 0px));
   }
@@ -651,7 +665,7 @@ html[data-halo-perf="soft"] body::before {
 
   html[data-halo-kb] .ask-hero {
     align-content: end;
-    min-height: 0;
+    min-height: calc(100dvh - var(--kb-inset, 0px) - 8.5rem);
     padding-bottom: 0.2rem;
   }
 
@@ -659,13 +673,18 @@ html[data-halo-perf="soft"] body::before {
     transition: --kb-inset var(--kb-travel, 480ms) var(--ease-travel);
   }
 
-  /* Sliding the focused field dismisses the iOS keyboard and can tear the webview white. Snap the inset; the field fade still eases. */
+  /* The inset is written only after the keys have settled, so this ease
+     starts after the present. Snapping it is what made the field jump. */
   html[data-halo-native] {
-    transition: none;
+    transition: --kb-inset 320ms cubic-bezier(0.32, 0.72, 0, 1);
   }
 
   html[data-halo-motion="soft"] {
     transition: none;
+  }
+
+  html[data-halo-native][data-halo-motion="soft"] {
+    transition: --kb-inset 320ms cubic-bezier(0.32, 0.72, 0, 1);
   }
 
   /* One field fade — same ease as Ask travel, shorter. Do not kill child
@@ -678,6 +697,15 @@ html[data-halo-perf="soft"] body::before {
   html[data-halo-kb][data-halo-ask-shell="1"] .ask-shell--home .ask-stage:not(.is-playing),
   html[data-halo-kb][data-halo-ask-shell="1"] .ask-shell--chat .chat-stage .chat-scroll {
     opacity: 0;
+    pointer-events: none;
+  }
+
+  /* Fade-back still looks gone for ~480ms. Chips must not take taps until it ends.
+     .recent-slot sets pointer-events:auto, which punches through a parent none. */
+  html[data-halo-kb-fade][data-halo-ask-shell="1"] .ask-shell--home .ask-stage:not(.is-playing),
+  html[data-halo-kb-fade][data-halo-ask-shell="1"] .ask-shell--chat .chat-stage .chat-scroll,
+  html[data-halo-kb] .home-bubbles .recent-slot,
+  html[data-halo-kb-fade] .home-bubbles .recent-slot {
     pointer-events: none;
   }
 
@@ -716,6 +744,21 @@ html[data-halo-perf="soft"] body::before {
   .compose-suggest {
     max-height: 4.6rem;
     overflow-y: auto;
+  }
+
+  /* Paper + loop pin the list under the field with !important. On a phone
+     that puts it past the screen, and under the keyboard once the keys are up. */
+  html[data-halo-ask-shell="1"] .ask-shell-compose .compose-suggest,
+  html[data-halo-ask-shell="1"][data-halo-loop="17"][data-home-skin="paper"] .ask-shell-compose .compose-suggest {
+    top: auto !important;
+    bottom: calc(100% + 0.35rem) !important;
+    margin-top: 0 !important;
+    border-radius: 1.15rem !important;
+  }
+
+  html[data-halo-ask-shell="1"][data-halo-loop="17"][data-home-skin="paper"] .ask-shell-compose .compose-stack.is-open .compose,
+  html[data-halo-ask-shell="1"][data-halo-loop="17"][data-home-skin="paper"] .ask-shell-compose .compose-stack.is-open .compose-dock {
+    border-radius: 28px !important;
   }
 
   .ask-stage,
@@ -772,6 +815,9 @@ html[data-halo-perf="soft"] body::before {
   .brand-row {
     max-width: 100%;
     min-width: 0;
+    /* Keep dock paints in the actions layer (z 50) and covers the ◎. */
+    position: relative;
+    z-index: 51;
   }
 
   .gold-kept {

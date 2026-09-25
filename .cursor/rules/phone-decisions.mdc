@@ -1,0 +1,34 @@
+---
+description: Locked Halo phone decisions. Say when context is rotten or a change reopens a closed decision.
+alwaysApply: true
+---
+
+# Locked vs open
+
+At the start of any phone, Ask, keyboard, chat-open, or deploy task, read `web/DECISIONS.md`, then `web/PHONE-HANDOFF.md`. If those files are missing from this checkout, read them from branch `cloud/overnight-ui` in `/tmp/halo-overnight`. Do not reconstruct them from chat history.
+
+Locked lines are closed. If a fix needs to break one, stop and name the line. Do not break it.
+
+Open lines are the only place for a new idea. One open job at a time.
+
+## Say the context is bad
+
+Stop and tell Camron to start a fresh chat when any of these is true:
+
+- This chat already shipped two explanations for the same phone bug.
+- You are about to undo the previous turn.
+- You cannot state the current Ask path in one sentence.
+- You want to try another idea before the phone check.
+
+Say this and stop: "Context is bad. Start a new chat. Read web/DECISIONS.md and web/PHONE-HANDOFF.md. Do not continue here."
+
+## Say the reasoning is bad
+
+Say it before editing when:
+
+- The proof is desktop Chrome, not the phone checklist.
+- The change is a reload, a keyboard-up navigation, the 1080ms leave on the phone, or a stub that never mounts the real chat.
+- More than one agent would edit AskLanding, AskShell, or ChatThread.
+- The idea is an !important sweep or an app rewrite while Ask still fails.
+
+Say: "This repeats a closed mistake," name the locked line, then do the open job or stop.

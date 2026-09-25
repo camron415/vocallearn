@@ -188,19 +188,39 @@ export function MotionProvider({ children }: { children: ReactNode }) {
         )
       );
     const releaseKb = () => {
+      const wasUp = root.dataset.haloKb === "1" || lifted >= 0;
       resetSettle();
       window.clearTimeout(guessTick);
       lifted = -1;
       focusAt = 0;
       root.style.setProperty("--kb-inset", "0px");
+      if (!wasUp) {
+        delete root.dataset.haloKb;
+        delete root.dataset.haloKbFade;
+        return;
+      }
+      root.dataset.haloKbFade = "1";
+      const dropFade = () => {
+        if (composeFocused()) {
+          kbHide = window.setTimeout(dropFade, 480);
+          return;
+        }
+        delete root.dataset.haloKbFade;
+      };
       kbHide = window.setTimeout(() => {
-        if (!composeFocused()) delete root.dataset.haloKb;
+        if (composeFocused()) {
+          kbHide = window.setTimeout(dropFade, 480);
+          return;
+        }
+        delete root.dataset.haloKb;
+        kbHide = window.setTimeout(dropFade, 480);
       }, 480);
     };
     const syncHeight = () => {
       if (!phone.matches) {
         root.style.removeProperty("--kb-inset");
         delete root.dataset.haloKb;
+        delete root.dataset.haloKbFade;
         restingH = window.innerHeight;
         window.clearTimeout(kbHide);
         resetSettle();
@@ -225,6 +245,15 @@ export function MotionProvider({ children }: { children: ReactNode }) {
         // Home fades on the tap. The field itself does not move yet.
         root.dataset.haloKb = "1";
         if (focusAt === 0) focusAt = Date.now();
+        /* interactive-widget already shrank the page. An inset on top of that
+           parks the composer at the top and leaves a gap above the keys. */
+        if (restingH - window.innerHeight >= KB_MIN) {
+          resetSettle();
+          window.clearTimeout(guessTick);
+          lifted = 0;
+          root.style.setProperty("--kb-inset", "0px");
+          return;
+        }
         if (
           kbMeasured < KB_MIN ||
           (lifted >= 0 && Math.abs(kbMeasured - lifted) < KB_STEP)
@@ -270,24 +299,60 @@ export function MotionProvider({ children }: { children: ReactNode }) {
     };
     syncHeight();
     vv?.addEventListener("resize", syncHeight);
-    vv?.addEventListener("scroll", syncHeight);
+    const onViewportScroll = () => {
+      if (root.dataset.haloNative === "1" && composeFocused()) return;
+      syncHeight();
+    };
+    vv?.addEventListener("scroll", onViewportScroll);
     phone.addEventListener("change", syncHeight);
-    document.addEventListener("focusin", syncHeight);
-    const blurKb = () => window.setTimeout(syncHeight, 40);
+    let blurWait = 0;
+    const onFocusIn = () => {
+      window.clearTimeout(blurWait);
+      syncHeight();
+    };
+    const blurKb = () => {
+      window.clearTimeout(blurWait);
+      // A second tap focuses again. Releasing in between jumps the page.
+      blurWait = window.setTimeout(syncHeight, 220);
+    };
+    document.addEventListener("focusin", onFocusIn);
     document.addEventListener("focusout", blurKb);
+    const stopPageScroll = (event: TouchEvent) => {
+      if (root.dataset.haloNative !== "1") return;
+      if (root.dataset.haloKb !== "1" && !composeFocused()) return;
+      const target = event.target instanceof Element ? event.target : null;
+      if (
+        target?.closest(
+          ".chat-scroll, .history-overlay, .history-page, .ask-shell-compose, .compose, button, a"
+        )
+      ) {
+        return;
+      }
+      event.preventDefault();
+    };
+    document.addEventListener("touchmove", stopPageScroll, { passive: false });
+    const pinScroll = () => {
+      if (root.dataset.haloNative !== "1" || root.dataset.haloKb !== "1") return;
+      if (!focusAt || Date.now() - focusAt < 400) return;
+      if (window.scrollY !== 0) window.scrollTo(0, 0);
+    };
+    window.addEventListener("scroll", pinScroll, { passive: true });
 
     return () => {
       cancelled = true;
       window.clearTimeout(kbHide);
       window.clearTimeout(settleTick);
       window.clearTimeout(guessTick);
+      window.clearTimeout(blurWait);
       reduceQuery.removeEventListener("change", sync);
       pointerQuery.removeEventListener("change", sync);
       vv?.removeEventListener("resize", syncHeight);
-      vv?.removeEventListener("scroll", syncHeight);
+      vv?.removeEventListener("scroll", onViewportScroll);
       phone.removeEventListener("change", syncHeight);
-      document.removeEventListener("focusin", syncHeight);
+      document.removeEventListener("focusin", onFocusIn);
       document.removeEventListener("focusout", blurKb);
+      document.removeEventListener("touchmove", stopPageScroll);
+      window.removeEventListener("scroll", pinScroll);
     };
   }, []);
 

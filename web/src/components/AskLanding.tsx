@@ -334,7 +334,43 @@ export function AskLanding({
     });
   }
 
+  function pushAsk(href: string) {
+    const root = document.documentElement;
+    const keyboard = root.dataset.haloNative === "1" && root.dataset.haloKb === "1";
+    const go = () => {
+      leaving.current = false;
+      router.push(href);
+    };
+    if (!keyboard) {
+      go();
+      return;
+    }
+    delete root.dataset.haloKb;
+    delete root.dataset.haloKbFade;
+    root.style.setProperty("--kb-inset", "0px");
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+    window.setTimeout(go, 360);
+  }
+
   function goAfterLeave(run: () => void | Promise<void>) {
+    // The phone web view freezes if Home starts the 1080ms leave and then
+    // navigates. Chips and Settings stay on this page, so they still work.
+    if (document.documentElement.dataset.haloNative === "1") {
+      leaving.current = false;
+      void run();
+      return;
+    }
+    // A leave already in flight used to return here and leave Home on
+    // "Asking…" forever. The timer still performs this navigation once.
+    let ran = false;
+    const once = async () => {
+      if (ran) return;
+      ran = true;
+      await run();
+    };
+    window.setTimeout(() => {
+      void once();
+    }, COMPOSE_TRAVEL_MS + 280);
     if (leaving.current) return;
     if (playing) {
       window.dispatchEvent(new Event("halo-home-play-end"));
@@ -342,18 +378,18 @@ export function AskLanding({
       setGrown(false);
       setPlayKind("");
       clearComposeHandoff();
-      void run();
+      void once();
       return;
     }
     if (soft) {
       setDraft("");
-      void run();
+      void once();
       return;
     }
     if (shell?.active) {
       leaving.current = true;
       shell.leaveToChat(async () => {
-        await run();
+        await once();
         leaving.current = false;
       });
       return;
@@ -365,7 +401,7 @@ export function AskLanding({
     window.setTimeout(() => {
       pinComposeGhost(composeRef.current);
       captureComposeMorph(composeRef.current);
-      void run();
+      void once();
     }, COMPOSE_TRAVEL_MS);
   }
 
@@ -390,7 +426,9 @@ export function AskLanding({
     setSending(true);
     setError(null);
     setComposeOpen(false);
-    composeRef.current?.querySelector("textarea")?.blur();
+    if (document.documentElement.dataset.haloNative !== "1") {
+      composeRef.current?.querySelector("textarea")?.blur();
+    }
 
     if (demo || isLabPreviewPath()) {
       window.dispatchEvent(new Event("halo-home-play-end"));
@@ -401,6 +439,40 @@ export function AskLanding({
         router.replace(labPreviewChatHref());
         setSending(false);
       });
+      return;
+    }
+
+    if (document.documentElement.dataset.haloNative === "1") {
+      try {
+        const attachments = files.length ? await readAttachments(files) : [];
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: message || undefined,
+            attachments,
+            timeZone: resolveUserTimeZone(profile?.timeZone),
+            prepareOnly: true,
+          }),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(
+            (data as { error?: string }).error || "Failed to send"
+          );
+        }
+        const data = (await res.json()) as { conversationId?: string };
+        const conversationId =
+          res.headers.get(HALO_CONVERSATION_HEADER) || data.conversationId;
+        if (!conversationId) throw new Error("Failed to send");
+        stashAskAttachments(conversationId, attachments);
+        sessionStorage.setItem(`halo-ask-live:${conversationId}`, "1");
+        shell?.showOpening(message || "Sent an attachment");
+        router.prefetch(`/ask/${conversationId}`);
+        pushAsk(`/ask/${conversationId}`);
+      } catch (err) {
+        abortLeave(err instanceof Error ? err.message : "Something went wrong");
+      }
       return;
     }
 
@@ -531,6 +603,10 @@ export function AskLanding({
       return;
     }
     captureComposeMorph(composeRef.current);
+    if (document.documentElement.dataset.haloNative === "1") {
+      pushAsk(`/ask/${id}`);
+      return;
+    }
     goAfterLeave(() => {
       router.push(`/ask/${id}`);
     });
@@ -568,6 +644,10 @@ export function AskLanding({
           }
           const dest = chip.askId?.trim();
           if (!dest || /^[1-6]$/.test(dest)) return;
+          if (document.documentElement.dataset.haloNative === "1") {
+            pushAsk(`/ask/${dest}`);
+            return;
+          }
           goAfterLeave(() => {
             router.push(`/ask/${dest}`);
           });

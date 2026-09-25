@@ -257,6 +257,12 @@ html[data-halo-theme="dark"] {
   background-color: #0e141a;
 }
 
+html[data-halo-native][data-halo-theme="dark"],
+html[data-halo-native][data-halo-theme="dark"] body {
+  background: #0e141a;
+  background-color: #0e141a;
+}
+
 html[data-halo-theme="dark"] body::before {
   display: none;
 }
@@ -534,6 +540,15 @@ a {
   font-size: 1.08rem;
   letter-spacing: -0.02em;
   opacity: 0.86;
+}
+
+.lab-build {
+  margin-left: 0.4rem;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  opacity: 0.55;
+  vertical-align: 0.15em;
 }
 
 /* --------------------------------------------------------------------------

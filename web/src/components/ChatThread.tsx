@@ -81,6 +81,19 @@ type SaveOfferState = {
   error?: string;
 };
 
+/** Scroll the thread pane only. scrollIntoView also scrolls the page and slides the composer under the keys. */
+function scrollInsideThread(el: HTMLElement | null, edge: "start" | "end") {
+  const scroller = el?.closest(".chat-scroll");
+  if (!el || !(scroller instanceof HTMLElement)) return;
+  if (edge === "end") {
+    scroller.scrollTop = scroller.scrollHeight;
+    return;
+  }
+  const delta =
+    el.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
+  scroller.scrollTop += delta;
+}
+
 function shouldResume(messages: AskMessage[]) {
   const last = messages[messages.length - 1];
   if (!last || last.role !== "user") return false;
@@ -498,17 +511,13 @@ export function ChatThread({
   }, [demo, conversationId]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ block: "end", behavior: "auto" });
+    scrollInsideThread(bottomRef.current, "end");
   }, [conversationId]);
 
   useEffect(() => {
     if (!sending) return;
-    turnStartRef.current?.scrollIntoView({
-      block: "start",
-      inline: "nearest",
-      behavior: soft ? "auto" : "smooth",
-    });
-  }, [sending, soft]);
+    scrollInsideThread(turnStartRef.current, "start");
+  }, [sending]);
 
   useEffect(() => {
     return () => {
@@ -969,7 +978,12 @@ export function ChatThread({
                       ? () => {
                           setDraft(stripMarkdownForDisplay(m.content));
                           window.requestAnimationFrame(() => {
-                            document.getElementById("followup")?.focus();
+                            const field = document.getElementById(
+                              shell?.active ? "ask-shell-field" : "followup"
+                            );
+                            if (field instanceof HTMLElement) {
+                              field.focus({ preventScroll: true });
+                            }
                           });
                         }
                       : undefined
