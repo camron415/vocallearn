@@ -70,7 +70,7 @@ const config = {
   },
   plugins: {
     SplashScreen: {
-      launchShowDuration: 400,
+      launchShowDuration: 0,
       launchAutoHide: true,
       backgroundColor: "#fafaf9",
       showSpinner: false,

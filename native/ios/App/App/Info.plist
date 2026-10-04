@@ -26,6 +26,14 @@
 	<true/>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Halo uses the microphone when you dictate a question.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Halo turns your dictation into text on this device.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Halo uses the camera when you attach a photo.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Halo uses your photos when you attach a picture.</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -36,7 +44,17 @@
 				<string>halo</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>google</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.510970032625-6qh008u10nh94d2e648acq7cmq2r5on5</string>
+			</array>
+		</dict>
 	</array>
+	<key>GIDClientID</key>
+	<string>510970032625-6qh008u10nh94d2e648acq7cmq2r5on5.apps.googleusercontent.com</string>
 	<key>UIStatusBarStyle</key>
 	<string>UIStatusBarStyleDarkContent</string>
 	<key>UIApplicationSceneManifest</key>
