@@ -139,6 +139,20 @@ export function runAskProviderFixtures(): { ok: boolean; failures: string[] } {
     if (pickAnswerProvider(history, false) !== "grok") {
       failures.push("brief history teach_light should use Grok");
     }
+    if (history.tools || history.effort !== "low") {
+      failures.push("brief history should stay off search at low effort");
+    }
+
+    const capitalPlan = fallbackAskIntent("What is the capital of Maine?");
+    const capitalRoute = planToRoute(capitalPlan, false);
+    if (pickAnswerProvider(capitalRoute, false) !== "luna" || capitalRoute.tools) {
+      failures.push("a capital should stay on Luna with search off");
+    }
+
+    const population = fallbackAskIntent("What is the population of Japan?");
+    if (population.harvest || population.freshness !== "web") {
+      failures.push("population should search and not be kept");
+    }
 
     const hello = routeFor("Hello");
     if (hello.tools || pickAnswerProvider(hello, false) !== "luna") {

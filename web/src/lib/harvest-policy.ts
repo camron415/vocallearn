@@ -141,6 +141,7 @@ export function shouldSkipHarvest(
 ): boolean {
   if (looksLikeGibberish(userText)) return true;
   if (looksLikeChitChat(userText)) return true;
+  if (DO_NOT_KEEP.test(userText)) return true;
   if (policy.skipLookupAsks && isLookupAsk(userText)) return true;
   if (isEphemeralAsk(userText) && !wantsDeeperAsk(userText)) return true;
   if (RECIPE_OR_LIST_ASK.test(userText)) return true;
@@ -189,11 +190,15 @@ export function skipHarvestTurn(
   return { skip: false };
 }
 
+const DO_NOT_KEEP =
+  /\b(population of|ibuprofen|acetaminophen|tylenol|dosage|what dose|how much .{0,40}\b(give|take)|mg of|(?:10%|ten percent) of (?:the |your |our )?brain|vaccines?.{0,40}autism|autism.{0,40}vaccines?|glass is a liquid|why (?:do|does) (?:we|people) dream|bronze age collapse|caused the bronze age)\b/i;
+
 function harvestQualitySkip(
   userText: string,
   reply: string,
   policy: HarvestPolicy
 ): boolean {
+  if (DO_NOT_KEEP.test(userText)) return true;
   if (isEphemeralAsk(userText) && !wantsDeeperAsk(userText)) return true;
   if (OPINION_ASK.test(userText)) return true;
   if (RECIPE_OR_LIST_ASK.test(userText)) return true;

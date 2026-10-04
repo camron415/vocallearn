@@ -10,8 +10,15 @@ import {
   routeText,
   threadClip,
 } from "@/lib/ask-route";
-import { pickAnswerProvider, planToRoute } from "@/lib/ask-provider";
+import {
+  fetchStudyReference,
+  quietReferenceLinks,
+  referencePrompt,
+  wantsStudyPaper,
+  type StudyReference,
+} from "@/lib/study-reference";
 import { ensureAskClassify } from "@/lib/ask-plan-cache";
+import { isPictureTurn, pickAnswerProvider, planToRoute } from "@/lib/ask-provider";
 import {
   fallbackAskIntent,
   intentAnswerGuide,
@@ -128,9 +135,7 @@ export async function POST(request: Request) {
     const priorText = priorUserText(history);
     const priorReply = priorAssistantText(history);
     const clip = threadClip(history);
-    // Start classify, but do not hold the chat id on it. The thread joins
-    // the same flight when it resumes. Waiting here is the pause on Ask.
-    void ensureAskClassify(user.id, conversationId, userText, {
+    await ensureAskClassify(user.id, conversationId, userText, {
       hasFiles: attachments.length > 0,
       priorText,
       priorReply,
@@ -256,6 +261,12 @@ export async function POST(request: Request) {
           priorReply,
           threadClip: clip,
         });
+        const mayStudy = !hasFiles && fallbackIntent.harvest;
+        const studyPromise: Promise<StudyReference> = mayStudy
+          ? fetchStudyReference(userText, {
+              picture: wantsStudyPaper(userText),
+            })
+          : Promise.resolve({ wiki: null, paper: null });
         const intentPromise = ensureAskClassify(
           user.id,
           conversationId,
@@ -273,6 +284,19 @@ export async function POST(request: Request) {
           fallbackIntent
         );
         const liveRoute = planToRoute(intentForAnswer, hasFiles);
+        const picture = isPictureTurn(intentForAnswer);
+        let study: StudyReference = { wiki: null, paper: null };
+        if (
+          intentForAnswer.job === "remember" &&
+          intentForAnswer.freshness === "weights" &&
+          intentForAnswer.harvest &&
+          !hasFiles
+        ) {
+          study = await studyPromise;
+          if (!(picture && wantsStudyPaper(userText))) {
+            study = { ...study, paper: null };
+          }
+        }
         const useFeeds = intentForAnswer.freshness === "feeds" || liveRoute.seedLive;
         if (useFeeds) {
           const live = await liveLookupContext(routedText, {
@@ -303,6 +327,7 @@ export async function POST(request: Request) {
           system ??
             [ASK_SYSTEM_PROMPT, localeLine(geo)].filter(Boolean).join("\n\n"),
           searchRuleLine(liveSearch),
+          referencePrompt(study),
           harvestHint,
         ]
           .filter(Boolean)
@@ -328,9 +353,11 @@ export async function POST(request: Request) {
             continue;
           }
           if (live.type === "done") {
+            const linked = quietReferenceLinks(study);
+            const withLinks = linked ? `${live.text.trim()}\n\n${linked}` : live.text;
             const finalText = lookupSources.length
-              ? attachSources(live.text, lookupSources)
-              : live.text;
+              ? attachSources(withLinks, lookupSources)
+              : withLinks;
             const { assistantRow, assistantError } = await saveAssistantReply(
               supabase,
               conversationId,
@@ -375,7 +402,10 @@ export async function POST(request: Request) {
                 reply: assistantRow as AskMessage,
               });
             }
-            const harvestIntent = intentForAnswer;
+            const harvestIntent =
+              picture && !study.wiki
+                ? { ...intentForAnswer, harvest: false }
+                : intentForAnswer;
             const harvested =
               harvestIntent.harvest
                 ? await import("@/lib/learn-mine").then(({ mineLearnFromTurn }) =>

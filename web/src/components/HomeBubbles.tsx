@@ -130,7 +130,9 @@ type LearnPlay = {
   hitId: string | null;
   retrying: boolean;
   missed: string[];
+  assisted: string[];
   quote: boolean;
+  hintOn: boolean;
   choices: PlayChoice[];
 };
 
@@ -686,7 +688,9 @@ export function HomeBubbles({
       hitId: null,
       retrying: false,
       missed: [],
+      assisted: [],
       quote: false,
+      hintOn: false,
       choices: lead?.face === "see" ? choicesFor(leadChip) : [],
     });
     if (paper) return;
@@ -744,7 +748,12 @@ export function HomeBubbles({
 
   function resultsFor(from: LearnPlay): ChipRoundResult[] {
     const missed = new Set(from.missed);
-    return from.family.map((id) => ({ id, passed: !missed.has(id) }));
+    const assisted = new Set(from.assisted);
+    return from.family.map((id) => ({
+      id,
+      passed: !missed.has(id),
+      assisted: assisted.has(id),
+    }));
   }
 
   function commitRound(results: ChipRoundResult[]) {
@@ -771,7 +780,9 @@ export function HomeBubbles({
       const chip = chipById(id);
       const row = document.querySelector(`[data-end-chip="${id}"]`);
       const box = row?.getBoundingClientRect();
-      const master = chip ? wouldMasterOnPass(chip) : false;
+      const master = chip
+        ? wouldMasterOnPass(chip) && !from.assisted.includes(chip.id)
+        : false;
       const dest = master ? gold ?? pocket : pocket;
       if (!chip || !box || !dest) continue;
       if (master) goldFlights += 1;
@@ -850,25 +861,23 @@ export function HomeBubbles({
     if (!play || play.mode !== "play" || answering.current) return;
     const beat = play.beats[play.index];
     if (!beat || beat.face !== "see") return;
-    if (play.missId === choice.id) return;
+    if (play.quote) return;
     if (!choice.correct) {
       answering.current = true;
-      setPlay({
+      const revealed: LearnPlay = {
         ...play,
         missId: choice.id,
         hitId: null,
         quote: true,
-        retrying: true,
-        missed: play.retrying
-          ? play.missed.includes(beat.chipId)
-            ? play.missed
-            : [...play.missed, beat.chipId]
-          : play.missed,
-      });
+        hintOn: false,
+        retrying: false,
+        missed: play.missed.includes(beat.chipId)
+          ? play.missed
+          : [...play.missed, beat.chipId],
+      };
+      setPlay(revealed);
       window.clearTimeout(holdTimer.current);
-      holdTimer.current = window.setTimeout(() => {
-        answering.current = false;
-      }, MISS_HOLD_MS);
+      holdTimer.current = window.setTimeout(() => advanceFrom(revealed), MISS_HOLD_MS);
       return;
     }
     setPlay({
@@ -913,26 +922,54 @@ export function HomeBubbles({
           : "";
       hit = closedHit(typed, chip, /[A-Za-z0-9]/.test(cue) ? cue : "");
     }
-    if (!typed.trim()) return;
+    if (!typed.trim() || play.quote) return;
     if (!hit) {
       answering.current = true;
-      setPlay({
+      const picture = Boolean(chip.hint) && !play.hintOn;
+      if (picture) {
+        const shown: LearnPlay = {
+          ...play,
+          hitId: null,
+          quote: false,
+          hintOn: true,
+          retrying: true,
+        };
+        setPlay(shown);
+        window.clearTimeout(holdTimer.current);
+        holdTimer.current = window.setTimeout(() => {
+          answering.current = false;
+        }, MISS_HOLD_MS);
+        return;
+      }
+      const revealed: LearnPlay = {
         ...play,
         hitId: null,
         quote: true,
-        retrying: true,
+        hintOn: false,
+        retrying: false,
         missed: play.missed.includes(beat.chipId)
           ? play.missed
           : [...play.missed, beat.chipId],
-      });
+      };
+      setPlay(revealed);
       window.clearTimeout(holdTimer.current);
-      holdTimer.current = window.setTimeout(() => {
-        answering.current = false;
-      }, MISS_HOLD_MS);
+      holdTimer.current = window.setTimeout(() => advanceFrom(revealed), MISS_HOLD_MS);
       return;
     }
-    setPlay({ ...play, hitId: "typed", quote: false });
-    landCorrect({ ...play, hitId: "typed", quote: false, retrying: play.retrying });
+    const assisted = play.hintOn
+      ? play.assisted.includes(beat.chipId)
+        ? play.assisted
+        : [...play.assisted, beat.chipId]
+      : play.assisted;
+    setPlay({ ...play, hitId: "typed", quote: false, hintOn: false, assisted });
+    landCorrect({
+      ...play,
+      hitId: "typed",
+      quote: false,
+      hintOn: false,
+      assisted,
+      retrying: play.hintOn,
+    });
   }
 
   const learning = Boolean(play);
@@ -1166,6 +1203,12 @@ export function HomeBubbles({
                     className="compose-play-beat"
                     key={beat?.id ?? play.index}
                   >
+                    {play.hintOn && current?.hint ? (
+                      <div className="compose-play-miss" role="status">
+                        <p className="compose-play-miss-kicker">Not quite —</p>
+                        <blockquote className="compose-play-quote">{current.hint}</blockquote>
+                      </div>
+                    ) : null}
                     {play.quote && current ? (
                       <div className="compose-play-miss" role="status">
                         <p className="compose-play-miss-kicker">Not quite —</p>

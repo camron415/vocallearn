@@ -1,4 +1,5 @@
 import { callGrokChat } from "@/lib/grok";
+import { isPictureTurn } from "@/lib/ask-provider";
 import { resolveChipRecall, type ChipRecall } from "@/lib/chip-recall";
 import {
   capitalFallbackCard,
@@ -38,26 +39,26 @@ import {
 } from "@/lib/chip-invariants";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-const MINER = `You extract 0 to 3 review chips from a family Ask chat. Prefer 2–3 chips from the SAME assistant answer when it has more than one stable detail (a cluster).
-Return ONLY JSON: {"cards":[{"prompt":"question from memory","promptB":"a second different question for the same fact","answer":"short correct answer","hint":"tiny hint never used as a question","token":"same shape as answer","span":"exact substring copied from ASSISTANT","kind":"when|where|who|meaning","distractors":["wrong1","wrong2","wrong3"]}]}
+const MINER = `You extract 0 to 2 review chips from a family Ask chat. One chip that answers what they typed. A second only when they asked two things, or the second token is part of that same answer and would still be true alone.
+Return ONLY JSON: {"cards":[{"prompt":"question from memory","promptB":"a second different question for the same fact","answer":"short correct answer","hint":"sentence 2 copied verbatim, or empty","token":"same shape as answer","span":"exact substring copied from ASSISTANT","kind":"when|where|who|meaning","distractors":["wrong1","wrong2","wrong3"]}]}
 Rules:
 - Only stable facts: history, science, math, definitions, how-something-works.
 - SKIP weather, news, sports scores, stocks, recipes, schedules, opinions, fan sentiment, and prices that change day to day.
 - SKIP chit-chat and meta-talk: greetings, "got it", and anything about a typo in the user's message. Never quiz "what was the typo" or "what did the user mean to type".
+- SKIP a dose, a diagnosis, an emergency, and a count that moves (population).
+- SKIP when the answer says the question is unsettled, debated, or unknown. Return {"cards":[]}.
 - KEEP closed facts even from short asks: capitals, counts, names, dates, places, definitions. One-word answers (Jupiter, Nile) are fine.
 - Uniqueness is the question cue, not the answer word. Same answer with a different question is a new card. Restated questions are not.
-- When you return 2+ cards from one answer, spread kinds (when / where / who / meaning) when the facts support it — not all the same color.
+- Do not chip a picture, a cause, a consequence, or a color. The hint is sentence 2 of ASSISTANT copied verbatim. If there is no picture sentence, hint is "".
+- Never rewrite the hint. Never use the hint as prompt or promptB.
 - span MUST be the shortest literal substring in ASSISTANT (city, year, number) — never a full sentence.
-- If USER asks "capital of …", return at least one where card; span = the city name as written.
-- If USER asks "population of …", return a meaning card; span = the number as written (keep commas).
-- When ASSISTANT gives 2+ closed facts (city + population), return 2 cards.
+- If USER asks "capital of …", return one where card; span = the city name as written.
+- If USER asks "population of …", return {"cards":[]}.
 - kind: when=dates/years/durations, where=places, who=names, meaning=definitions or the vital phrase.
 - token MUST be the same class as answer (both names, both years, both mile figures). Never a phrase vs a city.
 - distractors: exactly 3 wrong answers, SAME SHAPE as the answer (same unit, same kind of name). Never miles vs km. Never a phrase vs a city. Never a year vs an era label.
 - promptB MUST be a real second question for the same fact. Never copy prompt. Never use hint as promptB.
-- Return a "recall" field: "closed" or "open".
-- When Open gist cards allowed is 1, card 1 SHOULD be recall=open: token = the topic name (1–3 words, e.g. Photosynthesis), answer = a complete sentence 12–24 words (“Photosynthesis is the process of converting…”, never a bare verb like “convert light energy…”), span = a short phrase copied from ASSISTANT, distractors = []. Then 1–2 closed pegs with 3 distractors.
-- span for closed = shortest token (city, year, name). span for open = a 4–10 word phrase that appears in ASSISTANT. token for open is the topic name, not a slice of the gist.
+- Return a "recall" field: "closed".
 - If nothing qualifies, {"cards":[]}.`;
 
 const LEARN_CARDS_PEEK = 400;
@@ -72,9 +73,9 @@ Harvest this turn: ${intent.harvest ? "yes" : "no"}
 Mode: ${intent.answerMode}
 Ask kind (MAIN chip): ${intent.askKind ?? "unspecified"}
 Max chips: ${intent.maxChips}
-Open gist cards allowed: ${intent.maxOpen} (0 or 1). Open = one complete sentence gist of USER's question, 12–24 words, topic name as token, not the whole answer.
+Open gist cards allowed: 0. Every card is closed. hint is sentence 2 copied from ASSISTANT, or empty. Do not invent a hint. Do not chip the picture.
 Closed cards: short tokens with exactly 3 same-shape distractors.
-Primary card must answer USER (if USER is a follow-up, use PRIOR context in USER needs — “this” means that topic). Card 1 is the MAIN fact (askKind). Cards 2–3 are supporting who/when/where with a different kind — never trivia, never a restatement of USER's question.
+Primary card must answer USER (if USER is a follow-up, use PRIOR context in USER needs — “this” means that topic). Card 1 is the MAIN fact (askKind). A second card only when USER asked two things. Never trivia, never a restatement, never the picture.
 Never echo USER as a token (“Give me brief”, “Why did Western”).
 Never harvest a product SKU, a specific item's material blend, shopping, today's forecast, event times, or advice lists.
 Do not rewrite older facts from earlier turns. Only chips for THIS assistant answer.`;
@@ -209,6 +210,20 @@ function claimAlreadyKept(card: KnownClaim, known: KnownClaim[]) {
   return known.some((row) => cueRestates(cue, harvestCueKey(row.prompt)));
 }
 
+function pictureHint(raw: string | undefined, reply: string, index: number) {
+  const given = (raw ?? "").trim();
+  if (index > 0) return undefined;
+  if (given && given.length >= 12 && given.length <= 240) return given.slice(0, 240);
+  const parts = reply
+    .replace(/\s+/g, " ")
+    .split(/(?<=[.!?])\s+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  const second = parts[1];
+  if (!second || second.length < 24 || second.length > 240) return undefined;
+  return second;
+}
+
 export function parseMinerJson(raw: string): MinerJson | null {
   const blob = extractJson(raw);
   if (!blob) return null;
@@ -244,6 +259,13 @@ export function cardsFromMinerJson(
     ...knownPrompts.map((prompt) => asKnownClaim({ prompt })),
     ...(options?.knownRows ?? []).map(asKnownClaim),
   ];
+  if (
+    /\b(unsettled|debated|no consensus|not agreed|do not agree|don't agree|no single cause|several theories|remains unclear|still unclear)\b/i.test(
+      reply.slice(0, 420)
+    )
+  ) {
+    return [];
+  }
   const harvested: HarvestChipDraft[] = [];
 
   for (const card of parsed?.cards ?? []) {
@@ -326,7 +348,10 @@ export function cardsFromMinerJson(
           ? promptB.slice(0, 240)
           : undefined,
       answer: invariant.answer,
-      hint: (card.hint ?? "").trim().slice(0, 160) || undefined,
+      hint:
+        intent && isPictureTurn(intent)
+          ? pictureHint(card.hint, reply, harvested.length)
+          : undefined,
       weight: "simple",
       cluster: clusterId || undefined,
       distractors,

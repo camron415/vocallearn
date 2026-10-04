@@ -72,7 +72,7 @@ export const FAMILY_REVIEW_CASES: FamilyReviewCase[] = [
     cannedReply:
       "Photosynthesis is how plants make food from sunlight, water, and carbon dioxide. It happens in the chloroplast and gives off oxygen.",
     wantSkip: false,
-    wantOpen: true,
+    wantOpen: false,
     expectTokens: ["chloroplast"],
     note: "Open gist + closed pegs. Gist due tomorrow; Home cloze then gist SAY.",
   },
@@ -82,7 +82,7 @@ export const FAMILY_REVIEW_CASES: FamilyReviewCase[] = [
     cannedReply:
       "Many cows are brown because of genetics — pigments like **melanin** in the coat. Breed and camouflage also play a part. It is not because they drink chocolate milk.",
     wantSkip: false,
-    wantOpen: true,
+    wantOpen: false,
     expectTokens: ["melanin"],
     note: "How/why — gist plus one closed atom.",
   },

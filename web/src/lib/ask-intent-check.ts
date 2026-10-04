@@ -38,14 +38,14 @@ export function runAskIntentFixtures(): { ok: boolean; failures: string[] } {
     !capital.harvest ||
     capital.answerMode !== "direct" ||
     capital.maxOpen !== 0 ||
-    capital.maxChips < 2
+    capital.maxChips !== 1
   ) {
-    fail(failures, "utah capital should be direct closed with 2–3 chip budget");
+    fail(failures, "utah capital should be direct closed with one chip");
   }
 
   const cows = fallbackAskIntent("why are cows brown");
-  if (!cows.harvest || cows.answerMode !== "teach_light" || cows.maxOpen !== 1) {
-    fail(failures, "cows why should be teach_light with one open slot");
+  if (!cows.harvest || cows.answerMode !== "teach_light" || cows.maxOpen !== 0) {
+    fail(failures, "cows why should be teach_light with no open gist");
   }
 
   const weather = fallbackAskIntent("What's the weather this week?");
@@ -80,8 +80,8 @@ export function runAskIntentFixtures(): { ok: boolean; failures: string[] } {
   }
 
   const immune = fallbackAskIntent("How does the human immune system work?");
-  if (!immune.harvest || immune.maxOpen !== 1) {
-    fail(failures, "immune how should allow one open gist");
+  if (!immune.harvest || immune.maxOpen !== 0 || immune.maxChips !== 1) {
+    fail(failures, "immune how should keep one closed chip and no open gist");
   }
 
   const event = fallbackAskIntent("What time is the Tesla cyber cab event");
@@ -101,8 +101,8 @@ export function runAskIntentFixtures(): { ok: boolean; failures: string[] } {
   const nileName = fallbackAskIntent(
     "What is usually named as the longest river in the world?"
   );
-  if (!nileName.harvest || nileName.answerMode !== "direct" || nileName.maxChips < 2) {
-    fail(failures, "nile name-only should be direct with 2–3 chip budget");
+  if (!nileName.harvest || nileName.answerMode !== "direct" || nileName.maxChips !== 1) {
+    fail(failures, "nile name-only should be direct with one chip");
   }
 
   const photo = fallbackAskIntent("what is this", { hasFiles: true });
@@ -377,8 +377,8 @@ export function runAskIntentFixtures(): { ok: boolean; failures: string[] } {
   const openKept = cardsFromMinerJson(parseMinerJson(openJson), reply, [], "imm", {
     intent: immune,
   });
-  if (openKept.length !== 1 || openKept[0]?.recall !== "open") {
-    fail(failures, `open gist with intent maxOpen 1, got ${openKept.length}`);
+  if (openKept.length !== 0) {
+    fail(failures, `how/why should not keep an open gist, got ${openKept.length}`);
   }
 
   const openBlocked = cardsFromMinerJson(parseMinerJson(openJson), reply, [], "imm", {
@@ -493,36 +493,24 @@ export function runAskIntentFixtures(): { ok: boolean; failures: string[] } {
     { intent: fallbackAskIntent(wyomingAsk), userText: wyomingAsk }
   );
   const wyTokens = wyoming.map((c) => c.token);
-  if (!wyTokens.includes("Cheyenne") || wyoming.length < 1 || wyoming.length > 3) {
-    fail(failures, `wyoming capital should keep Cheyenne plus optional support, got ${wyTokens.join(",")}`);
-  }
-  if (!wyTokens.includes("1869")) {
-    fail(failures, "wyoming should also keep the supporting statehood year");
+  if (!wyTokens.includes("Cheyenne") || wyoming.length !== 1) {
+    fail(failures, `wyoming capital should keep only Cheyenne, got ${wyTokens.join(",")}`);
   }
 
   const gist = openFallbackCard(
     "How does photosynthesis work?",
     "Photosynthesis is how plants make food from sunlight, water, and carbon dioxide. It happens in the chloroplast."
   );
-  if (!gist || gist.recall !== "open" || gist.span.length < 8) {
-    fail(failures, "open fallback should emit a gist with a span in the reply");
-  }
-  if (gist && gist.token.toLowerCase() !== "photosynthesis") {
-    fail(failures, `open token should be the topic, got ${gist.token}`);
-  }
-  if (gist && !/photosynthesis is/i.test(gist.answer)) {
-    fail(failures, `open gist should be a complete sentence, got ${gist.answer}`);
+  if (gist) {
+    fail(failures, "open fallback should not emit a gist card");
   }
 
   const telegram = openFallbackCard(
     "What is the basic definition of photosynthesis?",
     "Convert light energy from the sun into chemical energy stored in glucose. Chloroplasts do this work."
   );
-  if (
-    telegram &&
-    !/photosynthesis is the process of converting/i.test(telegram.answer)
-  ) {
-    fail(failures, `telegram gist should complete the sentence, got ${telegram.answer}`);
+  if (telegram) {
+    fail(failures, "a definition should not fall back to an open gist");
   }
 
   const fans = fallbackAskIntent(
@@ -607,8 +595,8 @@ export function runAskIntentFixtures(): { ok: boolean; failures: string[] } {
   }
 
   const teachGuide = intentAnswerGuide(quake);
-  if (!/first sentence|gist/i.test(teachGuide) || !/supporting pegs/i.test(teachGuide)) {
-    fail(failures, "teach_light guide should lead with the answer then supporting pegs");
+  if (!/Sentence 1/i.test(teachGuide) || /supporting pegs/i.test(teachGuide)) {
+    fail(failures, "teach_light guide should lead with the answer and not ask for side pegs");
   }
 
   const sky = parseAskIntent(
@@ -618,10 +606,10 @@ export function runAskIntentFixtures(): { ok: boolean; failures: string[] } {
   if (
     !sky?.harvest ||
     sky.job !== "remember" ||
-    sky.maxChips !== 3 ||
+    sky.maxChips !== 2 ||
     sky.saveOffer
   ) {
-    fail(failures, "educational remember should Keep, cap 3 chips, no recipe pill");
+    fail(failures, "educational remember should Keep, cap 2 chips, no recipe pill");
   }
 
   const weatherRemember = parseAskIntent(
@@ -659,8 +647,8 @@ export function runAskIntentFixtures(): { ok: boolean; failures: string[] } {
   if (!bomb.harvest || bomb.job !== "remember" || bomb.answerMode !== "teach_light") {
     fail(failures, "brief history of the atomic bomb should harvest as teach_light");
   }
-  if (bomb.maxChips < 2) {
-    fail(failures, "brief history should budget at least 2 chips");
+  if (bomb.maxChips !== 1) {
+    fail(failures, "brief history should budget one chip");
   }
 
   const nagasaki = fallbackAskIntent(

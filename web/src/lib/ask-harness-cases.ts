@@ -60,9 +60,9 @@ export const ASK_HARNESS_CASES: HarnessCase[] = [
       freshness: "weights",
       harvest: true,
       tools: false,
-      provider: "luna",
+      provider: "grok",
     },
-    note: "Educational how/why — Luna, Keep. Grok only if answerDepth long.",
+    note: "Why/how picture turn — Grok 4.3, low effort, search off, Keep one chip.",
   },
   {
     id: "edu-who-this",

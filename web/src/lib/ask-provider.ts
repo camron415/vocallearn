@@ -4,14 +4,30 @@ import { lunaEnabled } from "@/lib/openai";
 
 export type AnswerProvider = "luna" | "grok";
 
+/** Why, how, and history. A date, place, name, or count stays on the mini even if the wording says history. */
+export function isPictureTurn(
+  plan: Pick<AskIntent, "job" | "answerMode" | "askKind">
+): boolean {
+  if (plan.job !== "remember" || plan.answerMode !== "teach_light") return false;
+  if (
+    plan.askKind === "when" ||
+    plan.askKind === "where" ||
+    plan.askKind === "who" ||
+    plan.askKind === "number"
+  ) {
+    return false;
+  }
+  return true;
+}
+
 /**
  * job ⟂ freshness. harvest = f(job). search = f(freshness).
- * Attachments always Grok; teach_light / web get a little effort.
+ * Picture turns write on Grok at low effort. Long depth does not pick the writer.
  */
 export function planToRoute(
   plan: Pick<
     AskIntent,
-    "job" | "answerMode" | "freshness" | "feedDomain" | "answerDepth"
+    "job" | "answerMode" | "freshness" | "feedDomain" | "answerDepth" | "askKind"
   >,
   hasAttachments: boolean
 ): AskRoute {
@@ -19,8 +35,7 @@ export function planToRoute(
     plan.feedDomain && plan.freshness !== "feeds" ? "feeds" : plan.freshness;
   const web = freshness === "web";
   const feeds = freshness === "feeds";
-  const teach = plan.answerMode === "teach_light";
-  const long = plan.answerDepth === "long";
+  const picture = isPictureTurn(plan);
   if (hasAttachments) {
     return {
       kind: "reason",
@@ -33,9 +48,10 @@ export function planToRoute(
   return {
     kind: feeds ? "lookup" : "reason",
     tools: web,
-    effort: web || long ? "medium" : feeds ? "none" : "low",
-    maxToolCalls: web ? (teach ? 2 : 1) : 0,
+    effort: web ? "medium" : feeds ? "none" : "low",
+    maxToolCalls: web ? 1 : 0,
     seedLive: feeds,
+    writer: picture && !web ? "grok" : "luna",
   };
 }
 
@@ -53,13 +69,14 @@ export function refineRouteForIntent(
       answerMode: (intent.answerMode as AskIntent["answerMode"]) || "practical",
       freshness,
       answerDepth: "standard",
+      askKind: null,
       feedDomain: (intent.feedDomain as FeedDomain | null) ?? null,
     },
     hasAttachments
   );
 }
 
-/** Luna: default family chat. Grok: files, web search, or long depth (route.effort). */
+/** Luna: closed facts and chat. Grok: files, web search, or a picture turn at low effort. */
 export function pickAnswerProvider(
   route: AskRoute,
   hasAttachments: boolean
@@ -67,6 +84,7 @@ export function pickAnswerProvider(
   if (!lunaEnabled()) return "grok";
   if (hasAttachments) return "grok";
   if (route.tools) return "grok";
+  if (route.writer === "grok") return "grok";
   if (route.effort === "medium" || route.effort === "high") return "grok";
   return "luna";
 }

@@ -97,8 +97,8 @@ Follow-ups: read PRIOR, LAST, and THREAD. USER may be short ("give me current on
 
 answerMode:
 - practical — only for live, kitchen, chat, opinion
-- direct — closed remember (capital, name, date, definition). maxChips 2–3, maxOpen 0
-- teach_light — how/why/explain/history remember. maxChips 2–3, maxOpen 1
+- direct — closed remember (capital, name, date, count). maxChips 1, maxOpen 0. A second chip only when they asked two things.
+- teach_light — how/why/explain/history remember. maxChips 1, maxOpen 0. A second chip only when they asked two things.
 
 saveOffer is "recipe" only when job is kitchen. Otherwise null.
 feedDomain is set only when freshness is feeds.
@@ -112,15 +112,15 @@ function foldKey(text: string) {
     .slice(0, 48);
 }
 
-function clampChips(n: number, harvest: boolean, mode: AnswerMode) {
+function clampChips(n: number, harvest: boolean, _mode: AnswerMode) {
   if (!harvest) return 0;
-  const fallback = mode === "direct" ? 2 : 3;
-  return Math.max(2, Math.min(3, Math.round(n) || fallback));
+  const raw = Math.round(n);
+  if (!raw) return 1;
+  return Math.max(1, Math.min(2, raw));
 }
 
-function clampOpen(n: number, harvest: boolean, mode: AnswerMode): 0 | 1 {
-  if (!harvest || mode === "direct" || mode === "practical") return 0;
-  return n >= 1 ? 1 : 0;
+function clampOpen(_n: number, _harvest: boolean, _mode: AnswerMode): 0 | 1 {
+  return 0;
 }
 
 export function parseAskIntent(
@@ -320,6 +320,22 @@ export function mergeAskIntent(
       ? resolvedAsk
       : "";
 
+  if (MOVING_COUNT.test(current) || MOVING_COUNT.test(resolvedAsk)) {
+    return blankIntent(false, "count that moves", "practical", current.slice(0, 240), 0, 0, null, "live", {
+      freshness: "web",
+    });
+  }
+  if (DOSE_ASK.test(current) || DOSE_ASK.test(resolvedAsk)) {
+    return blankIntent(false, "dose", "practical", current.slice(0, 240), 0, 0, null, "other", {
+      freshness: "weights",
+    });
+  }
+  if (UNSETTLED_ASK.test(current) || UNSETTLED_ASK.test(resolvedAsk)) {
+    return blankIntent(false, "unsettled", "practical", current.slice(0, 240), 0, 0, null, "other", {
+      freshness: "weights",
+    });
+  }
+
   if (looksLikeGibberish(current) || looksLikeChitChat(current)) {
     return sealPlan(
       {
@@ -465,8 +481,13 @@ const GREETING_ASK =
 const OPINION_ASK =
   /\b(sentiment|fan reaction|what (?:do|are) (?:the )?(?:fans|players|people) think|how do (?:fans|people|players) feel)\b/i;
 const CAPITAL_ASK = /\bcapital of\b/i;
+const MOVING_COUNT = /\bpopulation of\b/i;
+const DOSE_ASK =
+  /\b(ibuprofen|acetaminophen|tylenol|dosage|what dose|how much .{0,40}\b(give|take)|mg of)\b/i;
+const UNSETTLED_ASK =
+  /\b((?:10%|ten percent) of (?:the |your |our )?brain|vaccines?.{0,40}autism|autism.{0,40}vaccines?|glass is a liquid|why (?:do|does) (?:we|people) dream|bronze age collapse|caused the bronze age)\b/i;
 const CLOSED_LOOKUP =
-  /\b(population of|boiling point|largest city|how many|when was|who (wrote|invented|founded)|what is usually named|longest river|name of the)\b/i;
+  /\b(boiling point|largest city|how many|when was|who (wrote|invented|founded)|what is usually named|longest river|name of the)\b/i;
 
 /** Recipe / product / opinion skips still win over a classify-remember miss. */
 function regexSkipOwnsJob(text: string) {
@@ -596,6 +617,21 @@ export function fallbackAskIntent(
       { ...extras, freshness: "weights", feedDomain: null }
     );
   }
+  if (MOVING_COUNT.test(current)) {
+    return blankIntent(false, "count that moves", "practical", current.slice(0, 240), 0, 0, null, "live", {
+      freshness: "web",
+    });
+  }
+  if (DOSE_ASK.test(current)) {
+    return blankIntent(false, "dose", "practical", current.slice(0, 240), 0, 0, null, "other", {
+      freshness: "weights",
+    });
+  }
+  if (UNSETTLED_ASK.test(current)) {
+    return blankIntent(false, "unsettled", "practical", current.slice(0, 240), 0, 0, null, "other", {
+      freshness: "weights",
+    });
+  }
   if (
     options?.priorText?.trim() &&
     isShortFollowUp(current) &&
@@ -715,7 +751,7 @@ export function fallbackAskIntent(
     (isLookupAsk(resolved) && !deeper && !feed) ||
     CLOSED_LOOKUP.test(resolved)
   ) {
-    return blankIntent(true, "closed lookup", "direct", primaryAsk, 2, 0, null, "remember", {
+    return blankIntent(true, "closed lookup", "direct", primaryAsk, 1, 0, null, "remember", {
       freshness: "weights",
     });
   }
@@ -735,20 +771,20 @@ export function fallbackAskIntent(
   }
 
   if (deeper) {
-    return blankIntent(true, "how/why/explain", "teach_light", primaryAsk, 3, 1, null, "remember", {
+    return blankIntent(true, "how/why/explain", "teach_light", primaryAsk, 1, 0, null, "remember", {
       freshness: "weights",
     });
   }
 
   if (looksLikeRememberAsk(resolved) || looksLikeRememberAsk(current)) {
-    return blankIntent(true, "stable fact ask", "direct", primaryAsk, 2, 0, null, "remember", {
+    return blankIntent(true, "stable fact ask", "direct", primaryAsk, 1, 0, null, "remember", {
       freshness: "weights",
     });
   }
 
   const words = current.split(/\s+/).filter(Boolean).length;
   if (words >= 4 && current.length >= 8) {
-    return blankIntent(true, "timeout remember", "teach_light", primaryAsk, 3, 1, null, "remember", {
+    return blankIntent(false, "unsure", "practical", current.slice(0, 240), 0, 0, null, "other", {
       freshness: "weights",
     });
   }
@@ -759,6 +795,12 @@ export function fallbackAskIntent(
 }
 
 export function intentAnswerGuide(intent: AskIntent): string {
+  if (intent.harvestWhy === "dose") {
+    return "Answer in one or two cautious sentences. Say this is not a fact to study. Do not give a dose as a number to memorize. No Sources section.";
+  }
+  if (intent.harvestWhy === "unsettled") {
+    return "This is not a settled fact. Say that in one or two sentences and stop. If the claim is false, say no and stop. No picture, no mechanism to memorize, no Sources section.";
+  }
   if (intent.saveOffer === "recipe") {
     return [
       "This turn is a cookable kitchen card, not a review fact.",
@@ -797,23 +839,14 @@ export function intentAnswerGuide(intent: AskIntent): string {
   if (intent.answerMode === "direct") {
     return [
       kindLine,
-      "Spell that answer as a clear token.",
-      "Then add one or two supporting pegs in the prose (a who, when, where, or key term) so they can sit as side chips after the main fact.",
-      intent.answerDepth === "brief"
-        ? "Keep it to 2–4 sentences. Do not pad trivia or run a tutor quiz."
-        : "Keep it tight. Do not pad trivia or run a tutor quiz.",
+      "One or two sentences. No picture. No second fact. No Sources section.",
     ].join(" ");
   }
-  const depthLine =
-    intent.answerDepth === "long"
-      ? "After the opening gist you may write a longer explanation with headings if it helps."
-      : "A little more explanation is OK — teach clearly, do not run a tutor quiz or withhold the answer.";
   return [
-    kindLine,
-    "Open with one complete gist sentence of 12–24 words that starts with the topic (“Photosynthesis is the process of…”, not a telegram fragment).",
-    depthLine,
-    "Every closed fact worth keeping must appear at least once as a bare token in the prose, not only in a heading.",
-    "Then weave in up to two supporting pegs (a who, when, where, or key term) so they can sit as side chips after the main fact.",
+    "Sentence 1 gives the answer in its first words.",
+    "Sentence 2, if you write it, is one concrete scene of that same claim. It may not add a cause, date, name, or count that sentence 1 did not state. If the scene would still sound like a good explanation when sentence 1 is false, stop after sentence 1.",
+    "Then at most three short sentences inside that same scene. About four to six sentences. No headings, no quiz, no Sources section.",
+    "If the question is unsettled, say so in sentence 1 and stop. Do not pick a cause.",
   ].join(" ");
 }
 
@@ -1052,66 +1085,12 @@ export function capitalFallbackCard(
   };
 }
 
-/** One gist card when teach_light miner returns only closed pegs or nothing. */
+/** Gist cards are not harvested. The picture stays in the hint, not a bead. */
 export function openFallbackCard(
-  userText: string,
-  reply: string
-): {
-  prompt: string;
-  answer: string;
-  token: string;
-  span: string;
-  kind: "meaning";
-  recall: "open";
-  distractors: string[];
-} | null {
-  const plain = reply
-    .replace(/[#*_`]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-  const sentence = (plain.split(/(?<=[.!?])\s+/)[0] || plain).trim();
-  const words = sentence.split(" ").filter(Boolean);
-  if (words.length < 12 || words.length > 24) return null;
-  const topic = topicFromAsk(userText);
-  if (!topic || !sentence.toLowerCase().includes(topic.toLowerCase().slice(0, 12))) {
-    return null;
-  }
-  const gist = sentence;
-  let span = "";
-  for (let n = 6; n >= 3; n -= 1) {
-    for (let i = 0; i + n <= words.length; i += 1) {
-      const slice = words.slice(i, i + n).join(" ");
-      if (plain.toLowerCase().includes(slice.toLowerCase())) {
-        span = slice;
-        break;
-      }
-    }
-    if (span) break;
-  }
-  if (!span) return null;
-  return {
-    prompt: userText.trim().replace(/\?+$/, "?").slice(0, 240) || "What is the idea?",
-    answer: gist,
-    token: topic.slice(0, 80),
-    span,
-    kind: "meaning",
-    recall: "open",
-    distractors: [],
-  };
-}
-
-function topicFromAsk(userText: string): string {
-  const t = userText.replace(/[?!]+$/g, "").trim();
-  const m = t.match(
-    /^(?:what is|what's|whats|define|explain|how does|how do)\s+(?:the )?(?:basic )?(?:definition of )?(.+?)(?:\s+work|\s+mean)?$/i
-  );
-  const raw = (m?.[1] ?? t).replace(/\s+/g, " ").trim();
-  const words = raw
-    .split(/\s+/)
-    .filter((word) => !/^(a|an|the|of|for|and|basic)$/i.test(word));
-  const topic = words.slice(0, 3).join(" ");
-  if (!topic) return "Idea";
-  return topic.replace(/^\w/, (ch) => ch.toUpperCase()).slice(0, 48);
+  _userText: string,
+  _reply: string
+): null {
+  return null;
 }
 
 function completeGistSentence(topic: string, sentence: string): string {

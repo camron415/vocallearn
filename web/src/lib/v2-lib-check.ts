@@ -23,6 +23,7 @@ import { runAskAnswerShapeFixtures } from "./ask-answer-shape";
 import { runPendingTurnFixtures } from "./pending-turn-check";
 import { runFilmRateFixtures } from "./film-rate-check";
 import { runHaloJuiceFixtures } from "./halo-juice-check";
+import { runStudyHarnessFixtures } from "./study-harness-check";
 
 function runFamilyReviewFixtures(): SuiteResult {
   const failures: string[] = [];
@@ -80,6 +81,7 @@ const suites: Array<[string, () => SuiteResult | Promise<SuiteResult>]> = [
   ["home-pack (phone seats vs desktop 16)", runHomePackFixtures],
   ["film-rate (agent burst + take)", runFilmRateFixtures],
   ["halo-juice (quiet + listen atom)", runHaloJuiceFixtures],
+  ["study-harness (picture writer + do-not-keep)", runStudyHarnessFixtures],
 ];
 
 async function main() {

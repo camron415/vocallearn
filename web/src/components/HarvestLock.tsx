@@ -195,6 +195,26 @@ export function HarvestLock({
     missesRef.current += 1;
     setMiss(true);
     setMissId(trimmed);
+    window.clearTimeout(advanceTimer.current ?? undefined);
+    advanceTimer.current = window.setTimeout(() => {
+      const keep = [...claimedRef.current, current];
+      logsRef.current = [
+        ...logsRef.current,
+        lockChipLog(current, "skip", missesRef.current),
+      ];
+      missesRef.current = 0;
+      setMiss(false);
+      setMissId(null);
+      setHit(null);
+      setSaid("");
+      setListening(false);
+      if (index + 1 >= ordered.length) {
+        emit(keep);
+        return;
+      }
+      claimedRef.current = keep;
+      setIndex((n) => n + 1);
+    }, 1200);
   }
 
   function skipRest() {

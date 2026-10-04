@@ -3,9 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { AuthShell } from "@/components/AuthShell";
 import { emailError } from "@/lib/account";
-
-const SOCIAL_WAIT =
-  "Apple and Google need the paid Apple account. Email works now.";
+import { signInWithSocial, socialErrorMessage, type SocialProvider } from "@/lib/social-sign-in";
 
 function AppleMark() {
   return (
@@ -54,7 +52,6 @@ export function LoginForm({
   const [invite, setInvite] = useState("");
   const [joinOpen, setJoinOpen] = useState(false);
   const [error, setError] = useState<string | null>(initialError);
-  const [notice, setNotice] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -100,9 +97,20 @@ export function LoginForm({
     window.location.assign(`/invite/${encodeURIComponent(token)}`);
   }
 
-  function onSocial() {
-    setNotice(SOCIAL_WAIT);
+  async function onSocial(provider: SocialProvider) {
+    if (demo) {
+      setError("Preview only — no sign-in.");
+      return;
+    }
+    setLoading(true);
     setError(null);
+    try {
+      await signInWithSocial(provider);
+    } catch (error) {
+      const message = socialErrorMessage(error);
+      if (message) setError(message);
+      setLoading(false);
+    }
   }
 
   if (!ready) return <div className="login-stage" />;
@@ -127,16 +135,15 @@ export function LoginForm({
       }
     >
       <div className="login-oauth">
-        <button type="button" className="login-oauth-btn login-apple" onClick={onSocial}>
+        <button type="button" className="login-oauth-btn login-apple" disabled={loading} onClick={() => void onSocial("apple")}>
           <AppleMark />
           Sign in with Apple
         </button>
-        <button type="button" className="login-oauth-btn login-google" onClick={onSocial}>
+        <button type="button" className="login-oauth-btn login-google" disabled={loading} onClick={() => void onSocial("google")}>
           <GoogleMark />
           Sign in with Google
         </button>
       </div>
-      {notice ? <p className="login-hint">{notice}</p> : null}
       <p className="login-or">or</p>
       <form
         className="login-form"

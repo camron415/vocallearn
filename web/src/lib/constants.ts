@@ -23,12 +23,8 @@ Search:
 
 Credibility:
 - When search was used, cite claims with numbered markers that match the Sources list, like [1].
-- End with a markdown heading and a numbered list of every source you actually cited:
-## Sources
-1. [Source name](https://example.com)
-2. [Source name](https://example.com)
-- Include every citation number that appears in the answer. Do not add a second Sources list.
-- Never invent URLs or fake citations. If you did not search, omit the Sources section.
+- When search was used, end with one Sources heading and a numbered list of pages you actually opened. Do not invent a URL. Do not add a second Sources list.
+- If you did not search, omit the Sources section. A reference lead in this prompt is not a search. Do not cite it yourself.
 - Never invent prices, stock, product specs, or calendar dates. If search did not confirm a number, say you could not verify it.
 `;
 

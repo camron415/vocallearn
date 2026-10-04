@@ -5,7 +5,6 @@ import {
   addKeepChip,
   clearKeepChips,
   countsTowardKeepCap,
-  dropKeepChipsForAsks,
   finishRound,
   readDockBeads,
   readGoldVault,
@@ -128,23 +127,17 @@ export function runKeepMemoryFixtures() {
   }
 
   clearKeepChips();
-  addKeepChip(sample("older", { askId: "chat-old" }));
-  addKeepChip(sample("newer", { askId: "chat-new" }));
-  addKeepChip(sample("loose"));
-  dropKeepChipsForAsks(["chat-old"]);
-  const kept = readKeepChips();
-  if (kept.some((chip) => chip.id === "older")) {
-    fail(failures, "deleting a chat should drop its facts");
+  tryAddKeepChip(sample("assist", { clears: 1, seat: "home", dueAt: Date.now() - 1000 }));
+  finishRound([{ id: "assist", passed: true, assisted: true }]);
+  const assisted = readKeepChips().find((chip) => chip.id === "assist");
+  if (!assisted || (assisted.clears ?? 0) !== 1) {
+    fail(failures, "a pass after the picture should not step metal");
   }
-  if (!kept.some((chip) => chip.id === "newer")) {
-    fail(failures, "a newer chat's facts should stay");
+  if (!assisted || assisted.seat !== "keep") {
+    fail(failures, "a pass after the picture should leave the home seat");
   }
-  if (!kept.some((chip) => chip.id === "loose")) {
-    fail(failures, "a chip with no ask id should stay");
-  }
-  dropKeepChipsForAsks([""]);
-  if (readKeepChips().length !== kept.length) {
-    fail(failures, "an empty ask id should not drop facts");
+  if (!assisted?.dueAt || assisted.dueAt <= Date.now()) {
+    fail(failures, "a pass after the picture should be due the next calendar day");
   }
 
   clearKeepChips();

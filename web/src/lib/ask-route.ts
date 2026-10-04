@@ -11,6 +11,8 @@ export type AskRoute = {
   maxToolCalls: number;
   /** Fetch free feeds even when search will run (why / more / explain). */
   seedLive?: boolean;
+  /** Picture turns (why, how, history) write on Grok at low effort. Search stays off. */
+  writer?: "luna" | "grok";
 };
 
 export type FeedDomain =

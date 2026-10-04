@@ -823,7 +823,7 @@ export function shouldShowClearGreeting() {
   return stats.roundsToday > 0 && stats.due === 0 && stats.keep + stats.mastered > 0;
 }
 
-export type ChipRoundResult = { id: string; passed: boolean };
+export type ChipRoundResult = { id: string; passed: boolean; assisted?: boolean };
 
 export type FinishRoundSplit = {
   passedIds: string[];
@@ -884,6 +884,16 @@ export function finishRound(
     if (!byId.has(chip.id) || isGoldOrMastered(chip)) return chip;
     touchedClusters.add(clusterKeyFor(chip));
     const passed = byId.get(chip.id)!;
+    const assisted = list.find((row) => row.id === chip.id)?.assisted;
+    if (passed && assisted) {
+      passedIds.push(chip.id);
+      return {
+        ...chip,
+        lastResult: "ok" as const,
+        dueAt: addLocalCalendarDays(now, 1),
+        seat: "keep" as const,
+      };
+    }
     if (passed) {
       passedIds.push(chip.id);
       const clears = (chip.clears ?? 0) + 1;

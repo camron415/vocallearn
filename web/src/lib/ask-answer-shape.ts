@@ -61,8 +61,8 @@ export function runAskAnswerShapeFixtures(): { ok: boolean; failures: string[] }
   }
 
   const sky = fallbackAskIntent("why is the sky blue");
-  if (!/12–24 words|gist/i.test(intentAnswerGuide(sky))) {
-    fail(failures, "teach_light guide should ask for a gist sentence");
+  if (!/Sentence 1/i.test(intentAnswerGuide(sky))) {
+    fail(failures, "teach_light guide should ask for sentence 1");
   }
 
   return { ok: failures.length === 0, failures };
