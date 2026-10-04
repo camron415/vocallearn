@@ -180,7 +180,9 @@ export function PreviewSwitcher() {
       router.replace(qs ? `${pathname}?${qs}` : pathname);
     }
     try {
-      setMin(window.sessionStorage.getItem("halo-mixer-min") === "1");
+      const phone = window.matchMedia("(max-width: 720px)").matches;
+      const stored = window.sessionStorage.getItem("halo-mixer-min");
+      setMin(phone || stored === "1");
     } catch {
       /* private browsing */
     }

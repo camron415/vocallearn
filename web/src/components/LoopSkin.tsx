@@ -807,6 +807,22 @@ html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] .chat-
 html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] .chat-stage .topbar .stone-btn:focus-visible {
   background: rgba(255, 255, 255, 0.08) !important;
 }
+@media (hover: none) {
+  html[data-halo-loop="17"][data-home-skin="paper"] .chrome-menu .stone-btn:hover:not(:disabled),
+  html[data-halo-loop="17"][data-home-skin="paper"] .chrome-menu .stone-btn:focus,
+  html[data-halo-loop="17"][data-home-skin="paper"] .chrome-menu .stone-btn:focus-visible,
+  html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] .chrome-menu .stone-btn:hover:not(:disabled),
+  html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] .chrome-menu .stone-btn:focus,
+  html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] .chrome-menu .stone-btn:focus-visible {
+    background: transparent !important;
+  }
+  html[data-halo-loop="17"][data-home-skin="paper"] .chrome-menu .stone-btn:active:not(:disabled) {
+    background: rgba(0, 0, 0, 0.05) !important;
+  }
+  html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] .chrome-menu .stone-btn:active:not(:disabled) {
+    background: rgba(255, 255, 255, 0.08) !important;
+  }
+}
 html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] .chat-stage .topbar .brand-mark,
 html[data-halo-loop="17"][data-home-skin="paper"][data-halo-theme="dark"] .chat-stage .topbar .stone-btn {
   color: #f5f5f7 !important;
@@ -1264,10 +1280,64 @@ html[data-halo-loop="17"][data-home-skin="paper"] .home-bubbles .keep-album__slo
 html[data-halo-loop="17"][data-home-skin="paper"] .home-bubbles .keep-album__slot[data-hue="meaning"] .capsule {
   box-shadow: 0 0 0 1px color-mix(in srgb, #c5f3d4 40%, transparent) !important;
 }
-html[data-halo-loop="17"] .history-overlay:not(.learn-stage) {
+html[data-halo-loop="17"] .history-overlay:not(.learn-stage):not(.phone-menu) {
   align-items: center !important;
   padding: 1.25rem 1rem !important;
   background: var(--paper-field) !important;
+}
+html[data-halo-loop="17"] .history-overlay.phone-menu {
+  align-items: stretch !important;
+  justify-items: end !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  background: transparent !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+html[data-halo-loop="17"] .history-overlay.phone-menu .history-page,
+html[data-halo-loop="17"] .history-overlay.phone-menu .history-page.settings-page {
+  width: 100% !important;
+  max-width: none !important;
+  height: 100% !important;
+  max-height: none !important;
+  margin: 0 !important;
+  justify-self: stretch !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: var(--paper-field) !important;
+  padding: 0 !important;
+}
+html[data-halo-loop="17"] .history-overlay.phone-menu .phone-menu-body {
+  overflow: auto !important;
+  overscroll-behavior: none !important;
+}
+html[data-halo-loop="17"] .history-overlay.phone-menu .phone-menu-body.is-off {
+  display: none !important;
+}
+html[data-halo-loop="17"] .history-overlay.phone-menu .phone-menu-lock {
+  background: var(--paper-field) !important;
+}
+html[data-halo-loop="17"] .history-overlay.phone-menu .history-page-head {
+  margin: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
+}
+html[data-halo-loop="17"] .history-overlay.phone-menu .phone-menu-chat,
+html[data-halo-loop="17"] .history-overlay.phone-menu .phone-menu-tool,
+html[data-halo-loop="17"] .history-overlay.phone-menu .phone-recipe {
+  background: none !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+html[data-halo-loop="17"] .history-overlay.phone-menu .phone-menu-tool--menu {
+  margin-left: auto !important;
+  border-radius: 999px !important;
+  background: color-mix(in srgb, var(--halo-ink) 8%, transparent) !important;
 }
 html[data-halo-loop="17"] .history-page {
   width: min(var(--halo-chat), 100%) !important;
@@ -1360,8 +1430,8 @@ html[data-halo-loop="17"] .menu-sheet[data-grow="closing"] {
   box-shadow: none !important;
 }
 /* The composer hands its pill to the sheet and steps back out of the way. */
-html[data-halo-loop="17"][data-halo-sheet="1"]:not([data-halo-play="1"]) .ask-hero .compose,
-html[data-halo-loop="17"][data-halo-sheet="1"]:not([data-halo-play="1"]) .compose-dock {
+html[data-halo-loop="17"][data-halo-sheet="1"]:not([data-halo-play="1"]):not([data-halo-phone-menu="1"]) .ask-hero .compose,
+html[data-halo-loop="17"][data-halo-sheet="1"]:not([data-halo-play="1"]):not([data-halo-phone-menu="1"]) .compose-dock {
   opacity: 0 !important;
   transition: opacity 240ms var(--ease-travel, cubic-bezier(0.33, 0.04, 0.2, 1)) !important;
   pointer-events: none !important;
@@ -1714,7 +1784,13 @@ html[data-halo-native][data-halo-loop="17"] .login-card.auth-card {
     right: 12px !important;
     width: auto !important;
     transform: none !important;
-    bottom: 0.75rem !important;
+    bottom: calc(
+      0.35rem +
+        max(
+          var(--kb-inset, 0px),
+          var(--halo-native-bottom, env(safe-area-inset-bottom, 0px))
+        )
+    ) !important;
   }
   html[data-halo-loop="17"][data-halo-ask-shell="1"] .ask-shell--chat .compose-dock {
     position: relative !important;

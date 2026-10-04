@@ -18,6 +18,13 @@ import { haloJuice } from "@/lib/halo-juice";
 
 export { LOCK_IN_KICKER, LOCK_IN_SEE_KICKER, LOCK_IN_SAY_KICKER } from "@/lib/harvest-lock";
 
+function releaseThreadTaps() {
+  const active = document.activeElement;
+  if (active instanceof HTMLTextAreaElement || active instanceof HTMLInputElement) return;
+  delete document.documentElement.dataset.haloKb;
+  delete document.documentElement.dataset.haloKbFade;
+}
+
 function shuffle<T>(items: T[]) {
   const next = [...items];
   for (let i = next.length - 1; i > 0; i -= 1) {
@@ -37,10 +44,12 @@ export function HarvestLock({
   chips,
   onFinish,
   onLive,
+  onClose,
 }: {
   chips: HarvestChip[];
   onFinish: (result: HarvestLockFinish) => void;
   onLive?: (live: HarvestLockLive) => void;
+  onClose?: () => void;
 }) {
   const ordered = useMemo(() => lockOrder(chips), [chips]);
   const [index, setIndex] = useState(0);
@@ -86,7 +95,21 @@ export function HarvestLock({
   useEffect(() => {
     const root = rootRef.current;
     if (!root || !chip) return;
-    root.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    // scrollIntoView also scrolls the page, which slides the composer under the keys.
+    const frame = window.requestAnimationFrame(() => {
+      const scroller = root.closest(".chat-scroll");
+      if (!(scroller instanceof HTMLElement)) return;
+      const composer = document.querySelector(
+        ".ask-shell-compose, .compose-dock"
+      );
+      const scrollerBottom = scroller.getBoundingClientRect().bottom;
+      const limit =
+        composer instanceof HTMLElement
+          ? Math.min(composer.getBoundingClientRect().top - 12, scrollerBottom)
+          : scrollerBottom;
+      const delta = root.getBoundingClientRect().bottom - limit;
+      if (delta > 1) scroller.scrollTop += delta;
+    });
     const wrap = root.closest("[data-harvest-lock]");
     wrap?.querySelectorAll("[data-harvest]").forEach((mark) => {
       mark.classList.toggle(
@@ -95,6 +118,7 @@ export function HarvestLock({
       );
     });
     return () => {
+      window.cancelAnimationFrame(frame);
       wrap?.querySelectorAll("[data-harvest]").forEach((mark) => {
         mark.classList.remove("is-lock-current");
       });
@@ -162,6 +186,7 @@ export function HarvestLock({
     if (result.ok) {
       setHit(trimmed);
       setMiss(false);
+      releaseThreadTaps();
       advanceTimer.current = window.setTimeout(() => {
         passOne();
       }, 280);
@@ -317,6 +342,11 @@ export function HarvestLock({
           <button type="button" className="harvest-lock__drop" onClick={dropCurrent}>
             Don&apos;t keep this
           </button>
+          {onClose ? (
+            <button type="button" className="harvest-lock__drop" onClick={onClose}>
+              Close
+            </button>
+          ) : null}
         </div>
       </div>
     </div>

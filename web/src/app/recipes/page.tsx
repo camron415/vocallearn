@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { RecipesClient } from "@/components/RecipesClient";
 import { createClient } from "@/lib/supabase/server";
 import { loadHaloProfile } from "@/lib/halo-profile";
@@ -8,7 +9,8 @@ export default async function RecipesPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const profile = user ? await loadHaloProfile(supabase, user) : undefined;
+  if (!user) redirect("/login");
+  const profile = await loadHaloProfile(supabase, user);
 
   const [{ data: recipes }, { data: conversations }] = await Promise.all([
     supabase

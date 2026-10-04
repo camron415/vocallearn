@@ -7,6 +7,28 @@ import type { GrokMessage } from "@/lib/grok";
 
 export const maxDuration = 60;
 
+export async function GET() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { data, error } = await supabase
+    .from("halo_recipes")
+    .select("id, title, ingredients, steps, photo_path, created_at")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    return NextResponse.json({ error: "Could not load recipes." }, { status: 500 });
+  }
+
+  return NextResponse.json({ recipes: data ?? [] });
+}
+
 export async function POST(request: Request) {
   const supabase = await createClient();
   const {

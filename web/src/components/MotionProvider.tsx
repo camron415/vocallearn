@@ -159,17 +159,25 @@ export function MotionProvider({ children }: { children: ReactNode }) {
 
     const phone = window.matchMedia("(max-width: 720px)");
     const vv = window.visualViewport;
-    /* iOS owns the focused field while it presents the keyboard. Moving that
-       field mid-present makes WKWebView resign it, so the keyboard aborts and
-       the composer falls back to rest. The native inset snaps, so it is only
-       written once the measured keyboard has held still. Never guessed, and
-       nothing in here scrolls the page. */
+    /* iOS owns the focused field on the focus tick. Moving it before
+       WKWebView has reported the keys, or rewriting the inset on every
+       viewport event during the rise, makes it resign the field and the
+       keyboard aborts. So the native lift is one eased write on the first
+       viewport report of the keys, which rides up alongside them. Later
+       changes (suggestion bar, emoji keys) wait until the keys hold still.
+       Nothing in here scrolls the page. */
     const KB_MIN = 80;
     const KB_JITTER = 12;
     const KB_STILL = 100;
     const KB_STEP = 24;
+    // Native lift/drop and Home fade-back. Match html[data-halo-native] in motion.css.
+    const KB_GLIDE = 220;
+    const KB_FADE = 180;
+    const KB_REFOCUS = 48;
     let restingH = window.innerHeight;
     let kbHide = 0;
+    let releasing = false;
+    let focusTick = false;
     let settleTick = 0;
     let settleH = -1;
     let settleSince = 0;
@@ -187,22 +195,55 @@ export function MotionProvider({ children }: { children: ReactNode }) {
           ".compose, .ask-shell-compose, .compose-dock"
         )
       );
+    const cancelRelease = () => {
+      window.clearTimeout(kbHide);
+      releasing = false;
+    };
     const releaseKb = () => {
+      const wasUp = root.dataset.haloKb === "1" || lifted >= 0;
       resetSettle();
       window.clearTimeout(guessTick);
       lifted = -1;
       focusAt = 0;
       root.style.setProperty("--kb-inset", "0px");
+      if (!wasUp) {
+        delete root.dataset.haloKb;
+        delete root.dataset.haloKbFade;
+        return;
+      }
+      const native = root.dataset.haloNative === "1";
+      // The keys fire more viewport events on the way down. Restarting here would hold Home back.
+      if (native && releasing) return;
+      releasing = native;
+      /* Home stays faded until the composer has landed, then fades back
+         before chips take taps again. */
+      const drop = native ? KB_GLIDE : 480;
+      const fade = native ? KB_FADE : 480;
+      root.dataset.haloKbFade = "1";
+      const dropFade = () => {
+        if (composeFocused()) {
+          kbHide = window.setTimeout(dropFade, fade);
+          return;
+        }
+        delete root.dataset.haloKbFade;
+        releasing = false;
+      };
       kbHide = window.setTimeout(() => {
-        if (!composeFocused()) delete root.dataset.haloKb;
-      }, 480);
+        if (composeFocused()) {
+          kbHide = window.setTimeout(dropFade, fade);
+          return;
+        }
+        delete root.dataset.haloKb;
+        kbHide = window.setTimeout(dropFade, fade);
+      }, drop);
     };
     const syncHeight = () => {
       if (!phone.matches) {
         root.style.removeProperty("--kb-inset");
         delete root.dataset.haloKb;
+        delete root.dataset.haloKbFade;
         restingH = window.innerHeight;
-        window.clearTimeout(kbHide);
+        cancelRelease();
         resetSettle();
         window.clearTimeout(guessTick);
         lifted = -1;
@@ -215,16 +256,25 @@ export function MotionProvider({ children }: { children: ReactNode }) {
       const visual = vv?.height ?? window.innerHeight;
       const offset = vv?.offsetTop ?? 0;
       const kbMeasured = Math.max(0, Math.round(restingH - visual - offset));
-      window.clearTimeout(kbHide);
       /* Never guess a lift once Ask has blurred, or Home stays faded until the viewport catches up. */
       if (native && !focused) {
         releaseKb();
         return;
       }
+      cancelRelease();
       if (native && focused) {
         // Home fades on the tap. The field itself does not move yet.
         root.dataset.haloKb = "1";
         if (focusAt === 0) focusAt = Date.now();
+        /* interactive-widget already shrank the page. An inset on top of that
+           parks the composer at the top and leaves a gap above the keys. */
+        if (restingH - window.innerHeight >= KB_MIN) {
+          resetSettle();
+          window.clearTimeout(guessTick);
+          lifted = 0;
+          root.style.setProperty("--kb-inset", "0px");
+          return;
+        }
         if (
           kbMeasured < KB_MIN ||
           (lifted >= 0 && Math.abs(kbMeasured - lifted) < KB_STEP)
@@ -242,6 +292,16 @@ export function MotionProvider({ children }: { children: ReactNode }) {
             window.clearTimeout(guessTick);
             guessTick = window.setTimeout(syncHeight, 520 - (Date.now() - focusAt));
           }
+          return;
+        }
+        /* The keys are already on their way up when iOS reports them. A
+           report on the focus tick means they were already up, so that one
+           waits until they hold still like any later change. */
+        if (lifted < 0 && !focusTick) {
+          resetSettle();
+          window.clearTimeout(guessTick);
+          lifted = kbMeasured;
+          root.style.setProperty("--kb-inset", `${kbMeasured}px`);
           return;
         }
         const now = Date.now();
@@ -270,24 +330,65 @@ export function MotionProvider({ children }: { children: ReactNode }) {
     };
     syncHeight();
     vv?.addEventListener("resize", syncHeight);
-    vv?.addEventListener("scroll", syncHeight);
+    const onViewportScroll = () => {
+      if (root.dataset.haloNative === "1" && composeFocused()) return;
+      syncHeight();
+    };
+    vv?.addEventListener("scroll", onViewportScroll);
     phone.addEventListener("change", syncHeight);
-    document.addEventListener("focusin", syncHeight);
-    const blurKb = () => window.setTimeout(syncHeight, 40);
+    let blurWait = 0;
+    const onFocusIn = () => {
+      window.clearTimeout(blurWait);
+      focusTick = true;
+      syncHeight();
+      focusTick = false;
+    };
+    const blurKb = () => {
+      window.clearTimeout(blurWait);
+      /* A second tap focuses again within a few frames. Releasing in between
+         jumps the page. Waiting longer than that leaves the composer behind
+         the keys on the way down. */
+      const wait = root.dataset.haloNative === "1" ? KB_REFOCUS : 220;
+      blurWait = window.setTimeout(syncHeight, wait);
+    };
+    document.addEventListener("focusin", onFocusIn);
     document.addEventListener("focusout", blurKb);
+    const stopPageScroll = (event: TouchEvent) => {
+      if (root.dataset.haloNative !== "1") return;
+      if (root.dataset.haloKb !== "1" && !composeFocused()) return;
+      const target = event.target instanceof Element ? event.target : null;
+      if (
+        target?.closest(
+          ".chat-scroll, .history-overlay, .history-page, .ask-shell-compose, .compose, button, a"
+        )
+      ) {
+        return;
+      }
+      event.preventDefault();
+    };
+    document.addEventListener("touchmove", stopPageScroll, { passive: false });
+    const pinScroll = () => {
+      if (root.dataset.haloNative !== "1" || root.dataset.haloKb !== "1") return;
+      if (!focusAt || Date.now() - focusAt < 400) return;
+      if (window.scrollY !== 0) window.scrollTo(0, 0);
+    };
+    window.addEventListener("scroll", pinScroll, { passive: true });
 
     return () => {
       cancelled = true;
-      window.clearTimeout(kbHide);
+      cancelRelease();
       window.clearTimeout(settleTick);
       window.clearTimeout(guessTick);
+      window.clearTimeout(blurWait);
       reduceQuery.removeEventListener("change", sync);
       pointerQuery.removeEventListener("change", sync);
       vv?.removeEventListener("resize", syncHeight);
-      vv?.removeEventListener("scroll", syncHeight);
+      vv?.removeEventListener("scroll", onViewportScroll);
       phone.removeEventListener("change", syncHeight);
-      document.removeEventListener("focusin", syncHeight);
+      document.removeEventListener("focusin", onFocusIn);
       document.removeEventListener("focusout", blurKb);
+      document.removeEventListener("touchmove", stopPageScroll);
+      window.removeEventListener("scroll", pinScroll);
     };
   }, []);
 

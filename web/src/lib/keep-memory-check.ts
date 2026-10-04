@@ -5,6 +5,7 @@ import {
   addKeepChip,
   clearKeepChips,
   countsTowardKeepCap,
+  dropKeepChipsForAsks,
   finishRound,
   readDockBeads,
   readGoldVault,
@@ -124,6 +125,26 @@ export function runKeepMemoryFixtures() {
   }
   if (closedView.prompt !== "Where does photosynthesis happen?") {
     fail(failures, "closed inspect should keep the question");
+  }
+
+  clearKeepChips();
+  addKeepChip(sample("older", { askId: "chat-old" }));
+  addKeepChip(sample("newer", { askId: "chat-new" }));
+  addKeepChip(sample("loose"));
+  dropKeepChipsForAsks(["chat-old"]);
+  const kept = readKeepChips();
+  if (kept.some((chip) => chip.id === "older")) {
+    fail(failures, "deleting a chat should drop its facts");
+  }
+  if (!kept.some((chip) => chip.id === "newer")) {
+    fail(failures, "a newer chat's facts should stay");
+  }
+  if (!kept.some((chip) => chip.id === "loose")) {
+    fail(failures, "a chip with no ask id should stay");
+  }
+  dropKeepChipsForAsks([""]);
+  if (readKeepChips().length !== kept.length) {
+    fail(failures, "an empty ask id should not drop facts");
   }
 
   clearKeepChips();

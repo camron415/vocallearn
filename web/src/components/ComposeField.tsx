@@ -34,10 +34,11 @@ export function ComposeField({
       ref={ref}
       className={`field ${props.className ?? ""}`}
       rows={1}
-      spellCheck={props.spellCheck ?? false}
-      autoCorrect={props.autoCorrect ?? "off"}
-      autoCapitalize={props.autoCapitalize ?? "off"}
-      autoComplete={props.autoComplete ?? "off"}
+      spellCheck={props.spellCheck ?? true}
+      autoCorrect={props.autoCorrect ?? "on"}
+      autoCapitalize={props.autoCapitalize ?? "sentences"}
+      autoComplete={props.autoComplete ?? "on"}
+      enterKeyHint={props.enterKeyHint ?? "send"}
       value={value}
       maxLength={maxLength}
       onChange={(e) => onValueChange(e.target.value.slice(0, maxLength))}

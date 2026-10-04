@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChoicePicks } from "@/components/ChoicePicks";
@@ -11,14 +11,30 @@ import { useMotionSettings } from "@/components/MotionProvider";
 import { useCoarsePointer } from "@/lib/coarse-pointer";
 import { APP_NAME } from "@/lib/constants";
 import { formatUsd, isHaloLane, laneLabel, type HaloLane } from "@/lib/limits";
-import { isLabBrowserHost } from "@/lib/lab-host";
+import { isLabBrowserHost, isPhoneLabHost } from "@/lib/lab-host";
 import {
   clearKeepChips,
+  dropKeepChipsForAsks,
   dropKeepDue,
   resetRoundsToday,
 } from "@/lib/keep-memory";
 import { createClient } from "@/lib/supabase/client";
 import type { HaloProfile } from "@/lib/types";
+
+function EmbeddedSheet({
+  open,
+  children,
+}: {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  titleId: string;
+  cardClassName?: string;
+  children: ReactNode;
+}) {
+  if (!open) return null;
+  return <>{children}</>;
+}
 
 async function patchProfile(body: Record<string, unknown>) {
   await fetch("/api/profile", {
@@ -42,12 +58,14 @@ export function SettingsMenu({
   profile,
   demo = false,
   hideTrigger = false,
+  embedded = false,
   open: openProp,
   onOpenChange,
 }: {
   profile?: HaloProfile;
   demo?: boolean;
   hideTrigger?: boolean;
+  embedded?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }) {
@@ -71,7 +89,8 @@ export function SettingsMenu({
   const [usage, setUsage] = useState<Usage | null>(null);
   const [qaNote, setQaNote] = useState<string | null>(null);
   const admin = Boolean(profile?.isAdmin) && !demo;
-  const labQa = admin && isLabBrowserHost();
+  const labQa = admin && (isLabBrowserHost() || isPhoneLabHost());
+  const chipTools = !demo && (labQa || isPhoneLabHost());
 
   useEffect(() => {
     if (!open || demo) return;
@@ -170,11 +189,12 @@ export function SettingsMenu({
       flashQa("Could not clear chats.");
       return;
     }
+    dropKeepChipsForAsks(ids);
     flashQa(`Cleared ${ids.length} chat${ids.length === 1 ? "" : "s"}.`);
     router.refresh();
   }
 
-  const Sheet = coarse ? SimpleSheet : MenuSheet;
+  const Sheet = embedded ? EmbeddedSheet : coarse ? SimpleSheet : MenuSheet;
 
   return (
     <div className="history-wrap">
@@ -334,12 +354,12 @@ export function SettingsMenu({
           </section>
         ) : null}
 
-        {labQa ? (
+        {chipTools ? (
           <section className="settings-block">
-            <p className="field-label">Lab QA</p>
+            <p className="field-label">Home chips</p>
             <p className="login-sub">
-              Localhost / LAN only. See <code>web/HARVEST-OPS.md</code> for the
-              full promote checklist.
+              Clear the dots on Home. Use this after a chat was deleted and a
+              chip no longer opens.
             </p>
             <div className="settings-row">
               <GlassButton
@@ -369,9 +389,11 @@ export function SettingsMenu({
               >
                 Clear Keep
               </GlassButton>
-              <GlassButton onClick={() => void clearAllChats()}>
-                Clear all chats
-              </GlassButton>
+              {labQa ? (
+                <GlassButton onClick={() => void clearAllChats()}>
+                  Clear all chats
+                </GlassButton>
+              ) : null}
             </div>
             {qaNote ? <p className="login-sub">{qaNote}</p> : null}
           </section>

@@ -18,6 +18,8 @@ export async function generateViewport(): Promise<Viewport> {
     width: "device-width",
     initialScale: 1,
     viewportFit: "cover",
+    /* Resize the page when the keyboard opens. Panning shows the white web view under the composer. */
+    interactiveWidget: "resizes-content",
     themeColor: dark ? "#0e0e10" : "#fafaf9",
   };
 }

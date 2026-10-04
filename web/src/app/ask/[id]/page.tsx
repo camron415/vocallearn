@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { ChatThread } from "@/components/ChatThread";
+import { ShellOwnedChat } from "@/components/ShellOwnedChat";
 import { loadHaloProfile } from "@/lib/halo-profile";
 import { createClient } from "@/lib/supabase/server";
 import type { AskMessage } from "@/lib/types";
@@ -35,12 +36,14 @@ export default async function AskConversationPage({
     .order("created_at", { ascending: true });
 
   return (
-    <ChatThread
-      conversationId={id}
-      title={conversation.title}
-      initialMessages={(messages ?? []) as AskMessage[]}
-      conversations={[]}
-      profile={profile}
-    />
+    <ShellOwnedChat id={id}>
+      <ChatThread
+        conversationId={id}
+        title={conversation.title}
+        initialMessages={(messages ?? []) as AskMessage[]}
+        conversations={[]}
+        profile={profile}
+      />
+    </ShellOwnedChat>
   );
 }

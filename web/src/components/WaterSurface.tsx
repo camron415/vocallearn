@@ -432,7 +432,11 @@ export function WaterAction({
         if (type === "button") haloJuice("mic");
         onClick?.();
       }}
-      onPointerDown={wet ? splash : undefined}
+      onPointerDown={(event) => {
+        // A focused field steals the first tap. Keep the click so Ask still submits.
+        if (type === "submit") event.preventDefault();
+        if (wet) splash();
+      }}
       className={
         wet
           ? `water water--action${live ? "" : " water--still"} ${className}`

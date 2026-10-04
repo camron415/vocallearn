@@ -29,6 +29,7 @@ import { stashAskAttachments } from "@/lib/pending-attach";
 import { abortPendingTurn, armPendingStream } from "@/lib/pending-turn";
 import { HALO_CONVERSATION_HEADER } from "@/lib/ask-stream-headers";
 import {
+  dropKeepChipsForAsks,
   isBankedChip,
   isDueChip,
   isMasteredChip,
@@ -334,7 +335,45 @@ export function AskLanding({
     });
   }
 
+  function pushAsk(href: string) {
+    const root = document.documentElement;
+    const native = root.dataset.haloNative === "1";
+    if (native) {
+      delete root.dataset.haloKb;
+      delete root.dataset.haloKbFade;
+      root.style.setProperty("--kb-inset", "0px");
+      const active = document.activeElement;
+      if (active instanceof HTMLElement) active.blur();
+    }
+    leaving.current = false;
+    // Next's router.push swaps the page. On the phone that swap is the
+    // white flash whenever the arrive fade is not already covering it.
+    if (native && document.querySelector(".ask-shell.is-ask-arrive")) {
+      History.prototype.pushState.call(window.history, window.history.state, "", href);
+      return;
+    }
+    router.push(href);
+  }
+
   function goAfterLeave(run: () => void | Promise<void>) {
+    // The phone web view freezes if Home starts the 1080ms leave and then
+    // navigates. Chips and Settings stay on this page, so they still work.
+    if (document.documentElement.dataset.haloNative === "1") {
+      leaving.current = false;
+      void run();
+      return;
+    }
+    // A leave already in flight used to return here and leave Home on
+    // "Asking…" forever. The timer still performs this navigation once.
+    let ran = false;
+    const once = async () => {
+      if (ran) return;
+      ran = true;
+      await run();
+    };
+    window.setTimeout(() => {
+      void once();
+    }, COMPOSE_TRAVEL_MS + 280);
     if (leaving.current) return;
     if (playing) {
       window.dispatchEvent(new Event("halo-home-play-end"));
@@ -342,18 +381,18 @@ export function AskLanding({
       setGrown(false);
       setPlayKind("");
       clearComposeHandoff();
-      void run();
+      void once();
       return;
     }
     if (soft) {
       setDraft("");
-      void run();
+      void once();
       return;
     }
     if (shell?.active) {
       leaving.current = true;
       shell.leaveToChat(async () => {
-        await run();
+        await once();
         leaving.current = false;
       });
       return;
@@ -365,7 +404,7 @@ export function AskLanding({
     window.setTimeout(() => {
       pinComposeGhost(composeRef.current);
       captureComposeMorph(composeRef.current);
-      void run();
+      void once();
     }, COMPOSE_TRAVEL_MS);
   }
 
@@ -390,7 +429,9 @@ export function AskLanding({
     setSending(true);
     setError(null);
     setComposeOpen(false);
-    composeRef.current?.querySelector("textarea")?.blur();
+    if (document.documentElement.dataset.haloNative !== "1") {
+      composeRef.current?.querySelector("textarea")?.blur();
+    }
 
     if (demo || isLabPreviewPath()) {
       window.dispatchEvent(new Event("halo-home-play-end"));
@@ -401,6 +442,46 @@ export function AskLanding({
         router.replace(labPreviewChatHref());
         setSending(false);
       });
+      return;
+    }
+
+    if (document.documentElement.dataset.haloNative === "1") {
+      document.documentElement.dataset.haloAskOut = "1";
+      try {
+        const attachments = files.length ? await readAttachments(files) : [];
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: message || undefined,
+            attachments,
+            timeZone: resolveUserTimeZone(profile?.timeZone),
+            prepareOnly: true,
+          }),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(
+            (data as { error?: string }).error || "Failed to send"
+          );
+        }
+        const data = (await res.json()) as { conversationId?: string };
+        const conversationId =
+          res.headers.get(HALO_CONVERSATION_HEADER) || data.conversationId;
+        if (!conversationId) throw new Error("Failed to send");
+        stashAskAttachments(conversationId, attachments);
+        sessionStorage.setItem(`halo-ask-live:${conversationId}`, "1");
+        shell?.showLiveChat({
+          id: conversationId,
+          text: message || "Sent an attachment",
+          profile,
+        });
+        delete document.documentElement.dataset.haloAskOut;
+        pushAsk(`/ask/${conversationId}`);
+      } catch (err) {
+        delete document.documentElement.dataset.haloAskOut;
+        abortLeave(err instanceof Error ? err.message : "Something went wrong");
+      }
       return;
     }
 
@@ -515,9 +596,10 @@ export function AskLanding({
   ]);
 
   useEffect(() => {
-    if (!shell?.active) return;
-    shell.setSubmitHandler((event) => onSubmit(event));
-    return () => shell.setSubmitHandler(null);
+    if (!shell?.active || shell.mode !== "home") return;
+    const handler = (event: FormEvent) => onSubmit(event);
+    shell.setSubmitHandler(handler);
+    return () => shell.releaseSubmitHandler(handler);
   }, [shell, onSubmit]);
 
   function openChat(id: string) {
@@ -531,6 +613,10 @@ export function AskLanding({
       return;
     }
     captureComposeMorph(composeRef.current);
+    if (document.documentElement.dataset.haloNative === "1" && shell?.openLive) {
+      void shell.openLive(id);
+      return;
+    }
     goAfterLeave(() => {
       router.push(`/ask/${id}`);
     });
@@ -539,14 +625,19 @@ export function AskLanding({
   return (
     <div className={`ask-stage${entering ? " is-entering" : ""}${playing ? " is-playing" : ""}`} ref={stageRef}>
       <HaloHeader
-        conversations={chats.map((c) => ({ id: c.id, title: c.title }))}
+        conversations={chats.map((c) => ({
+          id: c.id,
+          title: c.title,
+          updated_at: c.updated_at,
+        }))}
         demo={demo}
         homeHref={demo ? "/preview" : "/ask"}
         profile={profile}
         onOpenChat={openChat}
-        onDeleted={(id) =>
-          setChats((prev) => prev.filter((chat) => chat.id !== id))
-        }
+        onDeleted={(id) => {
+          dropKeepChipsForAsks([id]);
+          setChats((prev) => prev.filter((chat) => chat.id !== id));
+        }}
       />
 
       <HomeBubbles
@@ -568,6 +659,10 @@ export function AskLanding({
           }
           const dest = chip.askId?.trim();
           if (!dest || /^[1-6]$/.test(dest)) return;
+          if (document.documentElement.dataset.haloNative === "1" && shell?.openLive) {
+            void shell.openLive(dest);
+            return;
+          }
           goAfterLeave(() => {
             router.push(`/ask/${dest}`);
           });

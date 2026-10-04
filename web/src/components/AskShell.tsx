@@ -28,7 +28,10 @@ import {
   travelComposeTowardDock,
   travelComposeTowardHero,
 } from "@/components/SpringStage";
+import { ChatThread } from "@/components/ChatThread";
 import { ComposeStadium, WaterAction } from "@/components/WaterSurface";
+import { claimShellChat, releaseShellChat } from "@/lib/shell-chat";
+import type { AskMessage, HaloProfile } from "@/lib/types";
 
 export type AskShellMode = "home" | "chat";
 
@@ -70,8 +73,12 @@ type AskShellContextValue = {
   setError: (value: string | null) => void;
   setHomeUi: (ui: HomeComposeUi | null) => void;
   setSubmitHandler: (handler: ShellSubmit | null) => void;
+  releaseSubmitHandler: (handler: ShellSubmit) => void;
   leaveToChat: (navigate: () => void | Promise<void>) => void;
-  leaveToHome: (navigate: () => void) => void;
+  leaveToHome: (navigate: () => void) => void | Promise<void>;
+  showLiveChat: (chat: { id: string; text: string; profile?: HaloProfile }) => void;
+  openLive: (id: string) => Promise<boolean>;
+  liveSubmitRef: RefObject<ShellSubmit | null>;
   contentLeaving: boolean;
   contentEntering: boolean;
   onContentSettled: () => void;
@@ -98,6 +105,51 @@ function modeFromRoute(
   if (view === "chat") return "chat";
   if (/^\/ask\/[^/]+/.test(path)) return "chat";
   return "home";
+}
+
+const COVE_FADE_MS = 180;
+
+function delay(ms: number) {
+  return new Promise<void>((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
+
+function homeIsPainted(root: HTMLElement | null) {
+  const stage = root?.querySelector(".ask-stage");
+  if (!(stage instanceof HTMLElement)) return false;
+  const box = stage.getBoundingClientRect();
+  return box.width > 40 && box.height > 40;
+}
+
+function waitForPaintedHome(root: HTMLElement | null) {
+  return new Promise<boolean>((resolve) => {
+    const started = Date.now();
+    function tick() {
+      if (homeIsPainted(root)) {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => resolve(true));
+        });
+        return;
+      }
+      if (Date.now() - started > 2500) {
+        resolve(false);
+        return;
+      }
+      requestAnimationFrame(tick);
+    }
+    tick();
+  });
+}
+
+function liveUserMessage(id: string, text: string): AskMessage {
+  return {
+    id: `local-${id}`,
+    conversation_id: id,
+    role: "user",
+    content: text,
+    created_at: new Date().toISOString(),
+  };
 }
 
 export function AskShellProvider({
@@ -160,6 +212,8 @@ function AskShellInner({
   const [submitHandler, setSubmitHandlerState] = useState<ShellSubmit | null>(
     null
   );
+  const submitOwner = useRef<ShellSubmit | null>(null);
+  const liveSubmitRef = useRef<ShellSubmit | null>(null);
   const [contentLeaving, setContentLeaving] = useState(false);
   const [contentEntering, setContentEntering] = useState(false);
   const [leaveFrom, setLeaveFrom] = useState<AskShellMode | null>(null);
@@ -167,6 +221,14 @@ function AskShellInner({
   const shellRoot = useRef<HTMLDivElement | null>(null);
   const leaving = useRef(false);
   const pendingPose = useRef<AskShellMode | null>(null);
+  const [live, setLive] = useState<{
+    id: string;
+    text: string;
+    profile?: HaloProfile;
+    messages: AskMessage[];
+  } | null>(null);
+  const [cove, setCove] = useState<"hold" | "out" | null>(null);
+  const [askArrive, setAskArrive] = useState(false);
 
   useEffect(() => {
     if (!active) {
@@ -180,8 +242,13 @@ function AskShellInner({
   }, [active]);
 
   useEffect(() => {
-    if (leaving.current || stage === "other") return;
+    if (live || leaving.current || stage === "other") return;
+    if (document.documentElement.dataset.haloCove === "1") return;
     setMode((prev) => (prev === stage ? prev : stage));
+  }, [stage, live]);
+
+  useEffect(() => {
+    if (stage === "chat") setSending(false);
   }, [stage]);
 
   useLayoutEffect(() => {
@@ -202,7 +269,14 @@ function AskShellInner({
   }, []);
 
   const setSubmitHandler = useCallback((handler: ShellSubmit | null) => {
+    submitOwner.current = handler;
     setSubmitHandlerState(() => handler);
+  }, []);
+
+  const releaseSubmitHandler = useCallback((handler: ShellSubmit) => {
+    if (submitOwner.current !== handler) return;
+    submitOwner.current = null;
+    setSubmitHandlerState(null);
   }, []);
 
   const onContentSettled = useCallback(() => {
@@ -251,14 +325,110 @@ function AskShellInner({
     [soft]
   );
 
+  const openLive = useCallback(
+    async (id: string) => {
+      const res = await fetch(`/api/chats/${id}`);
+      if (!res.ok) return false;
+      const data = (await res.json()) as {
+        title?: string;
+        messages?: AskMessage[];
+      };
+      const messages = Array.isArray(data.messages) ? data.messages : [];
+      claimShellChat(id);
+      flushSync(() => {
+        setAskArrive(false);
+        setLive({
+          id,
+          text: data.title || "Chat",
+          profile: live?.profile,
+          messages,
+        });
+        setMode("chat");
+        setDraft("");
+        setFiles([]);
+        setError(null);
+      });
+      return true;
+    },
+    [live?.profile]
+  );
+
+  const showLiveChat = useCallback(
+    (chat: { id: string; text: string; profile?: HaloProfile }) => {
+      claimShellChat(chat.id);
+      const messages = [liveUserMessage(chat.id, chat.text)];
+      flushSync(() => {
+        setAskArrive(true);
+        setLive({ ...chat, messages });
+        setMode("chat");
+        setDraft("");
+        setFiles([]);
+        setError(null);
+      });
+    },
+    []
+  );
+
   const leaveToHome = useCallback(
-    (navigate: () => void) => {
+    (navigate: () => void): void | Promise<void> => {
+      const native = document.documentElement.dataset.haloNative === "1";
+      if (native) {
+        if (leaving.current) return Promise.resolve();
+        leaving.current = true;
+        const liveId = live?.id;
+        document.documentElement.dataset.haloCove = "1";
+        flushSync(() => {
+          setAskArrive(false);
+          setMode("home");
+          setDraft("");
+          setFiles([]);
+          setCove("hold");
+        });
+        if (!homeIsPainted(shellRoot.current)) navigate();
+        return waitForPaintedHome(shellRoot.current).then(async (painted) => {
+          if (!painted) {
+            flushSync(() => {
+              setMode("chat");
+              setCove(null);
+            });
+            delete document.documentElement.dataset.haloCove;
+            leaving.current = false;
+            return;
+          }
+          flushSync(() => setCove("out"));
+          await delay(COVE_FADE_MS);
+          releaseShellChat(liveId);
+          if (
+            shellRoot.current?.querySelector(".ask-stage") &&
+            window.location.pathname.startsWith("/ask/")
+          ) {
+            History.prototype.replaceState.call(
+              window.history,
+              window.history.state,
+              "",
+              "/ask"
+            );
+          }
+          flushSync(() => {
+            setLive(null);
+            setCove(null);
+          });
+          leaving.current = false;
+          window.setTimeout(() => {
+            delete document.documentElement.dataset.haloCove;
+          }, 2000);
+        });
+      }
+
+      releaseShellChat(live?.id);
       if (leaving.current || soft) {
+        setLive(null);
         navigate();
         return;
       }
       leaving.current = true;
       flushSync(() => {
+        setLive(null);
         setLeaveFrom("chat");
         setContentLeaving(true);
       });
@@ -276,11 +446,15 @@ function AskShellInner({
         window.setTimeout(() => setContentEntering(false), COMPOSE_TRAVEL_MS);
       }, COMPOSE_TRAVEL_MS);
     },
-    [soft]
+    [soft, live]
   );
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
+    if (live && !cove && liveSubmitRef.current) {
+      await liveSubmitRef.current(event);
+      return;
+    }
     await submitHandler?.(event);
   }
 
@@ -301,8 +475,12 @@ function AskShellInner({
       setError,
       setHomeUi,
       setSubmitHandler,
+      releaseSubmitHandler,
       leaveToChat,
       leaveToHome,
+      showLiveChat,
+      openLive,
+      liveSubmitRef,
       contentLeaving,
       contentEntering,
       onContentSettled,
@@ -317,8 +495,12 @@ function AskShellInner({
       error,
       setHomeUi,
       setSubmitHandler,
+      releaseSubmitHandler,
       leaveToChat,
       leaveToHome,
+      showLiveChat,
+      openLive,
+      liveSubmitRef,
       contentLeaving,
       contentEntering,
       onContentSettled,
@@ -349,9 +531,24 @@ function AskShellInner({
         ref={shellRoot}
         className={`ask-shell ask-shell--${mode}${
           contentLeaving && leaveFrom ? ` is-content-leaving is-leave-${leaveFrom}` : ""
-        }${contentEntering ? " is-content-entering" : ""}`}
+        }${contentEntering ? " is-content-entering" : ""        }${live ? " is-live" : ""}${
+          cove ? ` is-cove-${cove}` : ""
+        }${askArrive ? " is-ask-arrive" : ""}`}
       >
-        <div className="ask-shell-page">{children}</div>
+        <div className="ask-shell-page">
+          {children}
+          {live ? (
+            <div className="ask-shell-live">
+              <ChatThread
+                key={live.id}
+                conversationId={live.id}
+                title={live.text.slice(0, 80) || "Ask"}
+                initialMessages={live.messages}
+                profile={live.profile}
+              />
+            </div>
+          ) : null}
+        </div>
         <div
           className={`ask-shell-compose${
             home && ui?.suggestOpen ? " is-open" : ""

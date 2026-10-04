@@ -128,7 +128,9 @@ export async function POST(request: Request) {
     const priorText = priorUserText(history);
     const priorReply = priorAssistantText(history);
     const clip = threadClip(history);
-    await ensureAskClassify(user.id, conversationId, userText, {
+    // Start classify, but do not hold the chat id on it. The thread joins
+    // the same flight when it resumes. Waiting here is the pause on Ask.
+    void ensureAskClassify(user.id, conversationId, userText, {
       hasFiles: attachments.length > 0,
       priorText,
       priorReply,

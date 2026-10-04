@@ -40,7 +40,7 @@ import {
   sameHarvestFact,
   type HarvestChip,
 } from "@/lib/harvest";
-import { readKeepChips } from "@/lib/keep-memory";
+import { dropKeepChipsForAsks, readKeepChips } from "@/lib/keep-memory";
 import { readHaloStream, type HaloStreamEvent } from "@/lib/halo-stream";
 import { PREVIEW_RECIPE_ASK, PREVIEW_RECIPE_REPLY } from "@/lib/save-offer";
 import {
@@ -80,6 +80,26 @@ type SaveOfferState = {
   status: "ready" | "saving" | "saved" | "error";
   error?: string;
 };
+
+/** Scroll the thread pane only. scrollIntoView also scrolls the page and slides the composer under the keys. */
+function scrollInsideThread(el: HTMLElement | null, edge: "start" | "end") {
+  const scroller = el?.closest(".chat-scroll");
+  if (!el || !(scroller instanceof HTMLElement)) return;
+  if (edge === "end") {
+    scroller.scrollTop = scroller.scrollHeight;
+    return;
+  }
+  const delta =
+    el.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
+  scroller.scrollTop += delta;
+}
+
+function releaseThreadTaps() {
+  const active = document.activeElement;
+  if (active instanceof HTMLTextAreaElement || active instanceof HTMLInputElement) return;
+  delete document.documentElement.dataset.haloKb;
+  delete document.documentElement.dataset.haloKbFade;
+}
 
 function shouldResume(messages: AskMessage[]) {
   const last = messages[messages.length - 1];
@@ -248,6 +268,7 @@ export function ChatThread({
     lockLive.current = { claimedIds: [], droppedIds: [], remainingIds: [] };
     setLockChips([]);
     clearPendingLock();
+    releaseThreadTaps();
     if (!demo && !saveDemo) {
       reportHarvestLock({
         conversationId,
@@ -293,6 +314,17 @@ export function ChatThread({
   useComposeMorph(dockRef, !soft && !shell?.active);
 
   useLayoutEffect(() => {
+    if (!shell?.active) return;
+    const run = (event: FormEvent) => {
+      void onSubmit(event);
+    };
+    shell.liveSubmitRef.current = run;
+    return () => {
+      if (shell.liveSubmitRef.current === run) shell.liveSubmitRef.current = null;
+    };
+  });
+
+  useLayoutEffect(() => {
     const dock = dockRef.current;
     if (!dock) return;
     const stage = dock.closest(".chat-stage") as HTMLElement | null;
@@ -313,6 +345,20 @@ export function ChatThread({
     walkAwayKeep();
     turnAborts.get(conversationId)?.abort();
     const dest = demo || isLabPreviewPath() ? labPreviewHomeHref() : homeHref;
+    const native = document.documentElement.dataset.haloNative === "1";
+    if (native && shell?.active) {
+      leaving.current = true;
+      void Promise.resolve(
+        shell.leaveToHome(() => {
+          if (!document.querySelector(".ask-shell .ask-stage")) {
+            router.replace(dest);
+          }
+        })
+      ).finally(() => {
+        leaving.current = false;
+      });
+      return;
+    }
     if (soft) {
       clearComposeHandoff();
       router.replace(dest);
@@ -498,17 +544,17 @@ export function ChatThread({
   }, [demo, conversationId]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ block: "end", behavior: "auto" });
+    scrollInsideThread(bottomRef.current, "end");
   }, [conversationId]);
 
   useEffect(() => {
     if (!sending) return;
-    turnStartRef.current?.scrollIntoView({
-      block: "start",
-      inline: "nearest",
-      behavior: soft ? "auto" : "smooth",
-    });
-  }, [sending, soft]);
+    // A follow-up with the keyboard up pans the web view and shows the white
+    // iPhone background. The thread can move after the keys are down.
+    const root = document.documentElement;
+    if (root.dataset.haloNative === "1" && root.dataset.haloKb === "1") return;
+    scrollInsideThread(turnStartRef.current, "start");
+  }, [sending]);
 
   useEffect(() => {
     return () => {
@@ -834,8 +880,9 @@ export function ChatThread({
 
   useEffect(() => {
     if (!shell?.active) return;
-    shell.setSubmitHandler((event) => onSubmit(event));
-    return () => shell.setSubmitHandler(null);
+    const handler = (event: FormEvent) => onSubmit(event);
+    shell.setSubmitHandler(handler);
+    return () => shell.releaseSubmitHandler(handler);
   }, [shell, conversationId, draft, files, sending]);
 
   const lastUserId = [...messages].reverse().find((row) => row.role === "user")?.id;
@@ -906,9 +953,17 @@ export function ChatThread({
             return;
           }
           if (!shell?.active) captureComposeMorph(dockRef.current);
+          if (
+            shell?.active &&
+            document.documentElement.dataset.haloNative === "1"
+          ) {
+            void shell.openLive(id);
+            return;
+          }
           router.push(`/ask/${id}`);
         }}
         onDeleted={(id) => {
+          dropKeepChipsForAsks([id]);
           setChats((prev) => prev.filter((chat) => chat.id !== id));
           if (id !== conversationId) return;
           captureComposeMorph(null);
@@ -969,7 +1024,12 @@ export function ChatThread({
                       ? () => {
                           setDraft(stripMarkdownForDisplay(m.content));
                           window.requestAnimationFrame(() => {
-                            document.getElementById("followup")?.focus();
+                            const field = document.getElementById(
+                              shell?.active ? "ask-shell-field" : "followup"
+                            );
+                            if (field instanceof HTMLElement) {
+                              field.focus({ preventScroll: true });
+                            }
                           });
                         }
                       : undefined
@@ -991,6 +1051,11 @@ export function ChatThread({
                         outcomes: result.outcomes,
                       })
                     }
+                    onClose={() => {
+                      walkAwayKeep();
+                      setLockChips([]);
+                      releaseThreadTaps();
+                    }}
                   />
                 ) : null}
               </div>

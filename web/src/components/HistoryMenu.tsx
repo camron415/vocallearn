@@ -6,7 +6,7 @@ import { MenuSheet } from "@/components/MenuSheet";
 import { SimpleSheet } from "@/components/SimpleSheet";
 import { useCoarsePointer } from "@/lib/coarse-pointer";
 
-export type HistoryItem = { id: string; title: string };
+export type HistoryItem = { id: string; title: string; updated_at?: string };
 
 /** Lab (`demo`) History only reports the id. The parent must stay on `/preview`
  *  — never `/ask/:id`. Family History still opens a real thread. */

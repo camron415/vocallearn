@@ -13,3 +13,10 @@ export function isLabBrowserHost() {
   if (typeof window === "undefined") return false;
   return isLabHost(window.location.hostname);
 }
+
+/** The phone lab alias and its preview hosts. Not the family site. */
+export function isPhoneLabHost() {
+  if (typeof window === "undefined") return false;
+  const host = window.location.hostname;
+  return host === "halo-lab-personal-f999.vercel.app" || host.endsWith("-personal-f999.vercel.app");
+}

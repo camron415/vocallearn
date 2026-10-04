@@ -12,7 +12,7 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from("ask_conversations")
-    .select("id, title")
+    .select("id, title, updated_at")
     .eq("user_id", user.id)
     .order("updated_at", { ascending: false })
     .limit(40);
